@@ -1,69 +1,136 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
 <title>B4資料</title>
-<link rel="stylesheet" href="../../assets/css/common.css">
-<link rel="stylesheet" href="style.css">
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
+<link
+  rel="stylesheet"
+  href="style.css">
+
 </head>
 
 <body>
 
 <header class="topbar">
-<button class="menu-button" onclick="location.href='../'">戻る</button>
-<div class="logo">B4資料</div>
+
+<button
+  class="menu-button"
+  onclick="location.href='../'">
+戻る
+</button>
+
+<div class="logo">
+B4資料
+</div>
+
 </header>
+
 
 <main class="page">
 
-<h1>B4資料</h1>
+<div class="page-header">
 
-<section class="card">
+<div>
 
-<label>
-Book
-<select id="book"></select>
-</label>
+<h1>
+B4資料
+</h1>
 
-<label>
-クラス
-<input id="className">
-</label>
+<p>
+BookとStudentを選択して作成します。
+</p>
 
-<label>
-氏名
-<input id="studentName">
-</label>
-
-<label>
-シリアルコード
-<input id="code">
-</label>
-
-<div class="toolbar">
+</div>
 
 <button
-  id="preview"
-  class="primary-button">
-プレビュー
-</button>
-
-<button
-  id="print"
+  id="printAll"
   class="secondary-button">
-印刷
+一括印刷
 </button>
 
 </div>
 
-<div id="sheet"></div>
 
+<section class="card">
+
+<h2>
+作成対象
+</h2>
+
+
+<label>
+Book
+
+<select id="book">
+</select>
+
+</label>
+
+
+<div
+  class="select-all-row">
+
+<input
+  id="selectAll"
+  type="checkbox">
+
+<label
+  for="selectAll">
+全Studentを選択
+</label>
+
+</div>
+
+
+<div
+  id="students"
+  class="student-list">
+</div>
+
+
+<div
+  class="toolbar"
+  style="margin-top:15px">
+
+<button
+  id="create"
+  class="primary-button">
+B4資料を作成
+</button>
+
+</div>
+
+
+<p id="message"></p>
+
+</section>
+
+
+<section
+  id="sheets"
+  class="sheets">
 </section>
 
 </main>
 
-<script type="module" src="app.js"></script>
+
+<script
+  type="module"
+  src="app.js">
+</script>
 
 </body>
+
 </html>
