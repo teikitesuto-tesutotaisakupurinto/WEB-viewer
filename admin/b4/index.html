@@ -7,7 +7,7 @@
 
 <meta
   name="viewport"
-  content="width=device-width, initial-scale=1">
+  content="width=device-width,initial-scale=1">
 
 <title>B4資料</title>
 
@@ -30,21 +30,53 @@
 <aside class="admin-side">
 
 <div class="admin-brand">
-<div>WEB-viewer</div>
-<small>管理システム</small>
+
+<div>
+WEB-viewer
 </div>
+
+<small>
+管理システム
+</small>
+
+</div>
+
 
 <nav>
 
-<a href="../">ダッシュボード</a>
-<a href="../books/">Book管理</a>
-<a href="../serials/">シリアル管理</a>
-<a href="../students/">Student管理</a>
-<a href="../materials/">資料配信</a>
-<a class="active" href="./">B4資料</a>
-<a href="../system/">システム管理</a>
+<a href="../">
+ダッシュボード
+</a>
 
-<button id="logout" type="button">
+<a href="../books/">
+Book管理
+</a>
+
+<a href="../serials/">
+シリアル管理
+</a>
+
+<a href="../students/">
+Student管理
+</a>
+
+<a href="../materials/">
+資料配信
+</a>
+
+<a
+  class="active"
+  href="./">
+B4資料
+</a>
+
+<a href="../system/">
+システム管理
+</a>
+
+<button
+  id="logout"
+  type="button">
 ログアウト
 </button>
 
@@ -56,8 +88,15 @@
 <main class="admin-main">
 
 <header class="admin-notice">
-<div>お知らせ</div>
-<span>B4資料</span>
+
+<div>
+お知らせ
+</div>
+
+<span>
+B4資料
+</span>
+
 </header>
 
 
@@ -66,15 +105,25 @@
 <div class="page-heading">
 
 <div>
-<h1>B4資料</h1>
-<p>BookとStudentを選択して一括作成</p>
+
+<h1>
+B4資料
+</h1>
+
+<p>
+BookとStudentを選択して一括作成
+</p>
+
 </div>
+
 
 <button
   id="print"
-  class="primary-button"
-  type="button">
+  type="button"
+  class="primary-button">
+
 一括印刷
+
 </button>
 
 </div>
@@ -82,14 +131,27 @@
 
 <section class="admin-card">
 
+<h2>
+作成対象
+</h2>
+
+
 <label>
+
 Book
 
-<select id="book"></select>
+<select id="book">
+
+<option value="">
+Bookを選択してください
+</option>
+
+</select>
+
 </label>
 
 
-<label>
+<label class="check-all">
 
 <input
   id="selectAll"
@@ -106,21 +168,36 @@ Book
 </div>
 
 
+<div class="toolbar">
+
 <button
   id="create"
-  class="primary-button"
-  type="button">
+  type="button"
+  class="primary-button">
+
 B4資料を作成
+
 </button>
 
+</div>
 
-<p id="message"></p>
+
+<p
+  id="message"
+  class="message">
+</p>
 
 </section>
 
 
+<!--
+  B4資料はここに表示。
+  ダウンロード一覧やファイル一覧は表示しない。
+-->
+
 <section
-  id="sheets">
+  id="sheets"
+  class="b4-sheets">
 </section>
 
 </section>
@@ -130,7 +207,7 @@ B4資料を作成
 
 <script
   type="module"
-  src="app.js">
+  src="app.js?v=b4-final">
 </script>
 
 </body>
