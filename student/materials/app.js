@@ -55,58 +55,54 @@ if (error) {
 
 const materials =
   (data || []).filter(
-    material => {
+    item => {
 
       if (
-        material.all_students
+        item.all_students
       ) {
-
         return true;
       }
 
 
       return (
-        material
-          .material_recipients
-          ?.some(
-            recipient =>
-              recipient.student_id ===
-              student.id
-          )
+        item.material_recipients ||
+        []
+      ).some(
+        recipient =>
+          recipient.student_id ===
+          student.id
       );
 
     }
   );
 
 
-document.getElementById(
-  "materials"
-).innerHTML =
+const container =
+  document.getElementById(
+    "materials"
+  );
+
+
+container.innerHTML =
   materials.map(
-    material => `
+    item => `
 
 <div class="card">
 
-<h3>
-${escapeHtml(
-  material.title
-)}
-</h3>
+<h2>
+${escapeHtml(item.title)}
+</h2>
 
 <p>
-${escapeHtml(
-  material.description
-)}
+${escapeHtml(item.description)}
 </p>
 
 <button
   class="primary-button"
   data-file="${escapeHtml(
-    material.file_path || ""
+    item.file_path || ""
   )}">
-
 開く
-
 </button>
 
 </div>
@@ -114,45 +110,46 @@ ${escapeHtml(
 `
   ).join("") ||
   `<div class="card">
-資料はありません。
-</div>`;
+    資料はありません。
+  </div>`;
 
 
-document
+container
   .querySelectorAll(
     "[data-file]"
   )
-  .forEach(button => {
+  .forEach(
+    button => {
 
-    button.onclick = async () => {
+      button.onclick =
+        async () => {
 
-      const {
-        data,
-        error
-      } =
-        await supabase.storage
-          .from("web-viewer")
-          .createSignedUrl(
-            button.dataset.file,
-            300
-          );
-
-
-      if (error) {
-
-        alert(
-          "資料を開けませんでした。"
-        );
-
-        return;
-      }
+          const {
+            data,
+            error
+          } =
+            await supabase.storage
+              .from("web-viewer")
+              .createSignedUrl(
+                button.dataset.file,
+                300
+              );
 
 
-      window.open(
-        data.signedUrl,
-        "_blank"
-      );
+          if (error) {
 
-    };
+            alert(
+              "資料を開けませんでした。"
+            );
 
-  });
+            return;
+          }
+
+
+          location.href =
+            data.signedUrl;
+
+        };
+
+    }
+  );
