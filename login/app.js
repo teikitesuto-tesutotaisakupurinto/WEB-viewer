@@ -21,10 +21,6 @@ const button =
   );
 
 
-/*
- * ログインフォーム確認
- */
-
 if (!form) {
 
   throw new Error(
@@ -44,14 +40,9 @@ form.addEventListener(
     button.disabled =
       true;
 
-
     message.textContent =
       "";
 
-
-    /*
-     * 入力値
-     */
 
     const email =
       document
@@ -122,10 +113,6 @@ form.addEventListener(
     }
 
 
-    /*
-     * Authユーザー確認
-     */
-
     const user =
       loginData?.user;
 
@@ -152,8 +139,6 @@ form.addEventListener(
 
     /*
      * usersプロフィール取得
-     *
-     * クラス・学籍番号は使用しない
      */
 
     const {
@@ -177,11 +162,13 @@ form.addEventListener(
     );
 
 
-    /*
-     * RPCエラー
-     */
-
     if (profileError) {
+
+      console.error(
+        "PROFILE RPC ERROR:",
+        profileError
+      );
+
 
       message.textContent =
         "プロフィール取得エラー: " +
@@ -195,10 +182,6 @@ form.addEventListener(
 
     }
 
-
-    /*
-     * usersに登録されていない
-     */
 
     if (!profile) {
 
@@ -216,6 +199,9 @@ form.addEventListener(
 
     /*
      * Admin
+     *
+     * メンテナンス中でも
+     * そのままAdminへ入る。
      */
 
     if (
@@ -234,6 +220,9 @@ form.addEventListener(
 
     /*
      * Student
+     *
+     * メンテナンス判定は
+     * student/app.js側で行う。
      */
 
     if (
