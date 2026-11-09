@@ -1,3 +1,4 @@
+
 * {
   box-sizing: border-box;
 }
@@ -5,9 +6,10 @@
 html,
 body {
   margin: 0;
-
   min-height: 100%;
+}
 
+body {
   font-family:
     system-ui,
     -apple-system,
@@ -16,21 +18,26 @@ body {
     sans-serif;
 
   background: #f5f5f3;
-
   color: #222;
 }
+
+
+/* =========================
+   メンテナンス
+   ========================= */
 
 .maintenance-page {
   min-height: 100vh;
 
-  display: flex;
+  display: grid;
 
-  align-items: center;
+  place-items: center;
 
-  justify-content: center;
+  padding: 20px;
 
-  padding: 25px;
+  background: #f5f5f3;
 }
+
 
 .maintenance-card {
   width: min(
@@ -50,22 +57,23 @@ body {
 
   box-shadow:
     0 10px 30px
-    rgba(0,0,0,.06);
+    rgba(0, 0, 0, .06);
 }
 
-.maintenance-title {
-  color: #222;
 
+.maintenance-logo {
   font-size: 28px;
 
   font-weight: 800;
 }
+
 
 .maintenance-card h1 {
   margin: 30px 0 12px;
 
   font-size: 25px;
 }
+
 
 .maintenance-card p {
   margin: 0;
@@ -75,4 +83,136 @@ body {
   line-height: 1.8;
 
   white-space: pre-wrap;
+}
+
+
+.maintenance-logout {
+  margin-top: 22px;
+
+  padding: 10px 22px;
+
+  border: 1px solid #ccc;
+
+  border-radius: 8px;
+
+  background: #fff;
+
+  color: #222;
+
+  cursor: pointer;
+}
+
+
+.maintenance-logout:hover {
+  background: #f2f2f2;
+}
+
+
+/* =========================
+   エラー
+   ========================= */
+
+.page-error {
+  margin: 25px;
+
+  padding: 28px;
+
+  background: #fff;
+
+  border: 1px solid #ddd;
+
+  border-left: 5px solid #d5ca3d;
+
+  border-radius: 10px;
+}
+
+
+.page-error h2 {
+  margin-top: 0;
+}
+
+
+.page-error p {
+  color: #666;
+
+  white-space: pre-wrap;
+}
+
+
+.page-error button {
+  padding: 10px 17px;
+
+  border: 0;
+
+  border-radius: 8px;
+
+  background: #d5ca3d;
+
+  color: #222;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+/* =========================
+   共通
+   ========================= */
+
+.primary-button {
+  padding: 10px 17px;
+
+  border: 0;
+
+  border-radius: 8px;
+
+  background: #d5ca3d;
+
+  color: #222;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+.secondary-button {
+  padding: 10px 17px;
+
+  border: 1px solid #ccc;
+
+  border-radius: 8px;
+
+  background: #fff;
+
+  color: #222;
+
+  cursor: pointer;
+}
+
+
+.hidden {
+  display: none !important;
+}
+
+
+/* =========================
+   スマホ
+   ========================= */
+
+@media (max-width: 600px) {
+
+  .maintenance-card {
+    padding: 30px 22px;
+  }
+
+  .maintenance-logo {
+    font-size: 24px;
+  }
+
+  .maintenance-card h1 {
+    font-size: 21px;
+  }
+
 }
