@@ -1,51 +1,25 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1">
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>マイBooks</title>
-
-<link
-  rel="stylesheet"
-  href="../../assets/css/common.css">
-
+<link rel="stylesheet" href="../../assets/css/common.css">
 </head>
-
 <body>
 
 <header class="topbar">
-
-<button
-  class="menu-button"
-  onclick="location.href='../'">
-戻る
-</button>
-
-<div class="logo">
-マイBooks
-</div>
-
+<button class="menu-button" onclick="location.href='../'">戻る</button>
+<div class="logo">マイBooks</div>
 </header>
-
 
 <main class="page">
 
-<h1>
-マイBooks
-</h1>
-
+<h1>マイBooks</h1>
 
 <section class="card">
 
-<h2>
-Book登録
-</h2>
+<h2>Bookを登録</h2>
 
 <input
   id="code"
@@ -70,16 +44,13 @@ QR読み取り
 
 <div
   id="reader"
-  class="hidden">
+  class="hidden"
+  style="margin-top:15px">
 </div>
 
-<p
-  id="message"
-  class="message">
-</p>
+<p id="message"></p>
 
 </section>
-
 
 <div
   id="books"
@@ -89,12 +60,7 @@ QR読み取り
 
 </main>
 
-
-<script
-  type="module"
-  src="app.js">
-</script>
+<script type="module" src="app.js"></script>
 
 </body>
-
 </html>
