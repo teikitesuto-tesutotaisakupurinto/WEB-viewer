@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
+<title>資料配信</title>
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
+</head>
+
+<body>
+
+<header class="topbar">
+
+<button
+  class="menu-button"
+  onclick="location.href='../'">
+戻る
+</button>
+
+<div class="logo">
+資料配信
+</div>
+
+</header>
+
+
+<main class="page">
+
+<h1>資料配信</h1>
+
+
+<section class="card">
+
+<input
+  id="title"
+  placeholder="資料タイトル">
+
+<textarea
+  id="description"
+  placeholder="説明">
+</textarea>
+
+<label>
+資料ファイル
+
+<input
+  id="file"
+  type="file"
+  accept=".pdf,.jpg,.jpeg,.png">
+</label>
+
+<label>
+対象Student UID
+
+<input
+  id="students"
+  placeholder="空欄なら全員">
+</label>
+
+<button
+  id="send"
+  class="primary-button">
+配信
+</button>
+
+<p id="message"></p>
+
+</section>
+
+<div
+  id="materials"
+  class="grid"
+  style="margin-top:20px">
+</div>
+
+</main>
+
+
+<script
+  type="module"
+  src="app.js">
+</script>
+
+</body>
+
+</html>
