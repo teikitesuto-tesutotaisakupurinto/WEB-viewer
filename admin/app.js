@@ -9,85 +9,62 @@ import {
 }
 from "../assets/js/supabase.js";
 
-import {
-  openDrawer,
-  closeDrawer
-}
-from "../assets/js/common.js";
 
-
-const profile =
+const admin =
   await requireAdmin();
 
-if (!profile) {
-  throw new Error(
-    "Unauthorized"
-  );
+if (!admin) {
+  throw new Error("Unauthorized");
 }
-
-
-document.getElementById(
-  "name"
-).textContent =
-  profile.display_name;
-
-
-document.getElementById(
-  "menu"
-).onclick =
-  openDrawer;
-
-
-document.getElementById(
-  "backdrop"
-).onclick =
-  closeDrawer;
 
 
 document.getElementById(
   "logout"
-).onclick =
-  logout;
+).onclick = logout;
 
 
-const books =
-  await supabase
-    .from("books")
-    .select(
-      "id",
-      {
-        count: "exact",
-        head: true
-      }
-    );
+const [
+  books,
+  licenses,
+  students
+] =
+  await Promise.all([
 
+    supabase
+      .from("books")
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true
+        }
+      ),
 
-const licenses =
-  await supabase
-    .from("licenses")
-    .select(
-      "id",
-      {
-        count: "exact",
-        head: true
-      }
-    );
+    supabase
+      .from("licenses")
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true
+        }
+      ),
 
+    supabase
+      .from("users")
+      .select(
+        "id",
+        {
+          count: "exact",
+          head: true
+        }
+      )
+      .eq(
+        "role",
+        "student"
+      )
 
-const students =
-  await supabase
-    .from("users")
-    .select(
-      "id",
-      {
-        count: "exact",
-        head: true
-      }
-    )
-    .eq(
-      "role",
-      "student"
-    );
+  ]);
 
 
 document.getElementById(
@@ -95,12 +72,10 @@ document.getElementById(
 ).textContent =
   books.count || 0;
 
-
 document.getElementById(
   "licenseCount"
 ).textContent =
   licenses.count || 0;
-
 
 document.getElementById(
   "studentCount"
