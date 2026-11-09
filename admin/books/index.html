@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="ja">
+
 <head>
 
 <meta charset="UTF-8">
@@ -21,3 +24,221 @@
   href="style.css">
 
 </head>
+
+<body>
+
+<aside class="admin-side">
+
+<div class="admin-brand">
+
+<div>
+WEB-viewer
+</div>
+
+<small>
+管理システム
+</small>
+
+</div>
+
+
+<nav>
+
+<a href="../">
+ダッシュボード
+</a>
+
+<a
+  class="active"
+  href="./">
+Book管理
+</a>
+
+<a href="../serials/">
+シリアル管理
+</a>
+
+<a href="../students/">
+Student管理
+</a>
+
+<a href="../materials/">
+資料配信
+</a>
+
+<a href="../b4/">
+B4資料
+</a>
+
+<a href="../system/">
+システム管理
+</a>
+
+<button id="logout">
+ログアウト
+</button>
+
+</nav>
+
+</aside>
+
+
+<main class="admin-main">
+
+<header class="admin-notice">
+
+<div>
+お知らせ
+</div>
+
+<span>
+Book管理
+</span>
+
+</header>
+
+
+<section class="admin-content">
+
+<div class="page-heading">
+
+<div>
+
+<h1>
+Book管理
+</h1>
+
+<p>
+教材の登録と管理
+</p>
+
+</div>
+
+<button
+  id="showForm"
+  class="primary-button">
+Bookを追加
+</button>
+
+</div>
+
+
+<section
+  id="formCard"
+  class="admin-card hidden">
+
+<h2>
+Bookを追加
+</h2>
+
+
+<label>
+
+Book名
+
+<input
+  id="title"
+  type="text"
+  autocomplete="off">
+
+</label>
+
+
+<label>
+
+説明
+
+<textarea
+  id="description">
+</textarea>
+
+</label>
+
+
+<label>
+
+教材ファイル
+
+<input
+  id="files"
+  type="file"
+  accept=".pdf,.jpg,.jpeg,.png"
+  multiple>
+
+</label>
+
+
+<p class="form-help">
+
+PDFは1ファイルで登録できます。
+
+画像は複数選択すると、
+1枚目から順番にページとして登録されます。
+
+</p>
+
+
+<div class="toolbar">
+
+<button
+  id="create"
+  class="primary-button">
+登録
+</button>
+
+<button
+  id="cancel"
+  class="secondary-button">
+キャンセル
+</button>
+
+</div>
+
+
+<p
+  id="message"
+  class="message">
+</p>
+
+</section>
+
+
+<section class="admin-card">
+
+<div class="section-heading">
+
+<div>
+
+<h2>
+登録済みBook
+</h2>
+
+<p>
+登録されている教材
+</p>
+
+</div>
+
+</div>
+
+
+<div
+  id="books"
+  class="book-admin-list">
+</div>
+
+</section>
+
+</section>
+
+</main>
+
+
+<script
+  type="module"
+  src="app.js?v=book-final">
+</script>
+
+</body>
+
+</html>
