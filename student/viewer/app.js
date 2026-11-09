@@ -12,6 +12,7 @@ from "../../assets/js/supabase.js";
 const student =
   await requireStudent();
 
+
 if (!student) {
   throw new Error("Unauthorized");
 }
@@ -22,6 +23,7 @@ const params =
     location.search
   );
 
+
 const bookId =
   params.get("book");
 
@@ -29,7 +31,7 @@ const bookId =
 if (!bookId) {
 
   location.replace(
-    "../"
+    "../books/"
   );
 
   throw new Error(
@@ -79,7 +81,7 @@ const penButton =
   );
 
 
-let book;
+let book = null;
 
 let pdf = null;
 
@@ -99,6 +101,8 @@ let lastX = 0;
 
 let lastY = 0;
 
+let rendering = false;
+
 let pinchDistance = null;
 
 let pinchZoom = 1;
@@ -111,11 +115,9 @@ let swipeTime = 0;
 
 let renderTimer = null;
 
-let rendering = false;
-
 
 /*
- * 権限
+ * 利用権
  */
 
 async function checkLicense() {
@@ -205,7 +207,7 @@ async function loadBook() {
 
 
 /*
- * 署名URL
+ * Storage URL
  */
 
 async function signedUrl(
@@ -267,9 +269,6 @@ async function loadPdf() {
         url
       })
       .promise;
-
-
-  await render();
 }
 
 
@@ -285,10 +284,9 @@ async function loadImages() {
   } =
     await supabase
       .from("book_pages")
-      .select(`
-        page_number,
-        file_path
-      `)
+      .select(
+        "page_number,file_path"
+      )
       .eq(
         "book_id",
         bookId
@@ -321,7 +319,7 @@ async function loadImages() {
  * ページ数
  */
 
-function countPages() {
+function pageCount() {
 
   if (
     book.file_type ===
@@ -331,23 +329,24 @@ function countPages() {
     return pdf?.numPages || 0;
   }
 
+
   return pages.length;
 }
 
 
 /*
- * ページ表示
+ * ページ番号
  */
 
 function updatePage() {
 
   pageLabel.textContent =
-    `${currentPage} / ${countPages()}`;
+    `${currentPage} / ${pageCount()}`;
 }
 
 
 /*
- * Annotation
+ * 書き込みCanvas
  */
 
 function setupAnnotation(
@@ -528,9 +527,9 @@ async function renderImage() {
   imagePage.style.height =
     `${height}px`;
 
-
   imagePage.style.display =
     "block";
+
 
   pdfCanvas.style.display =
     "none";
@@ -557,7 +556,7 @@ async function renderImage() {
 
 
 /*
- * render
+ * 表示
  */
 
 async function render() {
@@ -569,8 +568,8 @@ async function render() {
 
     if (!pdf) {
       await loadPdf();
-      return;
     }
+
 
     await renderPdf();
 
@@ -640,11 +639,9 @@ document.getElementById(
   "highlighter"
 ).onclick = () => {
 
-  penEnabled =
-    true;
+  penEnabled = true;
 
-  tool =
-    "highlighter";
+  tool = "highlighter";
 
   updatePen();
 };
@@ -658,11 +655,9 @@ document.getElementById(
   "eraser"
 ).onclick = () => {
 
-  penEnabled =
-    true;
+  penEnabled = true;
 
-  tool =
-    "eraser";
+  tool = "eraser";
 
   updatePen();
 };
@@ -676,23 +671,25 @@ document.getElementById(
   "clear"
 ).onclick = async () => {
 
-  const ctx =
+  const context =
     annotationCanvas
       .getContext("2d");
 
-  ctx.clearRect(
+
+  context.clearRect(
     0,
     0,
     annotationCanvas.width,
     annotationCanvas.height
   );
 
+
   await saveAnnotation();
 };
 
 
 /*
- * 前
+ * 前へ
  */
 
 async function previous() {
@@ -700,35 +697,41 @@ async function previous() {
   if (
     currentPage <= 1
   ) {
+
     return;
   }
 
 
   await saveAnnotation();
 
+
   currentPage--;
+
 
   await render();
 }
 
 
 /*
- * 次
+ * 次へ
  */
 
 async function next() {
 
   if (
     currentPage >=
-    countPages()
+    pageCount()
   ) {
+
     return;
   }
 
 
   await saveAnnotation();
 
+
   currentPage++;
+
 
   await render();
 }
@@ -747,14 +750,17 @@ document.getElementById(
 
 
 /*
- * PCズーム
+ * PC自由ズーム
  */
 
 stage.addEventListener(
   "wheel",
   event => {
 
-    if (!event.ctrlKey) {
+    if (
+      !event.ctrlKey
+    ) {
+
       return;
     }
 
@@ -764,8 +770,8 @@ stage.addEventListener(
 
     zoom +=
       event.deltaY > 0
-        ? -0.1
-        : 0.1;
+        ? -.1
+        : .1;
 
 
     zoom =
@@ -831,7 +837,10 @@ stage.addEventListener(
     }
 
 
-    if (penEnabled) {
+    if (
+      penEnabled
+    ) {
+
       return;
     }
 
@@ -935,6 +944,7 @@ stage.addEventListener(
     if (
       event.touches.length > 0
     ) {
+
       return;
     }
 
@@ -990,11 +1000,17 @@ stage.addEventListener(
     }
 
 
-    if (dx < 0) {
+    if (
+      dx < 0
+    ) {
+
       await next();
+
     }
     else {
+
       await previous();
+
     }
 
   }
@@ -1002,14 +1018,17 @@ stage.addEventListener(
 
 
 /*
- * 書き込み
+ * 書き込み開始
  */
 
 annotationCanvas.addEventListener(
   "pointerdown",
   event => {
 
-    if (!penEnabled) {
+    if (
+      !penEnabled
+    ) {
+
       return;
     }
 
@@ -1050,6 +1069,10 @@ annotationCanvas.addEventListener(
 );
 
 
+/*
+ * 書き込み中
+ */
+
 annotationCanvas.addEventListener(
   "pointermove",
   event => {
@@ -1058,6 +1081,7 @@ annotationCanvas.addEventListener(
       !drawing ||
       !penEnabled
     ) {
+
       return;
     }
 
@@ -1085,24 +1109,24 @@ annotationCanvas.addEventListener(
       rect.height;
 
 
-    const ctx =
+    const context =
       annotationCanvas
         .getContext("2d");
 
 
-    ctx.beginPath();
+    context.beginPath();
 
-    ctx.moveTo(
+    context.moveTo(
       lastX,
       lastY
     );
 
-    ctx.lineTo(
+    context.lineTo(
       x,
       y
     );
 
-    ctx.lineCap =
+    context.lineCap =
       "round";
 
 
@@ -1110,13 +1134,13 @@ annotationCanvas.addEventListener(
       tool === "highlighter"
     ) {
 
-      ctx.lineWidth =
+      context.lineWidth =
         18;
 
-      ctx.strokeStyle =
+      context.strokeStyle =
         "rgba(255,235,0,.45)";
 
-      ctx.globalCompositeOperation =
+      context.globalCompositeOperation =
         "source-over";
 
     }
@@ -1124,28 +1148,28 @@ annotationCanvas.addEventListener(
       tool === "eraser"
     ) {
 
-      ctx.lineWidth =
+      context.lineWidth =
         28;
 
-      ctx.globalCompositeOperation =
+      context.globalCompositeOperation =
         "destination-out";
 
     }
     else {
 
-      ctx.lineWidth =
+      context.lineWidth =
         3;
 
-      ctx.strokeStyle =
+      context.strokeStyle =
         "#111";
 
-      ctx.globalCompositeOperation =
+      context.globalCompositeOperation =
         "source-over";
 
     }
 
 
-    ctx.stroke();
+    context.stroke();
 
 
     lastX =
@@ -1157,6 +1181,10 @@ annotationCanvas.addEventListener(
   }
 );
 
+
+/*
+ * 書き込み終了
+ */
 
 annotationCanvas.addEventListener(
   "pointerup",
@@ -1196,6 +1224,7 @@ async function saveAnnotation() {
   if (
     !annotationCanvas.width
   ) {
+
     return;
   }
 
@@ -1239,13 +1268,17 @@ async function saveAnnotation() {
 
 
   if (error) {
-    console.error(error);
+
+    console.error(
+      "ANNOTATION ERROR:",
+      error
+    );
   }
 }
 
 
 /*
- * 読み込み
+ * 保存済み書き込み
  */
 
 async function loadAnnotation() {
@@ -1273,12 +1306,12 @@ async function loadAnnotation() {
       .maybeSingle();
 
 
-  const ctx =
+  const context =
     annotationCanvas
       .getContext("2d");
 
 
-  ctx.clearRect(
+  context.clearRect(
     0,
     0,
     annotationCanvas.width,
@@ -1289,6 +1322,7 @@ async function loadAnnotation() {
   if (
     !data?.annotation_data?.image
   ) {
+
     return;
   }
 
@@ -1300,7 +1334,7 @@ async function loadAnnotation() {
   image.onload =
     () => {
 
-      ctx.drawImage(
+      context.drawImage(
         image,
         0,
         0,
@@ -1317,7 +1351,10 @@ async function loadAnnotation() {
 
 
 /*
- * 戻る
+ * Viewerを閉じる
+ *
+ * Book一覧から別タブで開かれた場合は
+ * このタブを閉じて元のMy Booksへ戻る。
  */
 
 document.getElementById(
@@ -1327,7 +1364,10 @@ document.getElementById(
   await saveAnnotation();
 
 
-  if (window.opener) {
+  if (
+    window.opener &&
+    !window.opener.closed
+  ) {
 
     window.close();
 
@@ -1335,9 +1375,7 @@ document.getElementById(
   }
 
 
-  location.replace(
-    "../"
-  );
+  history.back();
 };
 
 
@@ -1350,15 +1388,33 @@ document.addEventListener(
   event => {
 
     if (
-      event.key === "ArrowLeft"
+      event.target.tagName ===
+        "INPUT" ||
+      event.target.tagName ===
+        "TEXTAREA"
     ) {
-      previous();
+
+      return;
     }
 
+
     if (
-      event.key === "ArrowRight"
+      event.key ===
+      "ArrowLeft"
     ) {
+
+      previous();
+
+    }
+
+
+    if (
+      event.key ===
+      "ArrowRight"
+    ) {
+
       next();
+
     }
 
   }
@@ -1385,17 +1441,21 @@ async function start() {
   catch (error) {
 
     console.error(
+      "VIEWER ERROR:",
       error
     );
+
 
     alert(
       error.message ||
       "Viewerを起動できませんでした。"
     );
 
+
     location.replace(
-      "../"
+      "../books/"
     );
+
   }
 }
 
