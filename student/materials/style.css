@@ -1,0 +1,43 @@
+.material-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(260px, 1fr)
+    );
+
+  gap: 18px;
+}
+
+.material-card {
+  padding: 22px;
+
+  background: #fff;
+
+  color: #222;
+
+  border-radius: 10px;
+
+  border: 1px solid #ddd;
+}
+
+.material-card h2 {
+  margin: 0;
+
+  font-size: 18px;
+}
+
+.material-card p {
+  color: #777;
+
+  line-height: 1.5;
+}
+
+.material-date {
+  margin-top: 10px;
+
+  color: #999;
+
+  font-size: 12px;
+}
