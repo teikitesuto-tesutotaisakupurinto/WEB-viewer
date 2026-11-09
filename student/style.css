@@ -1,5 +1,11 @@
 .card a {
+  display: inline-block;
+
+  margin-top: 8px;
+
   color: #222;
-  text-decoration: none;
+
   font-weight: 600;
+
+  text-decoration: none;
 }
