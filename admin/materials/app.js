@@ -1,5 +1,6 @@
 import {
-  requireAdmin
+  requireAdmin,
+  logout
 }
 from "../../assets/js/auth.js";
 
@@ -9,80 +10,334 @@ import {
 from "../../assets/js/supabase.js";
 
 import {
-  escapeHtml
+  escapeHtml,
+  showError
 }
 from "../../assets/js/common.js";
 
 
-const admin =
-  await requireAdmin();
+async function start() {
 
-if (!admin) {
-  throw new Error(
-    "Unauthorized"
-  );
-}
+  const admin =
+    await requireAdmin();
 
-
-const target =
-  document.getElementById(
-    "target"
-  );
-
-const studentBox =
-  document.getElementById(
-    "studentBox"
-  );
-
-
-target.onchange = () => {
-
-  studentBox.classList.toggle(
-    "hidden",
-    target.value !==
-      "students"
-  );
-
-};
-
-
-async function loadStudents() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("users")
-      .select(
-        "id,display_name"
-      )
-      .eq(
-        "role",
-        "student"
-      )
-      .order(
-        "display_name"
-      );
-
-
-  if (error) {
-    console.error(error);
+  if (!admin) {
     return;
   }
 
 
   document.getElementById(
-    "students"
-  ).innerHTML =
-    (data || []).map(
-      student => `
+    "logout"
+  ).onclick = logout;
 
-<label class="select-row">
+
+  const target =
+    document.getElementById(
+      "target"
+    );
+
+
+  const studentArea =
+    document.getElementById(
+      "studentArea"
+    );
+
+
+  target.onchange = () => {
+
+    studentArea.classList.toggle(
+      "hidden",
+      target.value !== "selected"
+    );
+
+  };
+
+
+  document.getElementById(
+    "selectAll"
+  ).onchange =
+    event => {
+
+      document
+        .querySelectorAll(
+          ".student-check"
+        )
+        .forEach(
+          checkbox => {
+
+            checkbox.checked =
+              event.target.checked;
+
+          }
+        );
+
+    };
+
+
+  document.getElementById(
+    "create"
+  ).onclick =
+    createMaterial;
+
+
+  await loadStudents();
+
+  await loadMaterials();
+
+
+  async function createMaterial() {
+
+    const title =
+      document.getElementById(
+        "title"
+      ).value.trim();
+
+
+    const description =
+      document.getElementById(
+        "description"
+      ).value.trim();
+
+
+    const file =
+      document.getElementById(
+        "file"
+      ).files[0];
+
+
+    const message =
+      document.getElementById(
+        "message"
+      );
+
+
+    if (
+      !title ||
+      !file
+    ) {
+
+      message.textContent =
+        "タイトルとファイルを入力してください。";
+
+      return;
+
+    }
+
+
+    const extension =
+      file.name
+        .split(".")
+        .pop()
+        .toLowerCase();
+
+
+    if (
+      ![
+        "pdf",
+        "jpg",
+        "jpeg",
+        "png"
+      ].includes(extension)
+    ) {
+
+      message.textContent =
+        "PDF、JPG、JPEG、PNGのみ対応しています。";
+
+      return;
+
+    }
+
+
+    if (
+      target.value === "selected" &&
+      document.querySelectorAll(
+        ".student-check:checked"
+      ).length === 0
+    ) {
+
+      message.textContent =
+        "対象Studentを選択してください。";
+
+      return;
+
+    }
+
+
+    message.textContent =
+      "配信しています。";
+
+
+    try {
+
+      const path =
+        "materials/" +
+        crypto.randomUUID() +
+        "." +
+        extension;
+
+
+      const {
+        error:
+          uploadError
+      } =
+        await supabase.storage
+          .from("web-viewer")
+          .upload(
+            path,
+            file
+          );
+
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+
+      const allStudents =
+        target.value === "all";
+
+
+      const {
+        data: material,
+        error
+      } =
+        await supabase
+          .from("materials")
+          .insert({
+            title,
+
+            description,
+
+            file_path:
+              path,
+
+            file_type:
+              extension,
+
+            all_students:
+              allStudents,
+
+            created_by:
+              admin.id
+          })
+          .select()
+          .single();
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      if (!allStudents) {
+
+        const ids =
+          Array.from(
+            document.querySelectorAll(
+              ".student-check:checked"
+            )
+          ).map(
+            checkbox =>
+              checkbox.value
+          );
+
+
+        const {
+          error:
+            recipientError
+        } =
+          await supabase
+            .from(
+              "material_recipients"
+            )
+            .insert(
+              ids.map(
+                student_id => ({
+                  material_id:
+                    material.id,
+
+                  student_id
+                })
+              )
+            );
+
+
+        if (recipientError) {
+          throw recipientError;
+        }
+
+      }
+
+
+      message.textContent =
+        "資料を配信しました。";
+
+
+      document.getElementById(
+        "title"
+      ).value = "";
+
+      document.getElementById(
+        "description"
+      ).value = "";
+
+      document.getElementById(
+        "file"
+      ).value = "";
+
+
+      await loadMaterials();
+
+    }
+    catch (error) {
+
+      console.error(error);
+
+      message.textContent =
+        "登録エラー: " +
+        error.message;
+
+    }
+
+  }
+
+
+  async function loadStudents() {
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .from("users")
+        .select(
+          "id,display_name"
+        )
+        .eq(
+          "role",
+          "student"
+        )
+        .order(
+          "display_name"
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    document.getElementById(
+      "students"
+    ).innerHTML =
+      (data || []).map(
+        student => `
+
+<label class="student-row">
 
 <input
-  type="checkbox"
   class="student-check"
+  type="checkbox"
   value="${student.id}">
 
 ${escapeHtml(
@@ -92,321 +347,100 @@ ${escapeHtml(
 </label>
 
 `
-    ).join("");
+      ).join("");
 
-}
-
-
-document.getElementById(
-  "selectAll"
-).onchange = event => {
-
-  document
-    .querySelectorAll(
-      ".student-check"
-    )
-    .forEach(
-      checkbox => {
-
-        checkbox.checked =
-          event.target.checked;
-
-      }
-    );
-
-};
-
-
-document.getElementById(
-  "create"
-).onclick = async () => {
-
-  const title =
-    document.getElementById(
-      "title"
-    ).value.trim();
-
-  const description =
-    document.getElementById(
-      "description"
-    ).value.trim();
-
-  const file =
-    document.getElementById(
-      "file"
-    ).files[0];
-
-
-  if (
-    !title ||
-    !file
-  ) {
-
-    document.getElementById(
-      "message"
-    ).textContent =
-      "タイトルとファイルを入力してください。";
-
-    return;
   }
 
 
-  const extension =
-    file.name
-      .split(".")
-      .pop()
-      .toLowerCase();
+  async function loadMaterials() {
 
-
-  if (
-    ![
-      "pdf",
-      "jpg",
-      "jpeg",
-      "png"
-    ].includes(
-      extension
-    )
-  ) {
-
-    document.getElementById(
-      "message"
-    ).textContent =
-      "PDF、JPG、JPEG、PNGのみ対応しています。";
-
-    return;
-  }
-
-
-  const path =
-    "materials/" +
-    crypto.randomUUID() +
-    "." +
-    extension;
-
-
-  document.getElementById(
-    "message"
-  ).textContent =
-    "配信しています。";
-
-
-  const {
-    error: uploadError
-  } =
-    await supabase.storage
-      .from("web-viewer")
-      .upload(
-        path,
-        file
-      );
-
-
-  if (uploadError) {
-
-    console.error(
-      uploadError
-    );
-
-    document.getElementById(
-      "message"
-    ).textContent =
-      "ファイルのアップロードに失敗しました。";
-
-    return;
-  }
-
-
-  const allStudents =
-    target.value ===
-    "all";
-
-
-  const {
-    data: material,
-    error
-  } =
-    await supabase
-      .from("materials")
-      .insert({
-        title,
-        description,
-        file_path:
-          path,
-        file_type:
-          extension,
-        all_students:
-          allStudents,
-        created_by:
-          admin.id
-      })
-      .select()
-      .single();
-
-
-  if (error) {
-
-    await supabase.storage
-      .from("web-viewer")
-      .remove([
-        path
-      ]);
-
-    console.error(error);
-
-    document.getElementById(
-      "message"
-    ).textContent =
-      "資料登録に失敗しました。";
-
-    return;
-  }
-
-
-  if (!allStudents) {
-
-    const ids =
-      Array.from(
-        document.querySelectorAll(
-          ".student-check:checked"
-        )
-      ).map(
-        checkbox =>
-          checkbox.value
-      );
-
-
-    if (
-      ids.length === 0
-    ) {
-
+    const box =
       document.getElementById(
-        "message"
-      ).textContent =
-        "対象Studentを選択してください。";
-
-      return;
-    }
-
-
-    const rows =
-      ids.map(
-        id => ({
-          material_id:
-            material.id,
-
-          student_id:
-            id
-        })
+        "materials"
       );
 
 
     const {
-      error:
-        recipientError
+      data,
+      error
     } =
       await supabase
-        .from(
-          "material_recipients"
-        )
-        .insert(
-          rows
+        .from("materials")
+        .select(`
+          id,
+          title,
+          description,
+          all_students,
+          created_at
+        `)
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
         );
 
 
-    if (recipientError) {
-
-      console.error(
-        recipientError
-      );
-
-      return;
+    if (error) {
+      throw error;
     }
 
-  }
+
+    if (
+      !data ||
+      data.length === 0
+    ) {
+
+      box.innerHTML =
+        "配信済み資料はありません。";
+
+      return;
+
+    }
 
 
-  document.getElementById(
-    "message"
-  ).textContent =
-    "資料を配信しました。";
+    box.innerHTML =
+      data.map(
+        material => `
 
+<div class="material-row">
 
-  document.getElementById(
-    "title"
-  ).value = "";
-
-  document.getElementById(
-    "description"
-  ).value = "";
-
-  document.getElementById(
-    "file"
-  ).value = "";
-
-
-  await loadMaterials();
-
-};
-
-
-async function loadMaterials() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("materials")
-      .select(
-        "id,title,description,all_students,created_at"
-      )
-      .order(
-        "created_at",
-        {
-          ascending:
-            false
-        }
-      );
-
-
-  if (error) {
-    return;
-  }
-
-
-  document.getElementById(
-    "materials"
-  ).innerHTML =
-    (data || []).map(
-      item => `
-
-<div class="list-row">
-
-<div>
-
-<strong>
+<div class="material-title">
 ${escapeHtml(
-  item.title
+  material.title
 )}
-</strong>
-
-<div class="muted">
-${item.all_students
-  ? "全Student"
-  : "指定Student"}
 </div>
 
+<div class="material-target">
+${
+  material.all_students
+    ? "全Student"
+    : "指定Student"
+}
 </div>
 
 </div>
 
 `
-    ).join("") ||
-    "<p>配信済み資料はありません。</p>";
+      ).join("");
+
+  }
 
 }
 
 
-await loadStudents();
-await loadMaterials();
+start()
+  .catch(
+    error => {
+
+      console.error(error);
+
+      showError(
+        error.message,
+        document.querySelector(
+          ".admin-content"
+        )
+      );
+
+    }
+  );
