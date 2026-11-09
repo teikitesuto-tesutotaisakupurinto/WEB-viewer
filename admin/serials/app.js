@@ -9,7 +9,6 @@ import {
 from "../../assets/js/supabase.js";
 
 import {
-  makeCode,
   escapeHtml
 }
 from "../../assets/js/common.js";
@@ -31,8 +30,13 @@ async function loadBooks() {
   } =
     await supabase
       .from("books")
-      .select("id,title")
-      .eq("enabled", true)
+      .select(
+        "id,title"
+      )
+      .eq(
+        "enabled",
+        true
+      )
       .order("title");
 
 
@@ -47,13 +51,15 @@ async function loadBooks() {
   document.getElementById(
     "book"
   ).innerHTML =
-    (data || []).map(book => `
+    (data || []).map(
+      book => `
 
 <option value="${book.id}">
 ${escapeHtml(book.title)}
 </option>
 
-`).join("");
+`
+    ).join("");
 }
 
 
@@ -94,6 +100,8 @@ async function loadSerials() {
     "serials"
   ).innerHTML = `
 
+<div class="table-wrap">
+
 <table>
 
 <thead>
@@ -109,7 +117,8 @@ async function loadSerials() {
 
 <tbody>
 
-${(data || []).map(item => `
+${(data || []).map(
+  item => `
 
 <tr>
 
@@ -135,11 +144,14 @@ ${escapeHtml(
 
 </tr>
 
-`).join("")}
+`
+).join("")}
 
 </tbody>
 
 </table>
+
+</div>
 
 `;
 }
@@ -164,6 +176,7 @@ document.getElementById(
 
   if (
     !bookId ||
+    !Number.isInteger(count) ||
     count < 1 ||
     count > 500
   ) {
@@ -172,23 +185,22 @@ document.getElementById(
   }
 
 
-  const rows = [];
+  const rows =
+    Array.from(
+      {
+        length: count
+      },
+      () => ({
+        book_id:
+          bookId,
 
+        status:
+          "unused",
 
-  for (
-    let i = 0;
-    i < count;
-    i++
-  ) {
-
-    rows.push({
-      code: makeCode(),
-      book_id: bookId,
-      status: "unused",
-      created_by: admin.id
-    });
-
-  }
+        created_by:
+          admin.id
+      })
+    );
 
 
   const {
@@ -203,12 +215,19 @@ document.getElementById(
 
     console.error(error);
 
-    alert(
-      "シリアル発行に失敗しました。"
-    );
+    document.getElementById(
+      "message"
+    ).textContent =
+      "シリアル発行に失敗しました。";
 
     return;
   }
+
+
+  document.getElementById(
+    "message"
+  ).textContent =
+    "発行しました。";
 
 
   await loadSerials();
