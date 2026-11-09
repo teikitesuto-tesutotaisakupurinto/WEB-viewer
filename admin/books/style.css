@@ -1,4 +1,3 @@
-```css
 .form-help {
   margin: -5px 0 18px;
 
@@ -9,33 +8,6 @@
   line-height: 1.6;
 }
 
-.section-heading {
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  margin-bottom: 10px;
-}
-
-.section-heading h2 {
-  margin: 0;
-}
-
-.section-heading p {
-  margin: 5px 0 0;
-
-  color: #777;
-
-  font-size: 13px;
-}
-
-.book-admin-list {
-  display: grid;
-
-  gap: 0;
-}
 
 .book-admin-item {
   display: flex;
@@ -51,19 +23,23 @@
   border-bottom: 1px solid #eee;
 }
 
+
 .book-admin-item:last-child {
   border-bottom: 0;
 }
 
+
 .book-admin-main {
   min-width: 0;
 }
+
 
 .book-admin-title {
   font-size: 16px;
 
   font-weight: 700;
 }
+
 
 .book-admin-description {
   margin-top: 5px;
@@ -72,6 +48,7 @@
 
   font-size: 13px;
 }
+
 
 .book-admin-serial {
   margin-top: 8px;
@@ -87,6 +64,7 @@
   font-size: 12px;
 }
 
+
 .book-admin-type {
   margin-top: 5px;
 
@@ -94,6 +72,7 @@
 
   font-size: 12px;
 }
+
 
 .book-admin-status {
   flex: 0 0 auto;
@@ -109,6 +88,7 @@
   font-size: 12px;
 }
 
+
 .book-empty {
   padding: 50px 20px;
 
@@ -117,13 +97,15 @@
   text-align: center;
 }
 
+
 @media (max-width: 650px) {
 
   .book-admin-item {
+
     align-items: flex-start;
 
     flex-direction: column;
+
   }
 
 }
-```
