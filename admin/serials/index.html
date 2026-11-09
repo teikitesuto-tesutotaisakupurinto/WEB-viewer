@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
+<title>シリアル管理</title>
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
+</head>
+
+<body>
+
+<header class="topbar">
+
+<button
+  class="menu-button"
+  onclick="location.href='../'">
+戻る
+</button>
+
+<div class="logo">
+シリアル管理
+</div>
+
+</header>
+
+
+<main class="page">
+
+<h1>シリアル管理</h1>
+
+
+<section class="card">
+
+<h2>シリアル発行</h2>
+
+<select id="book"></select>
+
+<input
+  id="count"
+  type="number"
+  min="1"
+  max="500"
+  value="1">
+
+<button
+  id="issue"
+  class="primary-button">
+発行
+</button>
+
+</section>
+
+
+<div
+  id="serials"
+  class="table-wrap"
+  style="margin-top:20px">
+</div>
+
+</main>
+
+
+<script
+  type="module"
+  src="app.js">
+</script>
+
+</body>
+
+</html>
