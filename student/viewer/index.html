@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
+<title>WEB-viewer</title>
+
+<link
+  rel="stylesheet"
+  href="style.css">
+
+</head>
+
+<body>
+
+<div id="viewer">
+
+<header class="viewer-bar">
+
+<button id="close">
+閉じる
+</button>
+
+<strong id="title">
+WEB-viewer
+</strong>
+
+<button id="previous">
+前へ
+</button>
+
+<span id="page">
+-
+</span>
+
+<button id="next">
+次へ
+</button>
+
+<button id="zoomOut">
+縮小
+</button>
+
+<span id="zoom">
+100%
+</span>
+
+<button id="zoomIn">
+拡大
+</button>
+
+<button id="pen">
+ペン
+</button>
+
+<button id="highlighter">
+蛍光ペン
+</button>
+
+<button id="eraser">
+消しゴム
+</button>
+
+<button id="clear">
+消去
+</button>
+
+</header>
+
+
+<main class="viewer-stage">
+
+<div
+  id="pageContainer"
+  class="page-container">
+
+<canvas
+  id="pdfCanvas">
+</canvas>
+
+<img
+  id="imagePage"
+  class="image-page">
+
+<canvas
+  id="annotationCanvas">
+</canvas>
+
+</div>
+
+</main>
+
+</div>
+
+
+<script
+  type="module"
+  src="app.js">
+</script>
+
+</body>
+
+</html>
