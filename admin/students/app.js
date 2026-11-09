@@ -14,11 +14,18 @@ import {
 from "../../assets/js/common.js";
 
 
+const FUNCTION_URL =
+  "https://wcddlfjtkrbpperhrxkk.supabase.co/functions/v1/bright-worker";
+
+
 const admin =
   await requireAdmin();
 
+
 if (!admin) {
-  throw new Error("Unauthorized");
+  throw new Error(
+    "Unauthorized"
+  );
 }
 
 
@@ -26,6 +33,7 @@ const formCard =
   document.getElementById(
     "formCard"
   );
+
 
 const message =
   document.getElementById(
@@ -52,7 +60,8 @@ document.getElementById(
     "hidden"
   );
 
-  message.textContent = "";
+  message.textContent =
+    "";
 
 };
 
@@ -76,7 +85,10 @@ async function loadStudents() {
         "student"
       )
       .order(
-        "display_name"
+        "display_name",
+        {
+          ascending: true
+        }
       );
 
 
@@ -86,6 +98,7 @@ async function loadStudents() {
       "STUDENT LIST ERROR:",
       error
     );
+
 
     document.getElementById(
       "students"
@@ -121,9 +134,19 @@ async function loadStudents() {
 <thead>
 
 <tr>
-<th>氏名</th>
-<th>クラス</th>
-<th>学籍番号</th>
+
+<th>
+氏名
+</th>
+
+<th>
+クラス
+</th>
+
+<th>
+学籍番号
+</th>
+
 </tr>
 
 </thead>
@@ -243,7 +266,7 @@ document.getElementById(
   try {
 
     /*
-     * 現在のログインセッション取得
+     * 現在のログインセッション
      */
 
     const {
@@ -255,7 +278,17 @@ document.getElementById(
 
 
     if (
-      sessionError ||
+      sessionError
+    ) {
+
+      throw new Error(
+        "ログインセッションを取得できませんでした。"
+      );
+
+    }
+
+
+    if (
       !sessionData.session
     ) {
 
@@ -272,24 +305,18 @@ document.getElementById(
 
 
     /*
-     * Edge Function URL
-     */
-
-    const functionUrl =
-      "https://wcddlfjtkrbpperhrxkk.supabase.co/functions/v1/create-student";
-
-
-    /*
-     * Functionへ直接POST
+     * Edge Functionへ直接送信
      */
 
     const response =
       await fetch(
-        functionUrl,
+        FUNCTION_URL,
         {
-          method: "POST",
+          method:
+            "POST",
 
           headers: {
+
             "Authorization":
               `Bearer ${accessToken}`,
 
@@ -298,43 +325,52 @@ document.getElementById(
 
             "Content-Type":
               "application/json"
+
           },
 
-          body: JSON.stringify({
-            display_name:
-              displayName,
+          body:
+            JSON.stringify({
 
-            email,
+              display_name:
+                displayName,
 
-            password,
+              email:
+                email,
 
-            class_name:
-              className,
+              password:
+                password,
 
-            student_number:
-              studentNumber
-          })
+              class_name:
+                className,
+
+              student_number:
+                studentNumber
+
+            })
+
         }
       );
 
 
     /*
-     * Functionの返答を取得
+     * Functionのレスポンス
      */
 
     const responseText =
       await response.text();
 
 
-    let result = null;
+    let result;
 
 
     try {
 
       result =
-        JSON.parse(
-          responseText
-        );
+        responseText
+          ? JSON.parse(
+              responseText
+            )
+          : {};
 
     }
     catch {
@@ -348,12 +384,13 @@ document.getElementById(
 
 
     console.log(
-      "FUNCTION STATUS:",
+      "Function status:",
       response.status
     );
 
+
     console.log(
-      "FUNCTION RESPONSE:",
+      "Function result:",
       result
     );
 
@@ -371,7 +408,6 @@ document.getElementById(
 
 
     if (
-      !result ||
       !result.success
     ) {
 
@@ -386,29 +422,35 @@ document.getElementById(
     message.style.color =
       "#222";
 
+
     message.textContent =
       "Studentを登録しました。";
 
 
     document.getElementById(
       "displayName"
-    ).value = "";
+    ).value =
+      "";
 
     document.getElementById(
       "email"
-    ).value = "";
+    ).value =
+      "";
 
     document.getElementById(
       "password"
-    ).value = "";
+    ).value =
+      "";
 
     document.getElementById(
       "className"
-    ).value = "";
+    ).value =
+      "";
 
     document.getElementById(
       "studentNumber"
-    ).value = "";
+    ).value =
+      "";
 
 
     await loadStudents();
