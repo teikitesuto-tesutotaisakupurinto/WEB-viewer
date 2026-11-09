@@ -22,6 +22,20 @@ if (!admin) {
 }
 
 
+document.getElementById(
+  "target"
+).onchange = event => {
+
+  document.getElementById(
+    "studentBox"
+  ).classList.toggle(
+    "hidden",
+    event.target.value !== "students"
+  );
+
+};
+
+
 async function loadMaterials() {
 
   const {
@@ -50,26 +64,40 @@ async function loadMaterials() {
   document.getElementById(
     "materials"
   ).innerHTML =
-    (data || []).map(item => `
+    (data || []).map(
+      item => `
 
-<div class="card">
+<div
+  style="
+    padding:15px 0;
+    border-bottom:1px solid #eee;
+  ">
 
-<h3>
+<strong>
 ${escapeHtml(item.title)}
-</h3>
+</strong>
 
 <p>
 ${escapeHtml(item.description)}
 </p>
 
+<p>
+${item.all_students
+  ? "全Student"
+  : "指定Student"}
+</p>
+
 </div>
 
-`).join("");
+`
+    ).join("") ||
+    "<p>配信済み資料はありません。</p>";
+
 }
 
 
 document.getElementById(
-  "send"
+  "create"
 ).onclick = async () => {
 
   const title =
@@ -87,19 +115,39 @@ document.getElementById(
       "file"
     ).files[0];
 
-  const studentIds =
+  const target =
     document.getElementById(
-      "students"
+      "target"
+    ).value;
+
+  const ids =
+    document.getElementById(
+      "studentIds"
     ).value
       .split(",")
-      .map(value => value.trim())
+      .map(
+        value => value.trim()
+      )
       .filter(Boolean);
 
 
   if (!title || !file) {
 
     alert(
-      "タイトルとファイルを指定してください。"
+      "タイトルとファイルを入力してください。"
+    );
+
+    return;
+  }
+
+
+  if (
+    target === "students" &&
+    ids.length === 0
+  ) {
+
+    alert(
+      "Student UIDを入力してください。"
     );
 
     return;
@@ -148,9 +196,7 @@ document.getElementById(
 
   if (upload.error) {
 
-    console.error(
-      upload.error
-    );
+    console.error(upload.error);
 
     alert(
       "ファイルのアップロードに失敗しました。"
@@ -172,8 +218,9 @@ document.getElementById(
         file_path: path,
         file_type: extension,
         all_students:
-          studentIds.length === 0,
-        created_by: admin.id
+          target === "all",
+        created_by:
+          admin.id
       })
       .select()
       .single();
@@ -185,6 +232,8 @@ document.getElementById(
       .from("web-viewer")
       .remove([path]);
 
+    console.error(error);
+
     alert(
       "資料登録に失敗しました。"
     );
@@ -193,10 +242,12 @@ document.getElementById(
   }
 
 
-  if (studentIds.length > 0) {
+  if (
+    target === "students"
+  ) {
 
-    const recipients =
-      studentIds.map(
+    const rows =
+      ids.map(
         studentId => ({
           material_id:
             material.id,
@@ -207,11 +258,28 @@ document.getElementById(
       );
 
 
-    await supabase
-      .from(
-        "material_recipients"
-      )
-      .insert(recipients);
+    const {
+      error: recipientError
+    } =
+      await supabase
+        .from(
+          "material_recipients"
+        )
+        .insert(rows);
+
+
+    if (recipientError) {
+
+      console.error(
+        recipientError
+      );
+
+      alert(
+        "対象Studentの登録に失敗しました。"
+      );
+
+      return;
+    }
 
   }
 
@@ -229,7 +297,7 @@ document.getElementById(
   ).value = "";
 
   document.getElementById(
-    "students"
+    "studentIds"
   ).value = "";
 
 
