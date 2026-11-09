@@ -1,15 +1,166 @@
-.maintenance-switch {
+.maintenance-setting {
   display: flex;
 
   align-items: center;
 
-  gap: 10px;
+  justify-content: space-between;
+
+  gap: 30px;
+
+  padding: 20px 0;
 
   margin-bottom: 20px;
+
+  border-bottom: 1px solid #eee;
 }
 
-.maintenance-switch input {
-  width: auto;
+
+.maintenance-text {
+  min-width: 0;
+}
+
+
+.maintenance-text h3 {
+  margin: 0;
+
+  font-size: 18px;
+}
+
+
+.maintenance-text p {
+  margin: 7px 0 0;
+
+  color: #777;
+
+  font-size: 13px;
+
+  line-height: 1.6;
+}
+
+
+/* =========================
+   トグル
+   ========================= */
+
+.toggle {
+  position: relative;
+
+  display: block;
+
+  width: 64px;
+
+  height: 36px;
+
+  flex: 0 0 auto;
 
   margin: 0;
+}
+
+
+.toggle input {
+  position: absolute;
+
+  width: 0;
+  height: 0;
+
+  opacity: 0;
+}
+
+
+.toggle-slider {
+  position: absolute;
+
+  inset: 0;
+
+  border-radius: 36px;
+
+  background: #b5b5b5;
+
+  cursor: pointer;
+
+  transition:
+    background .2s ease;
+}
+
+
+.toggle-slider::before {
+  content: "";
+
+  position: absolute;
+
+  width: 28px;
+
+  height: 28px;
+
+  top: 4px;
+
+  left: 4px;
+
+  border-radius: 50%;
+
+  background: #fff;
+
+  box-shadow:
+    0 1px 4px rgba(0,0,0,.25);
+
+  transition:
+    transform .2s ease;
+}
+
+
+.toggle input:checked
++ .toggle-slider {
+  background: #d5ca3d;
+}
+
+
+.toggle input:checked
++ .toggle-slider::before {
+  transform:
+    translateX(28px);
+}
+
+
+/* =========================
+   状態
+   ========================= */
+
+.maintenance-status {
+  display: inline-block;
+
+  margin-bottom: 20px;
+
+  padding: 6px 13px;
+
+  border-radius: 20px;
+
+  background: #eee;
+
+  color: #555;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+
+.maintenance-status.on {
+  background: #d5ca3d;
+
+  color: #222;
+}
+
+
+@media (max-width: 600px) {
+
+  .maintenance-setting {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+  .toggle {
+    align-self: flex-end;
+  }
+
 }
