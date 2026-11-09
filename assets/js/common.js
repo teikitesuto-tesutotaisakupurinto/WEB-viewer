@@ -11,7 +11,6 @@ export function escapeHtml(value) {
         "'": "&#039;"
       }[character])
     );
-
 }
 
 
@@ -24,7 +23,6 @@ export function openDrawer() {
   document
     .getElementById("backdrop")
     ?.classList.add("show");
-
 }
 
 
@@ -37,5 +35,4 @@ export function closeDrawer() {
   document
     .getElementById("backdrop")
     ?.classList.remove("show");
-
 }
