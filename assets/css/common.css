@@ -16,7 +16,7 @@ body {
     "Segoe UI",
     sans-serif;
 
-  background: #f4f5f7;
+  background: #f5f5f3;
   color: #222;
 }
 
@@ -31,6 +31,10 @@ button {
   cursor: pointer;
 }
 
+a {
+  color: inherit;
+}
+
 .hidden {
   display: none !important;
 }
@@ -43,11 +47,10 @@ button {
   left: 0;
   right: 0;
 
-  height: 58px;
+  height: 60px;
 
   display: flex;
   align-items: center;
-  gap: 14px;
 
   padding: 0 20px;
 
@@ -55,25 +58,26 @@ button {
   border-bottom: 1px solid #ddd;
 }
 
-.menu-button {
-  padding: 7px 12px;
+.logo {
+  font-weight: 800;
+  flex: 1;
+}
 
-  border: 1px solid #ddd;
+.menu-button {
+  padding: 8px 13px;
+
+  border: 1px solid #d5d5d5;
   border-radius: 7px;
 
   background: #fff;
-  color: #222;
-}
-
-.logo {
-  flex: 1;
-  font-weight: 700;
 }
 
 .page {
   max-width: 1200px;
-  margin: auto;
-  padding: 86px 24px 40px;
+
+  margin: 0 auto;
+
+  padding: 88px 24px 40px;
 }
 
 .card {
@@ -94,7 +98,7 @@ button {
       minmax(240px, 1fr)
     );
 
-  gap: 16px;
+  gap: 18px;
 }
 
 input,
@@ -102,8 +106,9 @@ textarea,
 select {
   width: 100%;
 
+  margin: 7px 0 15px;
+
   padding: 11px 13px;
-  margin: 6px 0 14px;
 
   border: 1px solid #bbb;
   border-radius: 8px;
@@ -112,22 +117,24 @@ select {
 }
 
 textarea {
-  min-height: 110px;
+  min-height: 100px;
   resize: vertical;
 }
 
 .primary-button {
-  padding: 11px 18px;
+  padding: 10px 17px;
 
   border: 0;
   border-radius: 8px;
 
-  background: #111;
-  color: #fff;
+  background: #d5ca3d;
+  color: #222;
+
+  font-weight: 700;
 }
 
 .secondary-button {
-  padding: 11px 18px;
+  padding: 10px 17px;
 
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -136,38 +143,29 @@ textarea {
   color: #222;
 }
 
-.danger-button {
-  padding: 11px 18px;
-
-  border: 0;
-  border-radius: 8px;
-
-  background: #b00020;
-  color: #fff;
-}
-
 .toolbar {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
 .table-wrap {
-  margin-top: 20px;
-
   overflow-x: auto;
 
-  background: #fff;
+  margin-top: 18px;
 
   border: 1px solid #ddd;
   border-radius: 10px;
+
+  background: #fff;
 }
 
 table {
   width: 100%;
-  min-width: 700px;
 
   border-collapse: collapse;
+
+  min-width: 650px;
 }
 
 th,
@@ -191,15 +189,18 @@ th {
   bottom: 0;
   left: 0;
 
-  width: 270px;
+  width: 250px;
 
   padding: 24px 14px;
 
   background: #fff;
+
   border-right: 1px solid #ddd;
 
   transform: translateX(-105%);
-  transition: transform .2s ease;
+
+  transition:
+    transform .18s ease;
 }
 
 .drawer.open {
@@ -212,14 +213,14 @@ th {
 
   width: 100%;
 
+  padding: 13px 15px;
+
   margin: 3px 0;
-  padding: 12px 14px;
 
   border: 0;
   border-radius: 7px;
 
   background: transparent;
-  color: #222;
 
   text-align: left;
   text-decoration: none;
@@ -227,7 +228,11 @@ th {
 
 .drawer a:hover,
 .drawer button:hover {
-  background: #f0f0f0;
+  background: #f2f2f2;
+}
+
+.drawer .active {
+  background: #d5ca3d;
 }
 
 .drawer-backdrop {
@@ -238,7 +243,7 @@ th {
 
   display: none;
 
-  background: rgba(0,0,0,.4);
+  background: rgba(0,0,0,.35);
 }
 
 .drawer-backdrop.show {
@@ -247,18 +252,5 @@ th {
 
 .stat {
   font-size: 32px;
-  font-weight: 700;
-}
-
-.message {
-  min-height: 20px;
-}
-
-@media(max-width:600px) {
-
-  .page {
-    padding-left: 14px;
-    padding-right: 14px;
-  }
-
+  font-weight: 800;
 }
