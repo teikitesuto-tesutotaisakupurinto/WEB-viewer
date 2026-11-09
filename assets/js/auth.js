@@ -1,19 +1,19 @@
+
 import {
   supabase
-}
-from "./supabase.js";
+} from "./supabase.js";
 
 
-const AUTH_TIMEOUT = 8000;
+const AUTH_TIMEOUT = 5000;
 
 
 /*
- * タイムアウト
+ * タイムアウト付き処理
  */
 
 function withTimeout(
   promise,
-  message
+  timeout = AUTH_TIMEOUT
 ) {
 
   return Promise.race([
@@ -28,12 +28,12 @@ function withTimeout(
 
             reject(
               new Error(
-                message
+                "処理がタイムアウトしました。"
               )
             );
 
           },
-          AUTH_TIMEOUT
+          timeout
         );
 
       }
@@ -45,7 +45,7 @@ function withTimeout(
 
 
 /*
- * 現在のユーザー
+ * ログインユーザー取得
  */
 
 export async function getUser() {
@@ -55,8 +55,7 @@ export async function getUser() {
     error
   } =
     await withTimeout(
-      supabase.auth.getUser(),
-      "ログイン情報の取得がタイムアウトしました。"
+      supabase.auth.getUser()
     );
 
 
@@ -65,7 +64,9 @@ export async function getUser() {
   }
 
 
-  if (!data?.user) {
+  if (
+    !data?.user
+  ) {
 
     throw new Error(
       "ログインしてください。"
@@ -80,7 +81,7 @@ export async function getUser() {
 
 
 /*
- * usersプロフィール
+ * プロフィール取得
  */
 
 export async function getProfile() {
@@ -94,7 +95,6 @@ export async function getProfile() {
     error
   } =
     await withTimeout(
-
       supabase
         .from("users")
         .select(
@@ -104,10 +104,7 @@ export async function getProfile() {
           "id",
           user.id
         )
-        .maybeSingle(),
-
-      "ユーザー情報の取得がタイムアウトしました。"
-
+        .maybeSingle()
     );
 
 
@@ -131,7 +128,7 @@ export async function getProfile() {
 
 
 /*
- * Admin
+ * Admin認証
  */
 
 export async function requireAdmin() {
@@ -160,7 +157,7 @@ export async function requireAdmin() {
 
 
 /*
- * Student
+ * Student認証
  */
 
 export async function requireStudent() {
@@ -189,43 +186,20 @@ export async function requireStudent() {
 
 
 /*
- * ログアウト
- *
- * Student / Admin 共通
+ * Supabase Authのローカルデータを
+ * 可能な限り全部削除
  */
 
-export async function logout() {
+function clearAuthStorage() {
 
   /*
-   * Supabase側のセッションを削除
+   * localStorage
    */
 
   try {
 
-    await supabase.auth.signOut({
-      scope: "local"
-    });
+    const localKeys = [];
 
-  }
-  catch (error) {
-
-    console.error(
-      "SUPABASE SIGNOUT ERROR:",
-      error
-    );
-
-  }
-
-
-  /*
-   * Supabase AuthのローカルStorageを削除
-   *
-   * sb-xxxxxxxx-auth-token
-   */
-
-  try {
-
-    const keys = [];
 
     for (
       let i = 0;
@@ -237,36 +211,78 @@ export async function logout() {
         localStorage.key(i);
 
 
+      if (!key) {
+        continue;
+      }
+
+
+      /*
+       * Supabase v2
+       *
+       * sb-xxxx-auth-token
+       */
+
       if (
-        key &&
-        key.startsWith("sb-") &&
-        key.endsWith(
-          "-auth-token"
+        key.startsWith("sb-")
+        &&
+        (
+          key.includes(
+            "auth-token"
+          )
+          ||
+          key.includes(
+            "auth"
+          )
         )
       ) {
 
-        keys.push(key);
+        localKeys.push(
+          key
+        );
+
+      }
+
+
+      /*
+       * 古い形式
+       */
+
+      if (
+        key ===
+        "supabase.auth.token"
+      ) {
+
+        localKeys.push(
+          key
+        );
 
       }
 
     }
 
 
-    keys.forEach(
+    localKeys.forEach(
       key => {
 
-        localStorage.removeItem(
-          key
-        );
+        try {
+
+          localStorage.removeItem(
+            key
+          );
+
+        }
+        catch {}
 
       }
     );
 
   }
-  catch (error) {
+  catch (
+    error
+  ) {
 
     console.error(
-      "LOCAL STORAGE CLEAR ERROR:",
+      "LOCAL STORAGE ERROR:",
       error
     );
 
@@ -274,12 +290,13 @@ export async function logout() {
 
 
   /*
-   * SessionStorageにも残っている場合に備える
+   * sessionStorage
    */
 
   try {
 
-    const keys = [];
+    const sessionKeys = [];
+
 
     for (
       let i = 0;
@@ -291,36 +308,146 @@ export async function logout() {
         sessionStorage.key(i);
 
 
+      if (!key) {
+        continue;
+      }
+
+
       if (
-        key &&
-        key.startsWith("sb-") &&
-        key.endsWith(
-          "-auth-token"
+        key.startsWith("sb-")
+        &&
+        (
+          key.includes(
+            "auth-token"
+          )
+          ||
+          key.includes(
+            "auth"
+          )
         )
       ) {
 
-        keys.push(key);
+        sessionKeys.push(
+          key
+        );
+
+      }
+
+
+      if (
+        key ===
+        "supabase.auth.token"
+      ) {
+
+        sessionKeys.push(
+          key
+        );
 
       }
 
     }
 
 
-    keys.forEach(
+    sessionKeys.forEach(
       key => {
 
-        sessionStorage.removeItem(
-          key
-        );
+        try {
+
+          sessionStorage.removeItem(
+            key
+          );
+
+        }
+        catch {}
 
       }
     );
 
   }
-  catch (error) {
+  catch (
+    error
+  ) {
 
     console.error(
-      "SESSION STORAGE CLEAR ERROR:",
+      "SESSION STORAGE ERROR:",
+      error
+    );
+
+  }
+
+}
+
+
+/*
+ * ログアウト
+ *
+ * 重要：
+ * signOutが失敗しても
+ * 絶対にログイン画面へ戻す
+ */
+
+export async function logout() {
+
+  /*
+   * 二重クリック防止
+   */
+
+  if (
+    window.__loggingOut
+  ) {
+
+    return;
+
+  }
+
+
+  window.__loggingOut =
+    true;
+
+
+  /*
+   * 先にボタンを無効化
+   */
+
+  document
+    .querySelectorAll(
+      "#logout"
+    )
+    .forEach(
+      button => {
+
+        button.disabled =
+          true;
+
+        button.textContent =
+          "ログアウト中...";
+
+      }
+    );
+
+
+  /*
+   * Supabase側セッションを削除
+   *
+   * 失敗しても続行
+   */
+
+  try {
+
+    await withTimeout(
+      supabase.auth.signOut({
+        scope: "local"
+      }),
+      3000
+    );
+
+  }
+  catch (
+    error
+  ) {
+
+    console.warn(
+      "SIGN OUT ERROR:",
       error
     );
 
@@ -328,10 +455,14 @@ export async function logout() {
 
 
   /*
-   * ログイン画面へ
-   *
-   * 絶対パスではなく、
-   * 現在のサイトから確実に作る
+   * ローカルセッションを削除
+   */
+
+  clearAuthStorage();
+
+
+  /*
+   * 最終的に必ずログイン画面へ
    */
 
   const loginUrl =
