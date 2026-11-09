@@ -20,7 +20,6 @@ async function start() {
   const admin =
     await requireAdmin();
 
-
   if (!admin) {
     return;
   }
@@ -29,7 +28,13 @@ async function start() {
   document.getElementById(
     "logout"
   ).onclick =
-    logout;
+    event => {
+
+      event.preventDefault();
+
+      logout();
+
+    };
 
 
   const enabled =
@@ -55,10 +60,6 @@ async function start() {
       "result"
     );
 
-
-  /*
-   * ON/OFF表示
-   */
 
   function updateStatus() {
 
@@ -88,15 +89,9 @@ async function start() {
   }
 
 
-  enabled.addEventListener(
-    "change",
-    updateStatus
-  );
+  enabled.onchange =
+    updateStatus;
 
-
-  /*
-   * 現在の設定取得
-   */
 
   const {
     data,
@@ -117,19 +112,14 @@ async function start() {
 
 
   if (error) {
-
-    throw new Error(
-      "メンテナンス設定を取得できませんでした: " +
-      error.message
-    );
-
+    throw error;
   }
 
 
   if (!data) {
 
     throw new Error(
-      "メンテナンス設定が登録されていません。"
+      "メンテナンス設定がありません。"
     );
 
   }
@@ -148,24 +138,10 @@ async function start() {
   updateStatus();
 
 
-  /*
-   * 保存
-   */
-
   document.getElementById(
     "save"
   ).onclick =
     async () => {
-
-      const saveButton =
-        document.getElementById(
-          "save"
-        );
-
-
-      saveButton.disabled =
-        true;
-
 
       result.textContent =
         "保存しています。";
@@ -181,6 +157,7 @@ async function start() {
               "maintenance_settings"
             )
             .update({
+
               enabled:
                 enabled.checked,
 
@@ -190,6 +167,7 @@ async function start() {
               updated_at:
                 new Date()
                   .toISOString()
+
             })
             .eq(
               "id",
@@ -211,21 +189,9 @@ async function start() {
       }
       catch (error) {
 
-        console.error(
-          "MAINTENANCE SAVE ERROR:",
-          error
-        );
-
-
         result.textContent =
           "保存エラー: " +
           error.message;
-
-      }
-      finally {
-
-        saveButton.disabled =
-          false;
 
       }
 
@@ -237,12 +203,6 @@ async function start() {
 start()
   .catch(
     error => {
-
-      console.error(
-        "SYSTEM PAGE ERROR:",
-        error
-      );
-
 
       showError(
         error.message,
