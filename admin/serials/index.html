@@ -1,10 +1,13 @@
+<!DOCTYPE html>
+<html lang="ja">
+
 <head>
 
 <meta charset="UTF-8">
 
 <meta
   name="viewport"
-  content="width=device-width,initial-scale=1">
+  content="width=device-width, initial-scale=1">
 
 <title>シリアル管理</title>
 
@@ -21,3 +24,189 @@
   href="style.css">
 
 </head>
+
+<body>
+
+<aside class="admin-side">
+
+<div class="admin-brand">
+
+<div>
+WEB-viewer
+</div>
+
+<small>
+管理システム
+</small>
+
+</div>
+
+<nav>
+
+<a href="../">
+ダッシュボード
+</a>
+
+<a href="../books/">
+Book管理
+</a>
+
+<a
+  class="active"
+  href="./">
+シリアル管理
+</a>
+
+<a href="../students/">
+Student管理
+</a>
+
+<a href="../materials/">
+資料配信
+</a>
+
+<a href="../b4/">
+B4資料
+</a>
+
+<a href="../system/">
+システム管理
+</a>
+
+<button
+  id="logout"
+  type="button">
+ログアウト
+</button>
+
+</nav>
+
+</aside>
+
+
+<main class="admin-main">
+
+<header class="admin-notice">
+
+<div>
+お知らせ
+</div>
+
+<span>
+シリアル管理
+</span>
+
+</header>
+
+
+<section class="admin-content">
+
+<div class="page-heading">
+
+<div>
+
+<h1>
+シリアル管理
+</h1>
+
+<p>
+Studentごとに固有シリアルを一括発行
+</p>
+
+</div>
+
+</div>
+
+
+<section class="admin-card">
+
+<h2>
+一括発行
+</h2>
+
+
+<label>
+
+Book
+
+<select id="book">
+<option value="">
+Bookを選択してください
+</option>
+</select>
+
+</label>
+
+
+<label class="check-label">
+
+<input
+  id="selectAll"
+  type="checkbox">
+
+全Studentを選択
+
+</label>
+
+
+<div
+  id="students"
+  class="student-list">
+
+</div>
+
+
+<div class="toolbar">
+
+<button
+  id="issue"
+  type="button"
+  class="primary-button">
+
+一括発行
+
+</button>
+
+</div>
+
+
+<p
+  id="message"
+  class="message">
+</p>
+
+</section>
+
+
+<section class="admin-card">
+
+<h2>
+発行済みシリアル
+</h2>
+
+
+<div
+  id="serials"
+  class="serial-list">
+
+<div class="list-row">
+読み込み中です。
+</div>
+
+</div>
+
+</section>
+
+</section>
+
+</main>
+
+
+<script
+  type="module"
+  src="app.js">
+</script>
+
+</body>
+
+</html>
