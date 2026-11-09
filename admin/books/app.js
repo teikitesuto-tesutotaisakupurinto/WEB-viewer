@@ -70,7 +70,10 @@ async function loadBooks() {
 
   if (error) {
 
-    console.error(error);
+    console.error(
+      "BOOK LIST ERROR:",
+      error
+    );
 
     document.getElementById(
       "books"
@@ -81,12 +84,15 @@ async function loadBooks() {
   }
 
 
-  if (!data || data.length === 0) {
+  if (
+    !data ||
+    data.length === 0
+  ) {
 
     document.getElementById(
       "books"
     ).innerHTML =
-      `<p>登録されたBookはありません。</p>`;
+      "<p>登録されたBookはありません。</p>";
 
     return;
   }
@@ -95,7 +101,8 @@ async function loadBooks() {
   document.getElementById(
     "books"
   ).innerHTML =
-    data.map(book => `
+    data.map(
+      book => `
 
 <div class="book-item">
 
@@ -117,51 +124,10 @@ ${escapeHtml(book.file_type || "")}
 
 </div>
 
-<div>
-
-<button
-  class="secondary-button"
-  data-id="${book.id}">
-詳細
-</button>
-
 </div>
 
-</div>
-
-`).join("");
-
-
-  document
-    .querySelectorAll(
-      "[data-id]"
-    )
-    .forEach(button => {
-
-      button.onclick = () => {
-
-        const book =
-          data.find(
-            item =>
-              item.id ===
-              button.dataset.id
-          );
-
-        if (!book) {
-          return;
-        }
-
-
-        alert(
-          "Book名: " +
-          book.title +
-          "\nBookシリアル: " +
-          book.book_serial
-        );
-
-      };
-
-    });
+`
+    ).join("");
 
 }
 
@@ -170,17 +136,24 @@ document.getElementById(
   "create"
 ).onclick = async () => {
 
-  message.textContent = "";
+  message.textContent =
+    "登録処理を開始しています。";
+
+  message.style.color =
+    "#222";
+
 
   const title =
     document.getElementById(
       "title"
     ).value.trim();
 
+
   const description =
     document.getElementById(
       "description"
     ).value.trim();
+
 
   const files =
     Array.from(
@@ -197,6 +170,9 @@ document.getElementById(
 
     message.textContent =
       "Book名と教材ファイルを入力してください。";
+
+    message.style.color =
+      "#b00020";
 
     return;
   }
@@ -232,6 +208,9 @@ document.getElementById(
     message.textContent =
       "PDF、JPG、JPEG、PNGのみ対応しています。";
 
+    message.style.color =
+      "#b00020";
+
     return;
   }
 
@@ -256,12 +235,11 @@ document.getElementById(
     message.textContent =
       "PDFを登録する場合は1ファイルだけ選択してください。";
 
+    message.style.color =
+      "#b00020";
+
     return;
   }
-
-
-  message.textContent =
-    "登録しています。";
 
 
   let bookPath = null;
@@ -273,6 +251,10 @@ document.getElementById(
 
   try {
 
+    /*
+     * PDF
+     */
+
     if (
       pdfFiles.length === 1
     ) {
@@ -280,7 +262,10 @@ document.getElementById(
       const file =
         pdfFiles[0];
 
-      bookType = "pdf";
+
+      bookType =
+        "pdf";
+
 
       bookPath =
         "books/" +
@@ -288,17 +273,31 @@ document.getElementById(
         ".pdf";
 
 
-      const upload =
+      message.textContent =
+        "PDFをアップロードしています。";
+
+
+      const {
+        error: uploadError
+      } =
         await supabase.storage
           .from("web-viewer")
           .upload(
             bookPath,
-            file
+            file,
+            {
+              upsert: false
+            }
           );
 
 
-      if (upload.error) {
-        throw upload.error;
+      if (uploadError) {
+
+        throw new Error(
+          "Storage upload: " +
+          uploadError.message
+        );
+
       }
 
 
@@ -307,12 +306,22 @@ document.getElementById(
       );
 
     }
+
+
+    /*
+     * 画像
+     */
+
     else {
 
       bookType =
         extensions[0];
 
     }
+
+
+    message.textContent =
+      "Book情報を登録しています。";
 
 
     const {
@@ -336,9 +345,18 @@ document.getElementById(
 
 
     if (bookError) {
-      throw bookError;
+
+      throw new Error(
+        "Books insert: " +
+        bookError.message
+      );
+
     }
 
+
+    /*
+     * 画像ページ
+     */
 
     if (
       pdfFiles.length === 0
@@ -356,6 +374,7 @@ document.getElementById(
         const file =
           files[index];
 
+
         const extension =
           file.name
             .split(".")
@@ -370,17 +389,31 @@ document.getElementById(
           extension;
 
 
-        const upload =
+        message.textContent =
+          `画像 ${index + 1} / ${files.length} をアップロードしています。`;
+
+
+        const {
+          error: uploadError
+        } =
           await supabase.storage
             .from("web-viewer")
             .upload(
               path,
-              file
+              file,
+              {
+                upsert: false
+              }
             );
 
 
-        if (upload.error) {
-          throw upload.error;
+        if (uploadError) {
+
+          throw new Error(
+            "Image upload: " +
+            uploadError.message
+          );
+
         }
 
 
@@ -406,6 +439,10 @@ document.getElementById(
       }
 
 
+      message.textContent =
+        "画像ページを登録しています。";
+
+
       const {
         error: pageError
       } =
@@ -417,10 +454,22 @@ document.getElementById(
 
 
       if (pageError) {
-        throw pageError;
+
+        throw new Error(
+          "Book pages insert: " +
+          pageError.message
+        );
+
       }
 
     }
+
+
+    message.textContent =
+      "Bookを登録しました。";
+
+    message.style.color =
+      "#222";
 
 
     document.getElementById(
@@ -436,10 +485,6 @@ document.getElementById(
     ).value = "";
 
 
-    message.textContent =
-      "Bookを登録しました。";
-
-
     formCard.classList.add(
       "hidden"
     );
@@ -447,15 +492,19 @@ document.getElementById(
 
     await loadBooks();
 
-
   }
   catch (error) {
 
     console.error(
-      "Book registration error:",
+      "BOOK REGISTRATION ERROR:",
       error
     );
 
+
+    /*
+     * 途中までアップロードした
+     * ファイルを削除
+     */
 
     if (
       uploadedPaths.length > 0
@@ -470,8 +519,13 @@ document.getElementById(
     }
 
 
+    message.style.color =
+      "#b00020";
+
+
     message.textContent =
-      "Book登録に失敗しました。";
+      "登録エラー: " +
+      error.message;
 
   }
 
