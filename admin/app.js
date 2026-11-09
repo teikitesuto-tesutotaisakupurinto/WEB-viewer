@@ -1,3 +1,4 @@
+
 import {
   requireAdmin,
   logout
@@ -10,43 +11,55 @@ import {
 from "../assets/js/common.js";
 
 
-try {
+async function start() {
 
   const admin =
     await requireAdmin();
 
 
   if (!admin) {
-    throw new Error(
-      "管理者として認証されていません。"
-    );
+    return;
   }
 
 
-  document.getElementById(
-    "logout"
-  ).onclick =
-    logout;
-
-
-}
-catch (error) {
-
-  console.error(
-    "ADMIN ERROR:",
-    error
-  );
-
-
-  const main =
-    document.querySelector(
-      ".admin-content"
+  const logoutButton =
+    document.getElementById(
+      "logout"
     );
 
 
-  showError(
-    error.message,
-    main
-  );
+  if (logoutButton) {
+
+    logoutButton.onclick =
+      async event => {
+
+        event.preventDefault();
+
+        await logout();
+
+      };
+
+  }
 
 }
+
+
+start()
+  .catch(
+    error => {
+
+      console.error(
+        "ADMIN ERROR:",
+        error
+      );
+
+
+      showError(
+        error.message,
+        document.querySelector(
+          ".admin-content"
+        )
+      );
+
+    }
+  );
