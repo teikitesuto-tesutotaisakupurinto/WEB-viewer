@@ -42,7 +42,7 @@ form.addEventListener(
 
 
     const {
-      error
+      error: loginError
     } =
       await supabase.auth
         .signInWithPassword({
@@ -51,7 +51,11 @@ form.addEventListener(
         });
 
 
-    if (error) {
+    if (loginError) {
+
+      console.error(
+        loginError
+      );
 
       message.textContent =
         "メールアドレスまたはパスワードが正しくありません。";
@@ -63,28 +67,45 @@ form.addEventListener(
 
 
     const {
-      data: userData
+      data: userData,
+      error: userError
     } =
-      await supabase.auth.getUser();
+      await supabase.auth
+        .getUser();
 
 
-    const user =
-      userData.user;
+    if (
+      userError ||
+      !userData.user
+    ) {
+
+      message.textContent =
+        "ログイン情報を取得できませんでした。";
+
+      button.disabled = false;
+
+      return;
+    }
 
 
     const {
-      data: profile
+      data: profile,
+      error: profileError
     } =
-      await supabase
-        .from("users")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
+      await supabase.rpc(
+        "get_my_profile"
+      );
 
 
-    if (!profile) {
+    if (
+      profileError ||
+      !profile ||
+      profile.length === 0
+    ) {
 
-      await supabase.auth.signOut();
+      console.error(
+        profileError
+      );
 
       message.textContent =
         "ユーザー情報が登録されていません。";
@@ -95,15 +116,38 @@ form.addEventListener(
     }
 
 
-    if (profile.role === "admin") {
+    const user =
+      profile[0];
 
-      location.replace("../admin/");
+
+    if (
+      user.role === "admin"
+    ) {
+
+      location.replace(
+        "../admin/"
+      );
 
       return;
     }
 
 
-    location.replace("../student/");
+    if (
+      user.role === "student"
+    ) {
+
+      location.replace(
+        "../student/"
+      );
+
+      return;
+    }
+
+
+    message.textContent =
+      "ユーザー権限が設定されていません。";
+
+    button.disabled = false;
 
   }
 );
