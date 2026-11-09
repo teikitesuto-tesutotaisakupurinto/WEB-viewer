@@ -1,144 +1,75 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1">
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>WEB-viewer</title>
-
-<link
-  rel="stylesheet"
-  href="../assets/css/common.css">
-
+<link rel="stylesheet" href="../assets/css/common.css">
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<header class="topbar">
+<aside class="admin-side">
 
-<button
-  id="menu"
-  class="menu-button">
-メニュー
-</button>
-
-<div class="logo">
-WEB-viewer
+<div class="admin-brand">
+<div>WEB-viewer</div>
+<small>管理システム</small>
 </div>
 
-<span id="name"></span>
-
-</header>
-
-
-<aside
-  id="drawer"
-  class="drawer">
-
-<h2>WEB-viewer</h2>
-
-<a href="./">
-ダッシュボード
-</a>
-
-<a href="books/">
-Book管理
-</a>
-
-<a href="serials/">
-シリアル管理
-</a>
-
-<a href="students/">
-Student管理
-</a>
-
-<a href="materials/">
-資料配信
-</a>
-
-<a href="b4/">
-B4資料
-</a>
-
-<a href="system/">
-システム管理
-</a>
-
-<button id="logout">
-ログアウト
-</button>
+<nav>
+<a class="active" href="./">ダッシュボード</a>
+<a href="books/">Book管理</a>
+<a href="serials/">シリアル管理</a>
+<a href="students/">Student管理</a>
+<a href="materials/">資料配信</a>
+<a href="b4/">B4資料</a>
+<a href="system/">システム管理</a>
+<button id="logout">ログアウト</button>
+</nav>
 
 </aside>
 
+<main class="admin-main">
 
-<div
-  id="backdrop"
-  class="drawer-backdrop">
+<header class="admin-notice">
+<div>お知らせ</div>
+<span>WEB-viewer管理画面</span>
+</header>
+
+<section class="admin-content">
+
+<div class="admin-heading">
+<div>
+<h1>ダッシュボード</h1>
+<p>WEB-viewerの管理状況</p>
+</div>
 </div>
 
+<div class="admin-stats">
 
-<main class="page">
-
-<h1>
-ダッシュボード
-</h1>
-
-<div class="grid">
-
-<div class="card">
-
-<h3>Book</h3>
-
-<div
-  id="bookCount"
-  class="stat">
-0
+<div class="admin-stat">
+<div>Book</div>
+<strong id="bookCount">0</strong>
 </div>
 
+<div class="admin-stat">
+<div>シリアル</div>
+<strong id="licenseCount">0</strong>
 </div>
 
-
-<div class="card">
-
-<h3>シリアル</h3>
-
-<div
-  id="licenseCount"
-  class="stat">
-0
+<div class="admin-stat">
+<div>Student</div>
+<strong id="studentCount">0</strong>
 </div>
 
 </div>
 
-
-<div class="card">
-
-<h3>Student</h3>
-
-<div
-  id="studentCount"
-  class="stat">
-0
-</div>
-
-</div>
-
-</div>
+</section>
 
 </main>
 
-
-<script
-  type="module"
-  src="app.js">
-</script>
+<script type="module" src="app.js"></script>
 
 </body>
-
 </html>
