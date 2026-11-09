@@ -30,18 +30,43 @@
 <aside class="admin-side">
 
 <div class="admin-brand">
-<div>WEB-viewer</div>
-<small>管理システム</small>
+
+<div>
+WEB-viewer
 </div>
+
+<small>
+管理システム
+</small>
+
+</div>
+
 
 <nav>
 
-<a href="../">ダッシュボード</a>
-<a href="../books/">Book管理</a>
-<a href="../serials/">シリアル管理</a>
-<a href="../students/">Student管理</a>
-<a href="../materials/">資料配信</a>
-<a href="../b4/">B4資料</a>
+<a href="../">
+ダッシュボード
+</a>
+
+<a href="../books/">
+Book管理
+</a>
+
+<a href="../serials/">
+シリアル管理
+</a>
+
+<a href="../students/">
+Student管理
+</a>
+
+<a href="../materials/">
+資料配信
+</a>
+
+<a href="../b4/">
+B4資料
+</a>
 
 <a
   class="active"
@@ -63,8 +88,15 @@
 <main class="admin-main">
 
 <header class="admin-notice">
-<div>お知らせ</div>
-<span>システム管理</span>
+
+<div>
+お知らせ
+</div>
+
+<span>
+システム管理
+</span>
+
 </header>
 
 
@@ -73,8 +105,15 @@
 <div class="page-heading">
 
 <div>
-<h1>システム管理</h1>
-<p>メンテナンス設定</p>
+
+<h1>
+システム管理
+</h1>
+
+<p>
+WEB-viewerの運用設定
+</p>
+
 </div>
 
 </div>
@@ -83,43 +122,78 @@
 <section class="admin-card">
 
 <h2>
-メンテナンスモード
+メンテナンス設定
 </h2>
 
 
-<label class="maintenance-switch">
+<div class="maintenance-setting">
+
+<div class="maintenance-text">
+
+<h3>
+メンテナンスモード
+</h3>
+
+<p>
+ONにするとStudent側に
+メンテナンス画面を表示します。
+</p>
+
+</div>
+
+
+<label
+  class="toggle">
 
 <input
-  id="enabled"
+  id="maintenanceEnabled"
   type="checkbox">
 
-<span>
-Student側にメンテナンス画面を表示する
+<span
+  class="toggle-slider">
 </span>
 
 </label>
 
+</div>
+
+
+<div
+  id="status"
+  class="maintenance-status">
+
+現在：OFF
+
+</div>
+
 
 <label>
 
-表示文
+メンテナンス表示文
 
 <textarea
   id="maintenanceMessage"
-  rows="5"></textarea>
+  rows="5"
+  placeholder="現在メンテナンス中です。">
+</textarea>
 
 </label>
 
 
 <button
   id="save"
-  class="primary-button"
-  type="button">
+  type="button"
+  class="primary-button">
+
 保存
+
 </button>
 
 
-<p id="result"></p>
+<p
+  id="result"
+  class="message">
+</p>
 
 </section>
 
@@ -130,7 +204,7 @@ Student側にメンテナンス画面を表示する
 
 <script
   type="module"
-  src="app.js">
+  src="app.js?v=maintenance-final">
 </script>
 
 </body>
