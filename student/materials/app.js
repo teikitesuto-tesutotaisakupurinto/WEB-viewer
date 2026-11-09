@@ -1,5 +1,6 @@
 import {
-  requireStudent
+  requireStudent,
+  logout
 }
 from "../../assets/js/auth.js";
 
@@ -17,9 +18,22 @@ from "../../assets/js/common.js";
 const student =
   await requireStudent();
 
+
 if (!student) {
   throw new Error("Unauthorized");
 }
+
+
+document.getElementById(
+  "logout"
+).onclick =
+  logout;
+
+
+const container =
+  document.getElementById(
+    "materials"
+  );
 
 
 const {
@@ -29,7 +43,13 @@ const {
   await supabase
     .from("materials")
     .select(`
-      *,
+      id,
+      title,
+      description,
+      file_path,
+      file_type,
+      all_students,
+      created_at,
       material_recipients (
         student_id
       )
@@ -50,51 +70,56 @@ if (error) {
 
   console.error(error);
 
+  container.innerHTML =
+    `
+    <div class="material-card">
+      資料を取得できませんでした。
+    </div>
+    `;
+
 }
+else {
+
+  const materials =
+    (data || []).filter(
+      item => {
+
+        if (
+          item.all_students
+        ) {
+          return true;
+        }
 
 
-const materials =
-  (data || []).filter(
-    item => {
+        return (
+          item.material_recipients ||
+          []
+        ).some(
+          recipient =>
+            recipient.student_id ===
+            student.id
+        );
 
-      if (
-        item.all_students
-      ) {
-        return true;
       }
+    );
 
 
-      return (
-        item.material_recipients ||
-        []
-      ).some(
-        recipient =>
-          recipient.student_id ===
-          student.id
-      );
+  container.innerHTML =
+    materials.map(
+      item => `
 
-    }
-  );
-
-
-const container =
-  document.getElementById(
-    "materials"
-  );
-
-
-container.innerHTML =
-  materials.map(
-    item => `
-
-<div class="card">
+<article class="material-card">
 
 <h2>
-${escapeHtml(item.title)}
+${escapeHtml(
+  item.title
+)}
 </h2>
 
 <p>
-${escapeHtml(item.description)}
+${escapeHtml(
+  item.description || ""
+)}
 </p>
 
 <button
@@ -105,51 +130,66 @@ ${escapeHtml(item.description)}
 開く
 </button>
 
+<div class="material-date">
+${new Date(
+  item.created_at
+).toLocaleDateString("ja-JP")}
 </div>
 
+</article>
+
 `
-  ).join("") ||
-  `<div class="card">
-    資料はありません。
-  </div>`;
+    ).join("") ||
+    `
+    <div class="material-card">
+      配信された資料はありません。
+    </div>
+    `;
 
 
-container
-  .querySelectorAll(
-    "[data-file]"
-  )
-  .forEach(
-    button => {
+  container
+    .querySelectorAll(
+      "[data-file]"
+    )
+    .forEach(
+      button => {
 
-      button.onclick =
-        async () => {
+        button.onclick =
+          async () => {
 
-          const {
-            data,
-            error
-          } =
-            await supabase.storage
-              .from("web-viewer")
-              .createSignedUrl(
-                button.dataset.file,
-                300
+            const {
+              data: urlData,
+              error: urlError
+            } =
+              await supabase.storage
+                .from("web-viewer")
+                .createSignedUrl(
+                  button.dataset.file,
+                  600
+                );
+
+
+            if (
+              urlError ||
+              !urlData?.signedUrl
+            ) {
+
+              alert(
+                "資料を開けませんでした。"
               );
 
+              return;
+            }
 
-          if (error) {
 
-            alert(
-              "資料を開けませんでした。"
+            window.open(
+              urlData.signedUrl,
+              "_blank"
             );
 
-            return;
-          }
+          };
 
+      }
+    );
 
-          location.href =
-            data.signedUrl;
-
-        };
-
-    }
-  );
+}
