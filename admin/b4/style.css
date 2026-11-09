@@ -1,6 +1,5 @@
 .b4-sheet {
   width: 100%;
-
   max-width: 900px;
 
   aspect-ratio: 1.414 / 1;
@@ -16,34 +15,26 @@
   display: flex;
   flex-direction: column;
 
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 
   text-align: center;
 }
 
 .b4-sheet h2 {
   margin: 0;
-
-  font-size: 32px;
-}
-
-.qr {
-  width: 250px;
-  height: 250px;
-
-  display: grid;
-  place-items: center;
+  font-size: 30px;
 }
 
 .b4-code {
   font-size: 24px;
   font-weight: 700;
+
   letter-spacing: 2px;
 }
 
 .b4-note {
-  font-size: 12px;
+  font-size: 11px;
 }
 
 @media print {
@@ -59,8 +50,10 @@
 
   #sheet {
     position: absolute;
-    left: 0;
+
     top: 0;
+    left: 0;
+
     width: 100%;
   }
 
