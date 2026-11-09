@@ -1,60 +1,135 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
 <title>資料配信</title>
-<link rel="stylesheet" href="../../assets/css/common.css">
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
 </head>
 
 <body>
 
 <header class="topbar">
-<button class="menu-button" onclick="location.href='../'">戻る</button>
-<div class="logo">資料配信</div>
+
+<button
+  class="menu-button"
+  onclick="location.href='../'">
+戻る
+</button>
+
+<div class="logo">
+資料配信
+</div>
+
 </header>
+
 
 <main class="page">
 
-<h1>資料配信</h1>
+<div class="page-heading">
+
+<div>
+
+<h1>
+資料配信
+</h1>
+
+<p>
+Studentへ教材・資料を配信
+</p>
+
+</div>
+
+</div>
+
 
 <section class="card">
 
-<h2>資料を追加</h2>
+<h2>
+資料を追加
+</h2>
+
 
 <label>
 タイトル
-<input id="title" type="text">
+
+<input
+  id="title"
+  type="text">
 </label>
+
 
 <label>
 説明
-<textarea id="description"></textarea>
+
+<textarea
+  id="description">
+</textarea>
 </label>
+
 
 <label>
 ファイル
+
 <input
   id="file"
   type="file"
   accept=".pdf,.jpg,.jpeg,.png">
 </label>
 
+
 <label>
 対象
+
 <select id="target">
-<option value="all">全Student</option>
-<option value="students">指定Student</option>
+
+<option value="all">
+全Student
+</option>
+
+<option value="students">
+Studentを選択
+</option>
+
 </select>
+
 </label>
 
-<label id="studentBox" class="hidden">
-Student UID
+
+<div
+  id="studentBox"
+  class="hidden">
+
+<h3>
+対象Student
+</h3>
+
+<label>
 <input
-  id="studentIds"
-  type="text"
-  placeholder="複数の場合はカンマ区切り">
+  id="selectAll"
+  type="checkbox">
+
+全Studentを選択
 </label>
+
+<div
+  id="students">
+</div>
+
+</div>
+
+
+<div class="toolbar">
 
 <button
   id="create"
@@ -62,21 +137,36 @@ Student UID
 配信
 </button>
 
-<p id="message"></p>
+</div>
+
+
+<p
+  id="message"
+  class="message">
+</p>
 
 </section>
 
+
 <section class="card">
 
-<h2>配信済み資料</h2>
+<h2>
+配信済み資料
+</h2>
 
-<div id="materials"></div>
+<div id="materials">
+</div>
 
 </section>
 
 </main>
 
-<script type="module" src="app.js"></script>
+
+<script
+  type="module"
+  src="app.js">
+</script>
 
 </body>
+
 </html>
