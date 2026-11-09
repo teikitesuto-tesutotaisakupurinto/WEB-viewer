@@ -5,79 +5,48 @@ import {
 from "../assets/js/auth.js";
 
 import {
-  supabase
+  showError
 }
-from "../assets/js/supabase.js";
+from "../assets/js/common.js";
 
 
-const admin =
-  await requireAdmin();
+try {
 
-if (!admin) {
-  throw new Error("Unauthorized");
+  const admin =
+    await requireAdmin();
+
+
+  if (!admin) {
+    throw new Error(
+      "管理者として認証されていません。"
+    );
+  }
+
+
+  document.getElementById(
+    "logout"
+  ).onclick =
+    logout;
+
+
 }
+catch (error) {
+
+  console.error(
+    "ADMIN ERROR:",
+    error
+  );
 
 
-document.getElementById(
-  "logout"
-).onclick = logout;
+  const main =
+    document.querySelector(
+      ".admin-content"
+    );
 
 
-const [
-  books,
-  licenses,
-  students
-] =
-  await Promise.all([
+  showError(
+    error.message,
+    main
+  );
 
-    supabase
-      .from("books")
-      .select(
-        "id",
-        {
-          count: "exact",
-          head: true
-        }
-      ),
-
-    supabase
-      .from("licenses")
-      .select(
-        "id",
-        {
-          count: "exact",
-          head: true
-        }
-      ),
-
-    supabase
-      .from("users")
-      .select(
-        "id",
-        {
-          count: "exact",
-          head: true
-        }
-      )
-      .eq(
-        "role",
-        "student"
-      )
-
-  ]);
-
-
-document.getElementById(
-  "bookCount"
-).textContent =
-  books.count || 0;
-
-document.getElementById(
-  "licenseCount"
-).textContent =
-  licenses.count || 0;
-
-document.getElementById(
-  "studentCount"
-).textContent =
-  students.count || 0;
+}
