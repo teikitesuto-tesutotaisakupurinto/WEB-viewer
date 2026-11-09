@@ -18,9 +18,90 @@ const admin =
   await requireAdmin();
 
 if (!admin) {
-  throw new Error("Unauthorized");
+  throw new Error(
+    "Unauthorized"
+  );
 }
 
+
+const bookSelect =
+  document.getElementById(
+    "book"
+  );
+
+const studentList =
+  document.getElementById(
+    "students"
+  );
+
+const selectAll =
+  document.getElementById(
+    "selectAll"
+  );
+
+const sheets =
+  document.getElementById(
+    "sheets"
+  );
+
+const message =
+  document.getElementById(
+    "message"
+  );
+
+
+let students = [];
+
+
+/*
+ * QRライブラリ
+ */
+
+function loadQRCode() {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      if (
+        window.QRCode
+      ) {
+
+        resolve();
+
+        return;
+      }
+
+
+      const script =
+        document.createElement(
+          "script"
+        );
+
+
+      script.src =
+        "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+
+
+      script.onload =
+        resolve;
+
+      script.onerror =
+        reject;
+
+
+      document.head.appendChild(
+        script
+      );
+
+    }
+  );
+
+}
+
+
+/*
+ * Book取得
+ */
 
 async function loadBooks() {
 
@@ -38,21 +119,27 @@ async function loadBooks() {
         true
       )
       .order(
-        "title"
+        "title",
+        {
+          ascending: true
+        }
       );
 
 
   if (error) {
 
-    console.error(error);
+    console.error(
+      error
+    );
+
+    message.textContent =
+      "Bookを取得できませんでした。";
 
     return;
   }
 
 
-  document.getElementById(
-    "book"
-  ).innerHTML =
+  bookSelect.innerHTML =
     (data || []).map(
       book => `
 
@@ -62,21 +149,175 @@ ${escapeHtml(book.title)}
 
 `
     ).join("");
+
+
+  await loadStudents();
+
 }
 
 
-document.getElementById(
-  "preview"
-).onclick = async () => {
+/*
+ * Student取得
+ */
 
-  const bookId =
-    document.getElementById(
-      "book"
-    ).value;
-
+async function loadStudents() {
 
   const {
-    data: book
+    data,
+    error
+  } =
+    await supabase
+      .from("users")
+      .select(
+        "id,display_name"
+      )
+      .eq(
+        "role",
+        "student"
+      )
+      .order(
+        "display_name",
+        {
+          ascending: true
+        }
+      );
+
+
+  if (error) {
+
+    console.error(
+      error
+    );
+
+    message.textContent =
+      "Studentを取得できませんでした。";
+
+    return;
+  }
+
+
+  students =
+    data || [];
+
+
+  renderStudents();
+
+}
+
+
+function renderStudents() {
+
+  if (
+    students.length === 0
+  ) {
+
+    studentList.innerHTML =
+      "<p>登録されたStudentはいません。</p>";
+
+    return;
+  }
+
+
+  studentList.innerHTML =
+    students.map(
+      student => `
+
+<label class="student-item">
+
+<input
+  type="checkbox"
+  class="student-checkbox"
+  value="${student.id}">
+
+<span>
+${escapeHtml(
+  student.display_name
+)}
+</span>
+
+</label>
+
+`
+    ).join("");
+
+}
+
+
+selectAll.onchange = () => {
+
+  document
+    .querySelectorAll(
+      ".student-checkbox"
+    )
+    .forEach(
+      checkbox => {
+
+        checkbox.checked =
+          selectAll.checked;
+
+      }
+    );
+
+};
+
+
+/*
+ * B4作成
+ */
+
+document.getElementById(
+  "create"
+).onclick = async () => {
+
+  message.style.color =
+    "#222";
+
+  message.textContent =
+    "作成しています。";
+
+
+  const bookId =
+    bookSelect.value;
+
+
+  const selectedStudents =
+    Array.from(
+      document.querySelectorAll(
+        ".student-checkbox:checked"
+      )
+    ).map(
+      checkbox =>
+        checkbox.value
+    );
+
+
+  if (!bookId) {
+
+    message.textContent =
+      "Bookを選択してください。";
+
+    return;
+  }
+
+
+  if (
+    selectedStudents.length === 0
+  ) {
+
+    message.textContent =
+      "Studentを選択してください。";
+
+    return;
+  }
+
+
+  /*
+   * Book
+   */
+
+  const {
+    data: book,
+    error: bookError
   } =
     await supabase
       .from("books")
@@ -90,124 +331,245 @@ document.getElementById(
       .single();
 
 
-  if (!book) {
+  if (
+    bookError ||
+    !book
+  ) {
+
+    message.textContent =
+      "Bookを取得できませんでした。";
+
     return;
   }
 
 
-  const code =
-    document.getElementById(
-      "code"
-    ).value.trim();
+  /*
+   * Studentごとの固有シリアル
+   */
+
+  const {
+    data: licenses,
+    error: licenseError
+  } =
+    await supabase
+      .from("licenses")
+      .select(
+        "id,code,student_id,status"
+      )
+      .eq(
+        "book_id",
+        bookId
+      )
+      .in(
+        "student_id",
+        selectedStudents
+      );
 
 
-  if (!code) {
+  if (licenseError) {
 
-    alert(
-      "シリアルコードを入力してください。"
+    console.error(
+      licenseError
     );
 
+    message.textContent =
+      "シリアルを取得できませんでした。";
+
     return;
   }
 
 
-  document.getElementById(
-    "sheet"
-  ).innerHTML = `
+  const licenseMap =
+    new Map(
+      (licenses || []).map(
+        license => [
+          license.student_id,
+          license
+        ]
+      )
+    );
 
-<div class="b4-sheet">
+
+  /*
+   * シリアルがないStudentがいる場合
+   */
+
+  const missingStudents =
+    selectedStudents.filter(
+      studentId =>
+        !licenseMap.has(
+          studentId
+        )
+    );
+
+
+  if (
+    missingStudents.length > 0
+  ) {
+
+    message.textContent =
+      "シリアルが発行されていないStudentが含まれています。";
+
+    return;
+  }
+
+
+  /*
+   * QRライブラリ
+   */
+
+  try {
+
+    await loadQRCode();
+
+  }
+  catch {
+
+    message.textContent =
+      "QRコード機能を読み込めませんでした。";
+
+    return;
+  }
+
+
+  sheets.innerHTML =
+    "";
+
+
+  /*
+   * B4生成
+   */
+
+  for (
+    const studentId
+    of selectedStudents
+  ) {
+
+    const student =
+      students.find(
+        item =>
+          item.id ===
+          studentId
+      );
+
+
+    const license =
+      licenseMap.get(
+        studentId
+      );
+
+
+    if (
+      !student ||
+      !license
+    ) {
+      continue;
+    }
+
+
+    const sheet =
+      document.createElement(
+        "div"
+      );
+
+
+    sheet.className =
+      "b4-sheet";
+
+
+    sheet.innerHTML = `
 
 <h2>
-電子教材利用案内
+WEB-viewer
 </h2>
 
 <div>
-Book名:
-${escapeHtml(book.title)}
-</div>
-
-<div>
-クラス:
 ${escapeHtml(
-  document.getElementById(
-    "className"
-  ).value
+  book.title
 )}
 </div>
 
-<div>
-氏名:
+<div class="b4-student">
 ${escapeHtml(
-  document.getElementById(
-    "studentName"
-  ).value
+  student.display_name
 )}
 </div>
 
 <div
-  id="qr"
-  style="
-    width:250px;
-    height:250px;
-  ">
+  class="b4-qr"
+  id="qr-${student.id}">
 </div>
 
 <div class="b4-code">
-${escapeHtml(code)}
+${escapeHtml(
+  license.code
+)}
 </div>
 
 <div>
-WEB-viewerにログインして利用してください。
+QRコードを読み取って利用してください。
 </div>
 
 <div class="b4-note">
 ※ 紛失の場合はこちらでは対応しかねますのでご注意ください。
 </div>
 
-</div>
 `;
 
 
-  const script =
-    document.createElement(
-      "script"
+    sheets.appendChild(
+      sheet
     );
 
 
-  script.src =
-    "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
-
-
-  script.onload = () => {
-
     new QRCode(
-      document.getElementById(
-        "qr"
+      sheet.querySelector(
+        "#qr-" +
+        student.id
       ),
       {
-        text: code,
-        width: 250,
-        height: 250
+        text:
+          license.code,
+
+        width:
+          250,
+
+        height:
+          250
       }
     );
 
-  };
+  }
 
 
-  document.head.appendChild(
-    script
-  );
+  message.style.color =
+    "#222";
+
+  message.textContent =
+    `${selectedStudents.length}人分のB4資料を作成しました。`;
 
 };
 
 
 document.getElementById(
-  "print"
+  "printAll"
 ).onclick = () => {
+
+  if (
+    !sheets.children.length
+  ) {
+
+    alert(
+      "先にB4資料を作成してください。"
+    );
+
+    return;
+  }
+
 
   window.print();
 
 };
 
 
-loadBooks();
+await loadBooks();
