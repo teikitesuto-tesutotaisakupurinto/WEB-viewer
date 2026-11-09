@@ -1,244 +1,127 @@
-<!DOCTYPE html>
-<html lang="ja">
+.form-help {
+  margin: -5px 0 18px;
 
-<head>
+  color: #777;
 
-<meta charset="UTF-8">
+  font-size: 13px;
 
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1">
+  line-height: 1.6;
+}
 
-<title>Book管理</title>
+.section-heading {
+  display: flex;
 
-<link
-  rel="stylesheet"
-  href="../../assets/css/common.css">
+  align-items: center;
 
-<link
-  rel="stylesheet"
-  href="../style.css">
+  justify-content: space-between;
 
-<link
-  rel="stylesheet"
-  href="style.css">
+  margin-bottom: 10px;
+}
 
-</head>
+.section-heading h2 {
+  margin: 0;
+}
 
-<body>
+.section-heading p {
+  margin: 5px 0 0;
 
-<aside class="admin-side">
+  color: #777;
 
-<div class="admin-brand">
+  font-size: 13px;
+}
 
-<div>
-WEB-viewer
-</div>
+.book-admin-list {
+  display: grid;
 
-<small>
-管理システム
-</small>
+  gap: 0;
+}
 
-</div>
+.book-admin-item {
+  display: flex;
 
+  align-items: center;
 
-<nav>
+  justify-content: space-between;
 
-<a href="../">
-ダッシュボード
-</a>
+  gap: 20px;
 
-<a
-  class="active"
-  href="./">
-Book管理
-</a>
+  padding: 18px 4px;
 
-<a href="../serials/">
-シリアル管理
-</a>
+  border-bottom: 1px solid #eee;
+}
 
-<a href="../students/">
-Student管理
-</a>
+.book-admin-item:last-child {
+  border-bottom: 0;
+}
 
-<a href="../materials/">
-資料配信
-</a>
+.book-admin-main {
+  min-width: 0;
+}
 
-<a href="../b4/">
-B4資料
-</a>
+.book-admin-title {
+  font-size: 16px;
 
-<a href="../system/">
-システム管理
-</a>
+  font-weight: 700;
+}
 
-<button id="logout">
-ログアウト
-</button>
+.book-admin-description {
+  margin-top: 5px;
 
-</nav>
+  color: #777;
 
-</aside>
+  font-size: 13px;
+}
 
+.book-admin-serial {
+  margin-top: 8px;
 
-<main class="admin-main">
+  color: #555;
 
-<header class="admin-notice">
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
 
-<div>
-お知らせ
-</div>
+  font-size: 12px;
+}
 
-<span>
-Book管理
-</span>
+.book-admin-type {
+  margin-top: 5px;
 
-</header>
+  color: #999;
 
+  font-size: 12px;
+}
 
-<section class="admin-content">
+.book-admin-status {
+  flex: 0 0 auto;
 
-<div class="page-heading">
+  padding: 6px 11px;
 
-<div>
+  border-radius: 15px;
 
-<h1>
-Book管理
-</h1>
+  background: #eee;
 
-<p>
-教材の登録と管理
-</p>
+  color: #444;
 
-</div>
+  font-size: 12px;
+}
 
-<button
-  id="showForm"
-  class="primary-button">
-Bookを追加
-</button>
+.book-empty {
+  padding: 50px 20px;
 
-</div>
+  color: #777;
 
+  text-align: center;
+}
 
-<section
-  id="formCard"
-  class="admin-card hidden">
+@media(max-width:650px) {
 
-<h2>
-Bookを追加
-</h2>
+  .book-admin-item {
+    align-items: flex-start;
 
+    flex-direction: column;
+  }
 
-<label>
-
-Book名
-
-<input
-  id="title"
-  type="text"
-  autocomplete="off">
-
-</label>
-
-
-<label>
-
-説明
-
-<textarea
-  id="description">
-</textarea>
-
-</label>
-
-
-<label>
-
-教材ファイル
-
-<input
-  id="files"
-  type="file"
-  accept=".pdf,.jpg,.jpeg,.png"
-  multiple>
-
-</label>
-
-
-<p class="form-help">
-
-PDFは1ファイルで登録できます。
-
-画像は複数選択すると、
-1枚目から順番にページとして登録されます。
-
-</p>
-
-
-<div class="toolbar">
-
-<button
-  id="create"
-  class="primary-button">
-登録
-</button>
-
-<button
-  id="cancel"
-  class="secondary-button">
-キャンセル
-</button>
-
-</div>
-
-
-<p
-  id="message"
-  class="message">
-</p>
-
-</section>
-
-
-<section class="admin-card">
-
-<div class="section-heading">
-
-<div>
-
-<h2>
-登録済みBook
-</h2>
-
-<p>
-登録されている教材
-</p>
-
-</div>
-
-</div>
-
-
-<div
-  id="books"
-  class="book-admin-list">
-</div>
-
-</section>
-
-</section>
-
-</main>
-
-
-<script
-  type="module"
-  src="app.js?v=book-final">
-</script>
-
-</body>
-
-</html>
+}
