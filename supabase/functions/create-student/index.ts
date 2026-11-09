@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -8,38 +9,54 @@ const corsHeaders = {
     "POST, OPTIONS"
 };
 
+
 Deno.serve(async (req) => {
 
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: corsHeaders
-    });
+
+    return new Response(
+      "ok",
+      {
+        headers: corsHeaders
+      }
+    );
+
   }
+
 
   try {
 
     const supabaseUrl =
-      Deno.env.get("SUPABASE_URL");
+      Deno.env.get(
+        "SUPABASE_URL"
+      );
 
     const serviceRoleKey =
       Deno.env.get(
         "SUPABASE_SERVICE_ROLE_KEY"
       );
 
+
     if (
       !supabaseUrl ||
       !serviceRoleKey
     ) {
+
       throw new Error(
-        "Supabase環境変数が設定されていません。"
+        "Supabaseの環境変数を取得できません。"
       );
+
     }
 
 
-    const authHeader =
-      req.headers.get("Authorization");
+    const authorization =
+      req.headers.get(
+        "Authorization"
+      );
 
-    if (!authHeader) {
+
+    if (!authorization) {
+
       return new Response(
         JSON.stringify({
           error:
@@ -54,42 +71,44 @@ Deno.serve(async (req) => {
           }
         }
       );
+
     }
 
 
-    const supabaseAdmin =
-      createClient(
-        supabaseUrl,
-        serviceRoleKey,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false
-          }
-        }
-      );
-
-
     const token =
-      authHeader.replace(
+      authorization.replace(
         "Bearer ",
         ""
       );
 
 
+    const adminClient =
+      createClient(
+        supabaseUrl,
+        serviceRoleKey,
+        {
+          auth: {
+            autoRefreshToken:
+              false,
+
+            persistSession:
+              false
+          }
+        }
+      );
+
+
     const {
-      data: {
-        user
-      },
+      data: userData,
       error: userError
     } =
-      await supabaseAdmin.auth
+      await adminClient.auth
         .getUser(token);
 
 
     if (
       userError ||
-      !user
+      !userData.user
     ) {
 
       return new Response(
@@ -110,16 +129,20 @@ Deno.serve(async (req) => {
     }
 
 
+    const currentUser =
+      userData.user;
+
+
     const {
       data: adminProfile,
       error: profileError
     } =
-      await supabaseAdmin
+      await adminClient
         .from("users")
         .select("role")
         .eq(
           "id",
-          user.id
+          currentUser.id
         )
         .single();
 
@@ -230,15 +253,11 @@ Deno.serve(async (req) => {
     }
 
 
-    /*
-     * Supabase Authユーザー作成
-     */
-
     const {
-      data: authData,
-      error: authError
+      data: created,
+      error: createError
     } =
-      await supabaseAdmin.auth.admin
+      await adminClient.auth.admin
         .createUser({
           email,
           password,
@@ -246,12 +265,16 @@ Deno.serve(async (req) => {
         });
 
 
-    if (authError) {
+    if (
+      createError ||
+      !created.user
+    ) {
 
       return new Response(
         JSON.stringify({
           error:
-            authError.message
+            createError?.message ||
+            "Authユーザーを作成できませんでした。"
         }),
         {
           status: 400,
@@ -267,26 +290,27 @@ Deno.serve(async (req) => {
 
 
     const studentId =
-      authData.user.id;
+      created.user.id;
 
-
-    /*
-     * public.users作成
-     */
 
     const {
       error: insertError
     } =
-      await supabaseAdmin
+      await adminClient
         .from("users")
         .insert({
-          id: studentId,
+          id:
+            studentId,
+
           display_name:
             displayName,
+
           role:
             "student",
+
           class_name:
             className,
+
           student_number:
             studentNumber
         });
@@ -294,12 +318,7 @@ Deno.serve(async (req) => {
 
     if (insertError) {
 
-      /*
-       * users登録に失敗したら
-       * Authユーザーも削除
-       */
-
-      await supabaseAdmin.auth.admin
+      await adminClient.auth.admin
         .deleteUser(
           studentId
         );
@@ -342,6 +361,7 @@ Deno.serve(async (req) => {
   catch (error) {
 
     console.error(error);
+
 
     return new Response(
       JSON.stringify({
