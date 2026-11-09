@@ -60,15 +60,16 @@ async function loadBooks() {
   document.getElementById(
     "books"
   ).innerHTML =
-    (data || []).map(item => `
+    (data || []).map(
+      item => `
 
 <div class="card">
 
-<h3>
+<h2>
 ${escapeHtml(
   item.books?.title || ""
 )}
-</h3>
+</h2>
 
 <p>
 ${escapeHtml(
@@ -84,10 +85,11 @@ ${escapeHtml(
 
 </div>
 
-`).join("") ||
-`<div class="card">
-登録されたBookはありません。
-</div>`;
+`
+    ).join("") ||
+    `<div class="card">
+    登録されたBookはありません。
+    </div>`;
 
 
   document
@@ -122,7 +124,6 @@ document.getElementById(
 
 
   if (!code) {
-
     return;
   }
 
@@ -133,7 +134,9 @@ document.getElementById(
   } =
     await supabase
       .from("licenses")
-      .select("*")
+      .select(
+        "id,book_id,status,student_id"
+      )
       .eq(
         "code",
         code
@@ -170,13 +173,14 @@ document.getElementById(
 
 
   const {
-    error: updateError
+    error: claimError
   } =
     await supabase
       .from("licenses")
       .update({
         status: "used",
-        student_id: student.id,
+        student_id:
+          student.id,
         used_at:
           new Date().toISOString()
       })
@@ -187,10 +191,18 @@ document.getElementById(
       .eq(
         "status",
         "unused"
+      )
+      .is(
+        "student_id",
+        null
       );
 
 
-  if (updateError) {
+  if (claimError) {
+
+    console.error(
+      claimError
+    );
 
     document.getElementById(
       "message"
@@ -237,7 +249,6 @@ document.getElementById(
       "hidden"
     )
   ) {
-
     return;
   }
 
@@ -269,11 +280,12 @@ document.getElementById(
         fps: 10,
         qrbox: 250
       },
-      async code => {
+      async decoded => {
 
         document.getElementById(
           "code"
-        ).value = code;
+        ).value =
+          decoded;
 
 
         try {
