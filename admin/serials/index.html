@@ -1,80 +1,54 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1">
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>シリアル管理</title>
-
-<link
-  rel="stylesheet"
-  href="../../assets/css/common.css">
-
+<link rel="stylesheet" href="../../assets/css/common.css">
 </head>
-
 <body>
 
 <header class="topbar">
-
-<button
-  class="menu-button"
-  onclick="location.href='../'">
-戻る
-</button>
-
-<div class="logo">
-シリアル管理
-</div>
-
+<button class="menu-button" onclick="location.href='../'">戻る</button>
+<div class="logo">シリアル管理</div>
 </header>
-
 
 <main class="page">
 
+<div class="page-header">
 <h1>シリアル管理</h1>
-
+</div>
 
 <section class="card">
 
 <h2>シリアル発行</h2>
 
+<label>
+Book
 <select id="book"></select>
+</label>
 
-<input
-  id="count"
-  type="number"
-  min="1"
-  max="500"
-  value="1">
+<label>
+発行数
+<input id="count" type="number" min="1" max="500" value="1">
+</label>
 
-<button
-  id="issue"
-  class="primary-button">
+<button id="issue" class="primary-button">
 発行
 </button>
 
+<p id="message"></p>
+
 </section>
 
-
-<div
-  id="serials"
-  class="table-wrap"
-  style="margin-top:20px">
-</div>
+<section class="card">
+<h2>発行済みシリアル</h2>
+<div id="serials"></div>
+</section>
 
 </main>
 
-
-<script
-  type="module"
-  src="app.js">
-</script>
+<script type="module" src="app.js"></script>
 
 </body>
-
 </html>
