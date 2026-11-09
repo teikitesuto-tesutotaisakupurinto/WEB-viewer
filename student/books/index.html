@@ -7,7 +7,7 @@
 
 <meta
   name="viewport"
-  content="width=device-width,initial-scale=1">
+  content="width=device-width, initial-scale=1">
 
 <title>My Books</title>
 
@@ -52,7 +52,8 @@ My Books
 </a>
 
 <button
-  id="logout">
+  id="logout"
+  type="button">
 ログアウト
 </button>
 
@@ -78,6 +79,7 @@ WEB-viewerをご利用いただけます。
 
 <section class="student-content">
 
+
 <div class="content-heading">
 
 <div>
@@ -99,10 +101,70 @@ My Books
 </div>
 
 
+<!-- =========================
+     シリアル登録
+     ========================= -->
+
+<section class="register-card">
+
+<div>
+
+<h2>
+教材を登録
+</h2>
+
+<p>
+発行されたシリアルコードを入力してください。
+</p>
+
+</div>
+
+
+<div class="register-form">
+
+<input
+  id="serialCode"
+  type="text"
+  autocomplete="off"
+  autocapitalize="characters"
+  spellcheck="false"
+  placeholder="XXXX-XXXX-XXXX">
+
+
+<button
+  id="register"
+  type="button"
+  class="register-button">
+
+登録
+
+</button>
+
+</div>
+
+
+<p
+  id="registerMessage"
+  class="register-message">
+</p>
+
+</section>
+
+
+<!-- =========================
+     Book
+     ========================= -->
+
 <section
   id="books"
   class="book-grid">
+
+<div class="book-empty">
+読み込み中です。
+</div>
+
 </section>
+
 
 </section>
 
@@ -111,7 +173,7 @@ My Books
 
 <script
   type="module"
-  src="app.js?v=books-final">
+  src="app.js?v=serial-register-final">
 </script>
 
 </body>
