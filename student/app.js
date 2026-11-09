@@ -1,43 +1,18 @@
 import {
-  requireStudent,
-  logout
+  requireStudent
 }
 from "../assets/js/auth.js";
 
-import {
-  openDrawer,
-  closeDrawer
-}
-from "../assets/js/common.js";
 
-
-const profile =
+const student =
   await requireStudent();
 
-if (!profile) {
+
+if (!student) {
   throw new Error("Unauthorized");
 }
 
 
-document.getElementById(
-  "name"
-).textContent =
-  profile.display_name;
-
-
-document.getElementById(
-  "menu"
-).onclick =
-  openDrawer;
-
-
-document.getElementById(
-  "backdrop"
-).onclick =
-  closeDrawer;
-
-
-document.getElementById(
-  "logout"
-).onclick =
-  logout;
+location.replace(
+  "./books/"
+);
