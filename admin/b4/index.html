@@ -1,136 +1,81 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1">
-
-<title>B4資料</title>
-
-<link
-  rel="stylesheet"
-  href="../../assets/css/common.css">
-
-<link
-  rel="stylesheet"
-  href="style.css">
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>教材登録シート</title>
+<link rel="stylesheet" href="../../assets/css/common.css">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<header class="topbar">
+<aside class="admin-side">
 
-<button
-  class="menu-button"
-  onclick="location.href='../'">
-戻る
-</button>
-
-<div class="logo">
-B4資料
+<div class="admin-brand">
+<div>WEB-viewer</div>
+<small>管理システム</small>
 </div>
 
+<nav>
+<a href="../">ダッシュボード</a>
+<a href="../books/">Book管理</a>
+<a href="../serials/">シリアル管理</a>
+<a href="../students/">Student管理</a>
+<a href="../materials/">資料配信</a>
+<a class="active" href="./">B4資料</a>
+<a href="../system/">システム管理</a>
+</nav>
+
+</aside>
+
+<main class="admin-main">
+
+<header class="admin-notice">
+<div>お知らせ</div>
+<span>B4資料</span>
 </header>
 
+<section class="admin-content">
 
-<main class="page">
+<h1>B4資料</h1>
 
-<div class="page-header">
-
-<div>
-
-<h1>
-B4資料
-</h1>
-
-<p>
-BookとStudentを選択して作成します。
-</p>
-
-</div>
-
-<button
-  id="printAll"
-  class="secondary-button">
-一括印刷
-</button>
-
-</div>
-
-
-<section class="card">
-
-<h2>
-作成対象
-</h2>
-
+<section class="admin-card">
 
 <label>
 Book
-
-<select id="book">
-</select>
-
+<select id="book"></select>
 </label>
 
+<div class="select-title">
+Student
+</div>
 
-<div
-  class="select-all-row">
-
-<input
-  id="selectAll"
-  type="checkbox">
-
-<label
-  for="selectAll">
+<label class="select-all">
+<input id="selectAll" type="checkbox">
 全Studentを選択
 </label>
 
-</div>
-
-
-<div
-  id="students"
-  class="student-list">
-</div>
-
-
-<div
-  class="toolbar"
-  style="margin-top:15px">
+<div id="students"></div>
 
 <button
-  id="create"
-  class="primary-button">
-B4資料を作成
+id="create"
+class="yellow-button">
+教材登録シートを作成
 </button>
-
-</div>
-
 
 <p id="message"></p>
 
 </section>
 
+<section id="sheets"></section>
 
-<section
-  id="sheets"
-  class="sheets">
 </section>
 
 </main>
 
-
-<script
-  type="module"
-  src="app.js">
-</script>
+<script type="module" src="app.js"></script>
 
 </body>
-
 </html>
