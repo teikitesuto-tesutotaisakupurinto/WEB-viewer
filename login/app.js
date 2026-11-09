@@ -3,19 +3,13 @@ from "../assets/js/supabase.js";
 
 
 const form =
-  document.getElementById(
-    "loginForm"
-  );
+  document.getElementById("loginForm");
 
 const message =
-  document.getElementById(
-    "message"
-  );
+  document.getElementById("message");
 
 const button =
-  document.getElementById(
-    "loginButton"
-  );
+  document.getElementById("loginButton");
 
 
 form.addEventListener(
@@ -25,23 +19,20 @@ form.addEventListener(
     event.preventDefault();
 
     message.textContent = "";
-
     button.disabled = true;
 
 
     const email =
-      document.getElementById(
-        "email"
-      ).value.trim();
-
+      document.getElementById("email")
+        .value.trim();
 
     const password =
-      document.getElementById(
-        "password"
-      ).value;
+      document.getElementById("password")
+        .value;
 
 
     const {
+      data: loginData,
       error: loginError
     } =
       await supabase.auth
@@ -53,9 +44,7 @@ form.addEventListener(
 
     if (loginError) {
 
-      console.error(
-        loginError
-      );
+      console.error(loginError);
 
       message.textContent =
         "メールアドレスまたはパスワードが正しくありません。";
@@ -66,18 +55,11 @@ form.addEventListener(
     }
 
 
-    const {
-      data: userData,
-      error: userError
-    } =
-      await supabase.auth
-        .getUser();
+    const user =
+      loginData.user;
 
 
-    if (
-      userError ||
-      !userData.user
-    ) {
+    if (!user) {
 
       message.textContent =
         "ログイン情報を取得できませんでした。";
@@ -88,24 +70,55 @@ form.addEventListener(
     }
 
 
+    console.log(
+      "ログインUID:",
+      user.id
+    );
+
+
     const {
       data: profile,
       error: profileError
     } =
-      await supabase.rpc(
-        "get_my_profile"
-      );
+      await supabase
+        .from("users")
+        .select(
+          "id, display_name, role"
+        )
+        .eq(
+          "id",
+          user.id
+        )
+        .maybeSingle();
 
 
-    if (
-      profileError ||
-      !profile ||
-      profile.length === 0
-    ) {
+    console.log(
+      "プロフィール:",
+      profile
+    );
+
+    console.log(
+      "プロフィール取得エラー:",
+      profileError
+    );
+
+
+    if (profileError) {
 
       console.error(
         profileError
       );
+
+      message.textContent =
+        "ユーザー情報の取得に失敗しました。";
+
+      button.disabled = false;
+
+      return;
+    }
+
+
+    if (!profile) {
 
       message.textContent =
         "ユーザー情報が登録されていません。";
@@ -116,12 +129,8 @@ form.addEventListener(
     }
 
 
-    const user =
-      profile[0];
-
-
     if (
-      user.role === "admin"
+      profile.role === "admin"
     ) {
 
       location.replace(
@@ -133,7 +142,7 @@ form.addEventListener(
 
 
     if (
-      user.role === "student"
+      profile.role === "student"
     ) {
 
       location.replace(
