@@ -4,55 +4,134 @@ import {
 from "./supabase.js";
 
 
+const REQUEST_TIMEOUT =
+  10000;
+
+
+function timeoutPromise(
+  promise,
+  message
+) {
+
+  return Promise.race([
+
+    promise,
+
+    new Promise(
+      (_, reject) => {
+
+        setTimeout(
+          () => {
+
+            reject(
+              new Error(
+                message
+              )
+            );
+
+          },
+          REQUEST_TIMEOUT
+        );
+
+      }
+    )
+
+  ]);
+
+}
+
+
+/*
+ * 現在ログイン中のUser
+ */
+
 export async function getUser() {
 
-  const {
-    data,
-    error
-  } =
-    await supabase.auth.getUser();
+  const result =
+    await timeoutPromise(
+      supabase.auth.getUser(),
+      "Supabaseへの接続がタイムアウトしました。"
+    );
 
 
-  if (error) {
+  if (
+    result.error
+  ) {
 
     console.error(
       "AUTH ERROR:",
-      error
+      result.error
     );
 
-    throw error;
+    throw result.error;
+
   }
 
 
-  return data?.user || null;
+  if (
+    !result.data?.user
+  ) {
+
+    throw new Error(
+      "ログイン情報がありません。"
+    );
+
+  }
+
+
+  return result.data.user;
+
 }
 
+
+/*
+ * usersプロフィール
+ */
 
 export async function getProfile() {
 
-  const {
-    data,
-    error
-  } =
-    await supabase.rpc(
-      "get_current_profile"
+  const result =
+    await timeoutPromise(
+      supabase.rpc(
+        "get_current_profile"
+      ),
+      "ユーザー情報の取得がタイムアウトしました。"
     );
 
 
-  if (error) {
+  if (
+    result.error
+  ) {
 
     console.error(
       "PROFILE ERROR:",
-      error
+      result.error
     );
 
-    throw error;
+    throw result.error;
+
   }
 
 
-  return data || null;
+  if (
+    !result.data
+  ) {
+
+    throw new Error(
+      "usersにユーザー情報がありません。"
+    );
+
+  }
+
+
+  return result.data;
+
 }
 
+
+/*
+ * Admin
+ */
 
 export async function requireAdmin() {
 
@@ -61,8 +140,8 @@ export async function requireAdmin() {
 
 
   if (
-    !profile ||
-    profile.role !== "admin"
+    profile.role !==
+    "admin"
   ) {
 
     location.replace(
@@ -70,12 +149,18 @@ export async function requireAdmin() {
     );
 
     return null;
+
   }
 
 
   return profile;
+
 }
 
+
+/*
+ * Student
+ */
 
 export async function requireStudent() {
 
@@ -84,8 +169,8 @@ export async function requireStudent() {
 
 
   if (
-    !profile ||
-    profile.role !== "student"
+    profile.role !==
+    "student"
   ) {
 
     location.replace(
@@ -93,12 +178,18 @@ export async function requireStudent() {
     );
 
     return null;
+
   }
 
 
   return profile;
+
 }
 
+
+/*
+ * ログアウト
+ */
 
 export async function logout() {
 
@@ -107,7 +198,9 @@ export async function logout() {
     await supabase.auth.signOut();
 
   }
-  catch (error) {
+  catch (
+    error
+  ) {
 
     console.error(
       "LOGOUT ERROR:",
@@ -118,9 +211,19 @@ export async function logout() {
 
 
   /*
-   * セッションが残っていても
-   * ログイン画面へ戻す
+   * ローカルに残っている
+   * Supabaseセッションも削除
    */
+
+  try {
+
+    localStorage.removeItem(
+      "supabase.auth.token"
+    );
+
+  }
+  catch {}
+
 
   location.replace(
     "/login/"
