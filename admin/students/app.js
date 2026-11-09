@@ -11,86 +11,122 @@ import {
 from "../../assets/js/supabase.js";
 
 import {
-  escapeHtml,
-  showError
+  escapeHtml
 }
 from "../../assets/js/common.js";
 
 
-async function start() {
-
-  const admin =
-    await requireAdmin();
-
-
-  if (!admin) {
-    return;
-  }
-
-
+const formCard =
   document.getElementById(
-    "logout"
-  ).onclick =
-    logout;
+    "formCard"
+  );
 
-
-  const formCard =
-    document.getElementById(
-      "formCard"
-    );
-
-
-  const message =
-    document.getElementById(
-      "message"
-    );
-
-
+const showFormButton =
   document.getElementById(
     "showForm"
-  ).onclick = () => {
+  );
 
-    formCard.classList.remove(
-      "hidden"
-    );
-
-  };
-
-
+const cancelButton =
   document.getElementById(
     "cancel"
-  ).onclick = () => {
+  );
 
-    formCard.classList.add(
-      "hidden"
-    );
-
-    message.textContent =
-      "";
-
-  };
-
-
+const createButton =
   document.getElementById(
     "create"
-  ).onclick =
-    () => createStudent(
-      message,
-      formCard
-    );
+  );
+
+const logoutButton =
+  document.getElementById(
+    "logout"
+  );
+
+const message =
+  document.getElementById(
+    "message"
+  );
+
+const studentsContainer =
+  document.getElementById(
+    "students"
+  );
 
 
-  await loadStudents();
+/*
+ * ========================================
+ * 最初にボタンを動かす
+ * ========================================
+ */
 
-}
 
+/*
+ * 生徒追加を開く
+ */
+
+showFormButton.onclick = () => {
+
+  formCard.classList.remove(
+    "hidden"
+  );
+
+  message.textContent =
+    "";
+
+};
+
+
+/*
+ * 生徒追加を閉じる
+ */
+
+cancelButton.onclick = () => {
+
+  formCard.classList.add(
+    "hidden"
+  );
+
+  message.textContent =
+    "";
+
+};
+
+
+/*
+ * ログアウト
+ */
+
+logoutButton.onclick = async () => {
+
+  await logout();
+
+};
+
+
+/*
+ * 生徒登録
+ */
+
+createButton.onclick = async () => {
+
+  await createStudent();
+
+};
+
+
+/*
+ * ========================================
+ * 生徒一覧
+ * ========================================
+ */
 
 async function loadStudents() {
 
-  const container =
-    document.getElementById(
-      "students"
-    );
+  studentsContainer.innerHTML =
+    `
+    <div class="list-row">
+      生徒を読み込んでいます。
+    </div>
+    `;
 
 
   const {
@@ -100,7 +136,7 @@ async function loadStudents() {
     await supabase
       .from("users")
       .select(
-        "id,display_name"
+        "id,display_name,role"
       )
       .eq(
         "role",
@@ -115,7 +151,12 @@ async function loadStudents() {
 
 
   if (error) {
-    throw error;
+
+    throw new Error(
+      "生徒取得エラー: " +
+      error.message
+    );
+
   }
 
 
@@ -124,18 +165,19 @@ async function loadStudents() {
     data.length === 0
   ) {
 
-    container.innerHTML =
+    studentsContainer.innerHTML =
       `
       <div class="list-row">
-        Studentは登録されていません。
+        登録されている生徒はいません。
       </div>
       `;
 
     return;
+
   }
 
 
-  container.innerHTML =
+  studentsContainer.innerHTML =
     data.map(
       student => `
 
@@ -153,10 +195,13 @@ async function loadStudents() {
 }
 
 
-async function createStudent(
-  message,
-  formCard
-) {
+/*
+ * ========================================
+ * 生徒登録
+ * ========================================
+ */
+
+async function createStudent() {
 
   const displayName =
     document.getElementById(
@@ -177,14 +222,20 @@ async function createStudent(
     ).value;
 
 
-  if (
-    !displayName ||
-    !email ||
-    !password
-  ) {
+  if (!displayName) {
 
     message.textContent =
-      "氏名、メールアドレス、パスワードを入力してください。";
+      "氏名を入力してください。";
+
+    return;
+
+  }
+
+
+  if (!email) {
+
+    message.textContent =
+      "メールアドレスを入力してください。";
 
     return;
 
@@ -203,15 +254,25 @@ async function createStudent(
   }
 
 
+  createButton.disabled =
+    true;
+
+
   message.textContent =
     "登録しています。";
 
 
   try {
 
+    /*
+     * 現在のAdminセッション
+     */
+
     const {
-      data: sessionData,
-      error: sessionError
+      data:
+        sessionData,
+      error:
+        sessionError
     } =
       await supabase.auth
         .getSession();
@@ -219,15 +280,19 @@ async function createStudent(
 
     if (
       sessionError ||
-      !sessionData.session
+      !sessionData?.session
     ) {
 
       throw new Error(
-        "ログインセッションがありません。"
+        "管理者のログインセッションがありません。"
       );
 
     }
 
+
+    /*
+     * Edge Function
+     */
 
     const response =
       await fetch(
@@ -251,6 +316,7 @@ async function createStudent(
 
           body:
             JSON.stringify({
+
               display_name:
                 displayName,
 
@@ -264,7 +330,7 @@ async function createStudent(
       );
 
 
-    const text =
+    const responseText =
       await response.text();
 
 
@@ -275,7 +341,7 @@ async function createStudent(
 
       result =
         JSON.parse(
-          text
+          responseText
         );
 
     }
@@ -283,27 +349,38 @@ async function createStudent(
 
       result = {
         error:
-          text
+          responseText
       };
 
     }
 
 
     if (
-      !response.ok ||
+      !response.ok
+    ) {
+
+      throw new Error(
+        result.error ||
+        `Edge Function Error: ${response.status}`
+      );
+
+    }
+
+
+    if (
       !result.success
     ) {
 
       throw new Error(
         result.error ||
-        "Student登録に失敗しました。"
+        "生徒登録に失敗しました。"
       );
 
     }
 
 
     message.textContent =
-      "Studentを登録しました。";
+      "生徒を登録しました。";
 
 
     document.getElementById(
@@ -340,29 +417,76 @@ async function createStudent(
 
     message.textContent =
       "登録エラー: " +
-      error.message;
+      (
+        error.message ||
+        "生徒登録に失敗しました。"
+      );
+
+  }
+  finally {
+
+    createButton.disabled =
+      false;
 
   }
 
 }
 
 
-start()
-  .catch(
-    error => {
+/*
+ * ========================================
+ * 起動
+ * ========================================
+ */
 
-      console.error(
-        "STUDENT PAGE ERROR:",
-        error
-      );
+(async () => {
+
+  try {
+
+    const admin =
+      await requireAdmin();
 
 
-      showError(
-        error.message,
-        document.querySelector(
-          ".admin-content"
-        )
-      );
-
+    if (!admin) {
+      return;
     }
-  );
+
+
+    await loadStudents();
+
+  }
+  catch (error) {
+
+    console.error(
+      "STUDENT PAGE ERROR:",
+      error
+    );
+
+
+    studentsContainer.innerHTML =
+      `
+      <div class="page-error">
+
+        <h2>
+          生徒一覧を読み込めませんでした
+        </h2>
+
+        <p>
+          ${escapeHtml(
+            error.message ||
+            "予期しないエラーが発生しました。"
+          )}
+        </p>
+
+        <button
+          class="primary-button"
+          onclick="location.reload()">
+          再読み込み
+        </button>
+
+      </div>
+      `;
+
+  }
+
+})();
