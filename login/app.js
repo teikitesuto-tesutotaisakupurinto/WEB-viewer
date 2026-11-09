@@ -44,10 +44,9 @@ form.addEventListener(
 
     if (loginError) {
 
-      console.error(loginError);
-
       message.textContent =
-        "メールアドレスまたはパスワードが正しくありません。";
+        "ログインエラー: " +
+        loginError.message;
 
       button.disabled = false;
 
@@ -62,18 +61,12 @@ form.addEventListener(
     if (!user) {
 
       message.textContent =
-        "ログイン情報を取得できませんでした。";
+        "ユーザーを取得できませんでした。";
 
       button.disabled = false;
 
       return;
     }
-
-
-    console.log(
-      "ログインUID:",
-      user.id
-    );
 
 
     const {
@@ -92,69 +85,20 @@ form.addEventListener(
         .maybeSingle();
 
 
-    console.log(
-      "プロフィール:",
-      profile
-    );
+    message.style.color = "#222";
 
-    console.log(
-      "プロフィール取得エラー:",
-      profileError
-    );
-
-
-    if (profileError) {
-
-      console.error(
-        profileError
-      );
-
-      message.textContent =
-        "ユーザー情報の取得に失敗しました。";
-
-      button.disabled = false;
-
-      return;
-    }
+    message.innerHTML = `
+      UID: ${user.id}<br>
+      Profile ID: ${profile?.id || "なし"}<br>
+      Role: ${profile?.role || "なし"}<br>
+      Error: ${profileError?.message || "なし"}
+    `;
 
 
-    if (!profile) {
+    console.log("LOGIN USER:", user);
+    console.log("PROFILE:", profile);
+    console.log("PROFILE ERROR:", profileError);
 
-      message.textContent =
-        "ユーザー情報が登録されていません。";
-
-      button.disabled = false;
-
-      return;
-    }
-
-
-    if (
-      profile.role === "admin"
-    ) {
-
-      location.replace(
-        "../admin/"
-      );
-
-      return;
-    }
-
-
-    if (
-      profile.role === "student"
-    ) {
-
-      location.replace(
-        "../student/"
-      );
-
-      return;
-    }
-
-
-    message.textContent =
-      "ユーザー権限が設定されていません。";
 
     button.disabled = false;
 
