@@ -6,6 +6,13 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+}
+
+body {
+
+  background: #2d2d2d;
+
+  color: #fff;
 
   font-family:
     system-ui,
@@ -13,13 +20,15 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-
-  background: #2d2d2d;
-  color: #fff;
 }
 
 
+/* =========================
+   Sidebar
+   ========================= */
+
 .student-side {
+
   position: fixed;
 
   top: 0;
@@ -29,21 +38,25 @@ body {
   width: 250px;
 
   background: #fff;
+
   color: #222;
 
   border-right: 1px solid #ddd;
 
-  z-index: 100;
+  z-index: 1000;
 }
 
 
 .student-brand {
+
   height: 150px;
 
   display: flex;
+
   flex-direction: column;
 
   align-items: center;
+
   justify-content: center;
 
   border-bottom: 1px solid #ddd;
@@ -51,12 +64,15 @@ body {
 
 
 .brand-title {
+
   font-size: 28px;
+
   font-weight: 800;
 }
 
 
 .brand-subtitle {
+
   margin-top: 5px;
 
   color: #777;
@@ -66,12 +82,14 @@ body {
 
 
 .student-side nav {
+
   padding-top: 12px;
 }
 
 
 .student-side nav a,
 .student-side nav button {
+
   display: block;
 
   width: 100%;
@@ -85,9 +103,11 @@ body {
   color: #222;
 
   text-align: left;
+
   text-decoration: none;
 
   font: inherit;
+
   font-weight: 600;
 
   cursor: pointer;
@@ -96,17 +116,25 @@ body {
 
 .student-side nav a:hover,
 .student-side nav button:hover {
+
   background: #f2f2f2;
 }
 
 
 .student-side nav .active {
+
   background: #d5ca3d;
+
   color: #fff;
 }
 
 
+/* =========================
+   Main
+   ========================= */
+
 .student-main {
+
   min-height: 100vh;
 
   margin-left: 250px;
@@ -116,9 +144,11 @@ body {
 
 
 .student-notice {
+
   height: 50px;
 
   display: flex;
+
   align-items: center;
 
   gap: 12px;
@@ -134,6 +164,7 @@ body {
 
 
 .notice-title {
+
   padding: 6px 15px;
 
   border-radius: 20px;
@@ -143,16 +174,19 @@ body {
   color: #fff;
 
   font-size: 13px;
+
   font-weight: 700;
 }
 
 
 .student-content {
+
   padding: 40px;
 }
 
 
 .content-heading {
+
   display: flex;
 
   align-items: flex-end;
@@ -161,11 +195,12 @@ body {
 
   gap: 20px;
 
-  margin-bottom: 30px;
+  margin-bottom: 25px;
 }
 
 
 .content-heading h1 {
+
   margin: 0;
 
   font-size: 34px;
@@ -173,6 +208,7 @@ body {
 
 
 .content-heading p {
+
   margin: 6px 0 0;
 
   color: #aaa;
@@ -180,13 +216,143 @@ body {
 
 
 #studentName {
+
   color: #ddd;
 
   font-size: 14px;
 }
 
 
+/* =========================
+   シリアル登録
+   ========================= */
+
+.register-card {
+
+  margin-bottom: 30px;
+
+  padding: 22px;
+
+  background: #fff;
+
+  color: #222;
+
+  border-radius: 12px;
+
+  border: 1px solid #ddd;
+}
+
+
+.register-card h2 {
+
+  margin: 0;
+
+  font-size: 20px;
+}
+
+
+.register-card p {
+
+  margin: 6px 0 0;
+
+  color: #777;
+
+  font-size: 13px;
+}
+
+
+.register-form {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 18px;
+}
+
+
+.register-form input {
+
+  flex: 1;
+
+  min-width: 0;
+
+  margin: 0;
+
+  padding: 12px 14px;
+
+  border: 1px solid #bbb;
+
+  border-radius: 8px;
+
+  background: #fff;
+
+  color: #222;
+
+  font-size: 16px;
+
+  letter-spacing: 1px;
+}
+
+
+.register-button {
+
+  flex: 0 0 auto;
+
+  padding: 12px 22px;
+
+  border: 0;
+
+  border-radius: 8px;
+
+  background: #d5ca3d;
+
+  color: #222;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+
+.register-button:hover {
+
+  background: #c9be32;
+}
+
+
+.register-button:disabled {
+
+  opacity: .6;
+
+  cursor: default;
+}
+
+
+.register-message {
+
+  min-height: 20px;
+
+  margin-top: 12px !important;
+
+  color: #444 !important;
+}
+
+
+.register-message.error {
+
+  color: #b00020 !important;
+}
+
+
+/* =========================
+   Books
+   ========================= */
+
 .book-grid {
+
   display: grid;
 
   grid-template-columns:
@@ -200,6 +366,7 @@ body {
 
 
 .book-card {
+
   overflow: hidden;
 
   background: #414141;
@@ -215,21 +382,25 @@ body {
 
 
 .book-card:hover {
-  transform: translateY(-3px);
+
+  transform:
+    translateY(-3px);
 
   background: #484848;
 }
 
 
 .book-cover {
+
   aspect-ratio: .72;
+
+  overflow: hidden;
 
   display: flex;
 
   align-items: center;
-  justify-content: center;
 
-  overflow: hidden;
+  justify-content: center;
 
   background: #eee;
 }
@@ -237,27 +408,19 @@ body {
 
 .book-cover canvas,
 .book-cover img {
+
   display: block;
 
   width: 100%;
+
   height: 100%;
 
   object-fit: cover;
 }
 
 
-.book-placeholder {
-  padding: 20px;
-
-  color: #777;
-
-  text-align: center;
-
-  font-size: 13px;
-}
-
-
 .book-info {
+
   min-height: 92px;
 
   padding: 13px;
@@ -265,9 +428,7 @@ body {
 
 
 .book-title {
-  color: #fff;
 
-  font-size: 14px;
   font-weight: 700;
 
   line-height: 1.45;
@@ -275,6 +436,7 @@ body {
 
 
 .book-description {
+
   margin-top: 5px;
 
   color: #bbb;
@@ -282,18 +444,11 @@ body {
   font-size: 11px;
 
   line-height: 1.45;
-
-  display: -webkit-box;
-
-  -webkit-line-clamp: 2;
-
-  -webkit-box-orient: vertical;
-
-  overflow: hidden;
 }
 
 
 .book-open {
+
   display: inline-block;
 
   margin-top: 9px;
@@ -307,14 +462,16 @@ body {
   color: #222;
 
   font-size: 12px;
+
   font-weight: 600;
 }
 
 
 .book-empty {
+
   grid-column: 1 / -1;
 
-  padding: 80px 20px;
+  padding: 70px 20px;
 
   color: #aaa;
 
@@ -322,46 +479,113 @@ body {
 }
 
 
-@media(max-width:700px) {
+/* =========================
+   Error
+   ========================= */
+
+.page-error {
+
+  grid-column: 1 / -1;
+
+  padding: 30px;
+
+  background: #fff;
+
+  color: #222;
+
+  border-radius: 10px;
+
+  border-left: 5px solid #d5ca3d;
+}
+
+
+.page-error p {
+
+  color: #666;
+
+  white-space: pre-wrap;
+}
+
+
+.page-error button {
+
+  padding: 10px 17px;
+
+  border: 0;
+
+  border-radius: 8px;
+
+  background: #d5ca3d;
+
+  font-weight: 700;
+}
+
+
+/* =========================
+   Mobile
+   ========================= */
+
+@media (max-width: 700px) {
 
   .student-side {
-    position: static;
 
-    width: 100%;
-  }
+    width: 190px;
 
-
-  .student-side nav {
-    display: flex;
-
-    overflow-x: auto;
-  }
-
-
-  .student-side nav a,
-  .student-side nav button {
-    width: auto;
-
-    white-space: nowrap;
   }
 
 
   .student-main {
-    margin-left: 0;
+
+    margin-left: 190px;
+
+  }
+
+
+  .student-brand {
+
+    height: 120px;
+
+  }
+
+
+  .brand-title {
+
+    font-size: 22px;
+
   }
 
 
   .student-content {
-    padding: 25px 18px;
+
+    padding: 25px 15px;
+
+  }
+
+
+  .register-form {
+
+    flex-direction: column;
+
+    align-items: stretch;
+
+  }
+
+
+  .register-button {
+
+    width: 100%;
+
   }
 
 
   .book-grid {
+
     grid-template-columns:
       repeat(
         auto-fill,
-        minmax(145px, 1fr)
+        minmax(140px, 1fr)
       );
+
   }
 
 }
