@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="ja">
+
 <head>
 
 <meta charset="UTF-8">
@@ -21,3 +24,174 @@
   href="style.css">
 
 </head>
+
+<body>
+
+<aside class="admin-side">
+
+<div class="admin-brand">
+
+<div>
+WEB-viewer
+</div>
+
+<small>
+管理システム
+</small>
+
+</div>
+
+
+<nav>
+
+<a href="../">
+ダッシュボード
+</a>
+
+<a href="../books/">
+Book管理
+</a>
+
+<a href="../serials/">
+シリアル管理
+</a>
+
+<a href="../students/">
+Student管理
+</a>
+
+<a href="../materials/">
+資料配信
+</a>
+
+<a href="../b4/">
+B4資料
+</a>
+
+<a
+  class="active"
+  href="./">
+システム管理
+</a>
+
+<button id="logout">
+ログアウト
+</button>
+
+</nav>
+
+</aside>
+
+
+<main class="admin-main">
+
+<header class="admin-notice">
+
+<div>
+お知らせ
+</div>
+
+<span>
+システム管理
+</span>
+
+</header>
+
+
+<section class="admin-content">
+
+<div class="page-heading">
+
+<div>
+
+<h1>
+システム管理
+</h1>
+
+<p>
+WEB-viewerの運用設定
+</p>
+
+</div>
+
+</div>
+
+
+<section class="admin-card">
+
+<h2>
+メンテナンス設定
+</h2>
+
+
+<div class="maintenance-setting">
+
+<div>
+
+<h3>
+メンテナンスモード
+</h3>
+
+<p>
+Student側にメンテナンス画面を表示します。
+</p>
+
+</div>
+
+
+<label class="switch">
+
+<input
+  id="maintenanceEnabled"
+  type="checkbox">
+
+<span class="slider">
+</span>
+
+</label>
+
+</div>
+
+
+<label>
+
+メンテナンス表示文
+
+<textarea
+  id="maintenanceMessage"
+  rows="5"></textarea>
+
+</label>
+
+
+<div class="toolbar">
+
+<button
+  id="save"
+  class="primary-button">
+保存
+</button>
+
+</div>
+
+
+<p
+  id="message"
+  class="message">
+</p>
+
+</section>
+
+</section>
+
+</main>
+
+
+<script
+  type="module"
+  src="app.js?v=maintenance-2">
+</script>
+
+</body>
+
+</html>
