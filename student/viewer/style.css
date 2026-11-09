@@ -34,6 +34,8 @@ body {
 }
 
 .viewer-bar button {
+  flex: 0 0 auto;
+
   white-space: nowrap;
 
   padding: 8px 11px;
@@ -78,10 +80,10 @@ body {
 }
 
 #pdfCanvas {
-  display: block;
+  display: none;
 }
 
-#imagePage {
+.image-page {
   display: none;
 
   max-width: none;
