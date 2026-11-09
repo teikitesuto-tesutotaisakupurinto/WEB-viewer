@@ -24,11 +24,17 @@ const {
   await supabase
     .from("system_settings")
     .select("*")
-    .eq("id", true)
+    .eq(
+      "id",
+      true
+    )
     .single();
 
 
-if (!error && data) {
+if (
+  !error &&
+  data
+) {
 
   document.getElementById(
     "maintenance"
@@ -41,27 +47,6 @@ if (!error && data) {
     data.maintenance_message;
 
 }
-
-
-document.getElementById(
-  "maintenance"
-).addEventListener(
-  "change",
-  event => {
-
-    if (
-      event.target.checked &&
-      !confirm(
-        "メンテナンスモードにしますか？"
-      )
-    ) {
-
-      event.target.checked =
-        false;
-    }
-
-  }
-);
 
 
 document.getElementById(
@@ -91,21 +76,28 @@ document.getElementById(
         updated_at:
           new Date().toISOString()
       })
-      .eq("id", true);
+      .eq(
+        "id",
+        true
+      );
 
 
   if (error) {
 
-    alert(
-      "保存に失敗しました。"
-    );
+    console.error(error);
+
+    document.getElementById(
+      "result"
+    ).textContent =
+      "保存に失敗しました。";
 
     return;
   }
 
 
-  alert(
-    "保存しました。"
-  );
+  document.getElementById(
+    "result"
+  ).textContent =
+    "保存しました。";
 
 };
