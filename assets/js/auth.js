@@ -1,14 +1,14 @@
+
 import {
   supabase
 }
 from "./supabase.js";
 
 
-const REQUEST_TIMEOUT =
-  10000;
+const TIMEOUT = 8000;
 
 
-function timeoutPromise(
+function withTimeout(
   promise,
   message
 ) {
@@ -30,7 +30,7 @@ function timeoutPromise(
             );
 
           },
-          REQUEST_TIMEOUT
+          TIMEOUT
         );
 
       }
@@ -42,38 +42,27 @@ function timeoutPromise(
 
 
 /*
- * 現在ログイン中のUser
+ * 現在のログインユーザー
  */
 
 export async function getUser() {
 
   const result =
-    await timeoutPromise(
+    await withTimeout(
       supabase.auth.getUser(),
-      "Supabaseへの接続がタイムアウトしました。"
+      "ログイン情報の取得がタイムアウトしました。"
     );
 
 
-  if (
-    result.error
-  ) {
-
-    console.error(
-      "AUTH ERROR:",
-      result.error
-    );
-
+  if (result.error) {
     throw result.error;
-
   }
 
 
-  if (
-    !result.data?.user
-  ) {
+  if (!result.data?.user) {
 
     throw new Error(
-      "ログイン情報がありません。"
+      "ログインしてください。"
     );
 
   }
@@ -85,37 +74,45 @@ export async function getUser() {
 
 
 /*
- * usersプロフィール
+ * プロフィール
  */
 
 export async function getProfile() {
 
+  const user =
+    await getUser();
+
+
+  /*
+   * RPCが固まる場合に備えて
+   * 直接usersを取得
+   */
+
   const result =
-    await timeoutPromise(
-      supabase.rpc(
-        "get_current_profile"
-      ),
+    await withTimeout(
+      supabase
+        .from("users")
+        .select(
+          "id,display_name,role"
+        )
+        .eq(
+          "id",
+          user.id
+        )
+        .maybeSingle(),
+
       "ユーザー情報の取得がタイムアウトしました。"
     );
 
 
-  if (
-    result.error
-  ) {
-
-    console.error(
-      "PROFILE ERROR:",
-      result.error
-    );
+  if (result.error) {
 
     throw result.error;
 
   }
 
 
-  if (
-    !result.data
-  ) {
+  if (!result.data) {
 
     throw new Error(
       "usersにユーザー情報がありません。"
@@ -198,9 +195,7 @@ export async function logout() {
     await supabase.auth.signOut();
 
   }
-  catch (
-    error
-  ) {
+  catch (error) {
 
     console.error(
       "LOGOUT ERROR:",
@@ -211,21 +206,10 @@ export async function logout() {
 
 
   /*
-   * ローカルに残っている
-   * Supabaseセッションも削除
+   * 強制的にログイン画面へ
    */
 
-  try {
-
-    localStorage.removeItem(
-      "supabase.auth.token"
-    );
-
-  }
-  catch {}
-
-
-  location.replace(
+  window.location.replace(
     "/login/"
   );
 
