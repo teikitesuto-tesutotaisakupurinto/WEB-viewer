@@ -3,19 +3,13 @@ from "../assets/js/supabase.js";
 
 
 const form =
-  document.getElementById(
-    "loginForm"
-  );
+  document.getElementById("loginForm");
 
 const message =
-  document.getElementById(
-    "message"
-  );
+  document.getElementById("message");
 
 const button =
-  document.getElementById(
-    "loginButton"
-  );
+  document.getElementById("loginButton");
 
 
 form.addEventListener(
@@ -30,19 +24,17 @@ form.addEventListener(
 
 
     const email =
-      document.getElementById(
-        "email"
-      ).value.trim();
-
+      document.getElementById("email")
+        .value
+        .trim();
 
     const password =
-      document.getElementById(
-        "password"
-      ).value;
+      document.getElementById("password")
+        .value;
 
 
     const {
-      data: login,
+      data: loginData,
       error: loginError
     } =
       await supabase.auth
@@ -54,12 +46,16 @@ form.addEventListener(
 
     if (loginError) {
 
-      console.error(
-        loginError
-      );
+      message.style.color = "#b00020";
 
       message.textContent =
-        "ログインできませんでした。";
+        "ログインエラー: " +
+        loginError.message;
+
+      console.error(
+        "LOGIN ERROR",
+        loginError
+      );
 
       button.disabled = false;
 
@@ -67,7 +63,9 @@ form.addEventListener(
     }
 
 
-    if (!login.user) {
+    if (!loginData?.user) {
+
+      message.style.color = "#b00020";
 
       message.textContent =
         "ログインユーザーを取得できませんでした。";
@@ -79,8 +77,8 @@ form.addEventListener(
 
 
     console.log(
-      "UID:",
-      login.user.id
+      "LOGIN UID:",
+      loginData.user.id
     );
 
 
@@ -94,20 +92,23 @@ form.addEventListener(
 
 
     console.log(
-      "Profile:",
+      "PROFILE:",
       profile
     );
 
     console.log(
-      "Profile error:",
+      "PROFILE ERROR:",
       profileError
     );
 
 
     if (profileError) {
 
+      message.style.color = "#b00020";
+
       message.textContent =
-        "ユーザー情報の取得に失敗しました。";
+        "Supabaseエラー: " +
+        profileError.message;
 
       button.disabled = false;
 
@@ -117,13 +118,21 @@ form.addEventListener(
 
     if (!profile) {
 
+      message.style.color = "#b00020";
+
       message.textContent =
-        "ユーザー情報が登録されていません。";
+        "usersに該当するユーザーがありません。";
 
       button.disabled = false;
 
       return;
     }
+
+
+    console.log(
+      "PROFILE RESULT:",
+      profile
+    );
 
 
     if (
@@ -150,8 +159,11 @@ form.addEventListener(
     }
 
 
+    message.style.color = "#b00020";
+
     message.textContent =
-      "ユーザー権限が設定されていません。";
+      "不明な権限です: " +
+      String(profile.role);
 
     button.disabled = false;
 
