@@ -1,81 +1,23 @@
-<!DOCTYPE html>
-<html lang="ja">
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
 <title>教材登録シート</title>
-<link rel="stylesheet" href="../../assets/css/common.css">
-<link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="style.css">
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
+<link
+  rel="stylesheet"
+  href="../style.css">
+
+<link
+  rel="stylesheet"
+  href="style.css">
+
 </head>
-
-<body>
-
-<aside class="admin-side">
-
-<div class="admin-brand">
-<div>WEB-viewer</div>
-<small>管理システム</small>
-</div>
-
-<nav>
-<a href="../">ダッシュボード</a>
-<a href="../books/">Book管理</a>
-<a href="../serials/">シリアル管理</a>
-<a href="../students/">Student管理</a>
-<a href="../materials/">資料配信</a>
-<a class="active" href="./">B4資料</a>
-<a href="../system/">システム管理</a>
-</nav>
-
-</aside>
-
-<main class="admin-main">
-
-<header class="admin-notice">
-<div>お知らせ</div>
-<span>B4資料</span>
-</header>
-
-<section class="admin-content">
-
-<h1>B4資料</h1>
-
-<section class="admin-card">
-
-<label>
-Book
-<select id="book"></select>
-</label>
-
-<div class="select-title">
-Student
-</div>
-
-<label class="select-all">
-<input id="selectAll" type="checkbox">
-全Studentを選択
-</label>
-
-<div id="students"></div>
-
-<button
-id="create"
-class="yellow-button">
-教材登録シートを作成
-</button>
-
-<p id="message"></p>
-
-</section>
-
-<section id="sheets"></section>
-
-</section>
-
-</main>
-
-<script type="module" src="app.js"></script>
-
-</body>
-</html>
