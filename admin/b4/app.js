@@ -10,8 +10,7 @@ import {
 from "../../assets/js/supabase.js";
 
 import {
-  escapeHtml,
-  showError
+  escapeHtml
 }
 from "../../assets/js/common.js";
 
@@ -21,7 +20,6 @@ async function start() {
   const admin =
     await requireAdmin();
 
-
   if (!admin) {
     return;
   }
@@ -30,17 +28,19 @@ async function start() {
   document.getElementById(
     "logout"
   ).onclick =
-    logout;
+    event => {
+
+      event.preventDefault();
+
+      logout();
+
+    };
 
 
-  const selectAll =
-    document.getElementById(
-      "selectAll"
-    );
-
-
-  selectAll.onchange =
-    () => {
+  document.getElementById(
+    "selectAll"
+  ).onchange =
+    event => {
 
       document
         .querySelectorAll(
@@ -50,7 +50,7 @@ async function start() {
           checkbox => {
 
             checkbox.checked =
-              selectAll.checked;
+              event.target.checked;
 
           }
         );
@@ -99,10 +99,6 @@ async function start() {
   await loadStudents();
 
 
-  /*
-   * Book
-   */
-
   async function loadBooks() {
 
     const {
@@ -119,10 +115,7 @@ async function start() {
           true
         )
         .order(
-          "title",
-          {
-            ascending: true
-          }
+          "title"
         );
 
 
@@ -131,50 +124,28 @@ async function start() {
     }
 
 
-    const select =
-      document.getElementById(
-        "book"
-      );
-
-
-    select.innerHTML =
+    document.getElementById(
+      "book"
+    ).innerHTML =
       `
       <option value="">
         Bookを選択してください
       </option>
-      `;
+      ` +
+      (data || []).map(
+        book => `
 
+        <option value="${book.id}">
+          ${escapeHtml(
+            book.title
+          )}
+        </option>
 
-    (data || []).forEach(
-      book => {
-
-        const option =
-          document.createElement(
-            "option"
-          );
-
-
-        option.value =
-          book.id;
-
-
-        option.textContent =
-          book.title;
-
-
-        select.appendChild(
-          option
-        );
-
-      }
-    );
+        `
+      ).join("");
 
   }
 
-
-  /*
-   * Student
-   */
 
   async function loadStudents() {
 
@@ -192,10 +163,7 @@ async function start() {
           "student"
         )
         .order(
-          "display_name",
-          {
-            ascending: true
-          }
+          "display_name"
         );
 
 
@@ -204,65 +172,32 @@ async function start() {
     }
 
 
-    const box =
-      document.getElementById(
-        "students"
-      );
-
-
-    if (
-      !data ||
-      data.length === 0
-    ) {
-
-      box.innerHTML =
-        `
-        <div class="list-row">
-          Studentが登録されていません。
-        </div>
-        `;
-
-      return;
-
-    }
-
-
-    box.innerHTML =
-      data.map(
+    document.getElementById(
+      "students"
+    ).innerHTML =
+      (data || []).map(
         student => `
 
-<label class="student-row">
+        <label class="student-row">
 
-<input
-  class="student-check"
-  type="checkbox"
-  value="${student.id}">
+          <input
+            class="student-check"
+            type="checkbox"
+            value="${student.id}">
 
-<span>
-${escapeHtml(
-  student.display_name
-)}
-</span>
+          ${escapeHtml(
+            student.display_name
+          )}
 
-</label>
+        </label>
 
-`
+        `
       ).join("");
 
   }
 
 
-  /*
-   * B4作成
-   */
-
   async function createB4() {
-
-    const message =
-      document.getElementById(
-        "message"
-      );
-
 
     const bookId =
       document.getElementById(
@@ -270,7 +205,7 @@ ${escapeHtml(
       ).value;
 
 
-    const studentIds =
+    const ids =
       Array.from(
         document.querySelectorAll(
           ".student-check:checked"
@@ -278,6 +213,12 @@ ${escapeHtml(
       ).map(
         checkbox =>
           checkbox.value
+      );
+
+
+    const message =
+      document.getElementById(
+        "message"
       );
 
 
@@ -291,27 +232,17 @@ ${escapeHtml(
     }
 
 
-    if (
-      studentIds.length === 0
-    ) {
+    if (!ids.length) {
 
       message.textContent =
-        "Studentを選択してください。";
+        "生徒を選択してください。";
 
       return;
 
     }
 
 
-    message.textContent =
-      "作成しています。";
-
-
     try {
-
-      /*
-       * Book
-       */
 
       const {
         data: book,
@@ -334,10 +265,6 @@ ${escapeHtml(
       }
 
 
-      /*
-       * License
-       */
-
       const {
         data: licenses,
         error: licenseError
@@ -353,7 +280,7 @@ ${escapeHtml(
           )
           .in(
             "student_id",
-            studentIds
+            ids
           );
 
 
@@ -373,10 +300,6 @@ ${escapeHtml(
         );
 
 
-      /*
-       * Student
-       */
-
       const {
         data: students,
         error: studentError
@@ -388,7 +311,7 @@ ${escapeHtml(
           )
           .in(
             "id",
-            studentIds
+            ids
           );
 
 
@@ -396,10 +319,6 @@ ${escapeHtml(
         throw studentError;
       }
 
-
-      /*
-       * QR
-       */
 
       if (
         !window.QRCode
@@ -423,7 +342,6 @@ ${escapeHtml(
 
             script.onload =
               resolve;
-
 
             script.onerror =
               reject;
@@ -449,8 +367,7 @@ ${escapeHtml(
         "";
 
 
-      let created =
-        0;
+      let count = 0;
 
 
       for (
@@ -481,40 +398,39 @@ ${escapeHtml(
 
         sheet.innerHTML = `
 
-<h2>
-WEB-viewer
-</h2>
+          <h2>
+            WEB-viewer
+          </h2>
 
-<div class="b4-book">
-${escapeHtml(
-  book.title
-)}
-</div>
+          <div class="b4-book">
+            ${escapeHtml(
+              book.title
+            )}
+          </div>
 
-<div class="b4-name">
-${escapeHtml(
-  student.display_name
-)}
-</div>
+          <div class="b4-name">
+            ${escapeHtml(
+              student.display_name
+            )}
+          </div>
 
-<div class="b4-qr">
-</div>
+          <div class="b4-qr"></div>
 
-<div class="b4-code">
-${escapeHtml(
-  code
-)}
-</div>
+          <div class="b4-code">
+            ${escapeHtml(
+              code
+            )}
+          </div>
 
-<p>
-WEB-viewerで教材を利用してください。
-</p>
+          <p>
+            WEB-viewerで教材を利用してください。
+          </p>
 
-<div class="b4-note">
-※ 紛失の場合はこちらでは対応しかねますのでご注意ください。
-</div>
+          <div class="b4-note">
+            ※ 紛失の場合はこちらでは対応しかねますのでご注意ください。
+          </div>
 
-`;
+        `;
 
 
         sheets.appendChild(
@@ -535,44 +451,23 @@ WEB-viewerで教材を利用してください。
 
             height:
               250
+
           }
         );
 
 
-        created++;
-
-      }
-
-
-      if (
-        created === 0
-      ) {
-
-        message.textContent =
-          "選択したStudentには発行済みシリアルがありません。";
-
-        return;
+        count++;
 
       }
 
 
       message.textContent =
-        `${created}人分のB4資料を作成しました。`;
-
-
-      /*
-       * 作成後に一覧やダウンロード欄は
-       * 追加しない。
-       */
+        count
+          ? `${count}人分のB4資料を作成しました。`
+          : "発行済みシリアルがありません。";
 
     }
     catch (error) {
-
-      console.error(
-        "B4 ERROR:",
-        error
-      );
-
 
       message.textContent =
         "作成エラー: " +
@@ -589,18 +484,25 @@ start()
   .catch(
     error => {
 
-      console.error(
-        "B4 PAGE ERROR:",
-        error
-      );
+      document.querySelector(
+        ".admin-content"
+      ).innerHTML += `
 
+        <div class="page-error">
 
-      showError(
-        error.message,
-        document.querySelector(
-          ".admin-content"
-        )
-      );
+          <h2>
+            B4画面を読み込めませんでした
+          </h2>
+
+          <p>
+            ${escapeHtml(
+              error.message
+            )}
+          </p>
+
+        </div>
+
+      `;
 
     }
   );
