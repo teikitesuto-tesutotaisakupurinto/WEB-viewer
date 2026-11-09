@@ -19,16 +19,29 @@ from "../assets/js/common.js";
 const profile =
   await requireAdmin();
 
+
 if (!profile) {
-  throw new Error("Unauthorized");
+
+  throw new Error(
+    "Admin authentication failed"
+  );
+
 }
 
+
+/*
+ * Admin名
+ */
 
 document.getElementById(
   "name"
 ).textContent =
-  profile.display_name;
+  profile.display_name || "";
 
+
+/*
+ * サイドバー
+ */
 
 document.getElementById(
   "menu"
@@ -42,53 +55,124 @@ document.getElementById(
   closeDrawer;
 
 
+/*
+ * ログアウト
+ */
+
 document.getElementById(
   "logout"
 ).onclick =
   logout;
 
 
-const books =
+/*
+ * Books件数
+ */
+
+const {
+  count: bookCount,
+  error: bookError
+} =
   await supabase
     .from("books")
-    .select("id", {
-      count: "exact",
-      head: true
-    });
+    .select(
+      "id",
+      {
+        count: "exact",
+        head: true
+      }
+    );
 
 
-const licenses =
+if (bookError) {
+
+  console.error(
+    "Books count error:",
+    bookError
+  );
+
+}
+
+
+/*
+ * シリアル件数
+ */
+
+const {
+  count: licenseCount,
+  error: licenseError
+} =
   await supabase
     .from("licenses")
-    .select("id", {
-      count: "exact",
-      head: true
-    });
+    .select(
+      "id",
+      {
+        count: "exact",
+        head: true
+      }
+    );
 
 
-const students =
+if (licenseError) {
+
+  console.error(
+    "License count error:",
+    licenseError
+  );
+
+}
+
+
+/*
+ * Student件数
+ */
+
+const {
+  count: studentCount,
+  error: studentError
+} =
   await supabase
     .from("users")
-    .select("id", {
-      count: "exact",
-      head: true
-    })
-    .eq("role", "student");
+    .select(
+      "id",
+      {
+        count: "exact",
+        head: true
+      }
+    )
+    .eq(
+      "role",
+      "student"
+    );
 
+
+if (studentError) {
+
+  console.error(
+    "Student count error:",
+    studentError
+  );
+
+}
+
+
+/*
+ * 表示
+ */
 
 document.getElementById(
   "bookCount"
 ).textContent =
-  books.count || 0;
+  bookCount || 0;
 
 
 document.getElementById(
   "licenseCount"
 ).textContent =
-  licenses.count || 0;
+  licenseCount || 0;
 
 
 document.getElementById(
   "studentCount"
 ).textContent =
-  students.count || 0;
+  studentCount || 0;
