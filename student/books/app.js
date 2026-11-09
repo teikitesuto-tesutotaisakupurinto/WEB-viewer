@@ -18,11 +18,8 @@ from "../../assets/js/common.js";
 const student =
   await requireStudent();
 
-
 if (!student) {
-  throw new Error(
-    "Unauthorized"
-  );
+  throw new Error("Unauthorized");
 }
 
 
@@ -44,27 +41,9 @@ const container =
   );
 
 
-/*
- * PDF.js
- */
-
-async function loadPdfJs() {
-
-  return await import(
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
-  );
-
-}
-
-
-/*
- * PDFの1ページ目を
- * Book表紙として描画
- */
-
-async function renderPdfThumbnail(
+async function renderPdfCover(
   canvas,
-  filePath
+  path
 ) {
 
   try {
@@ -76,7 +55,7 @@ async function renderPdfThumbnail(
       await supabase.storage
         .from("web-viewer")
         .createSignedUrl(
-          filePath,
+          path,
           300
         );
 
@@ -85,16 +64,18 @@ async function renderPdfThumbnail(
       error ||
       !data?.signedUrl
     ) {
-
-      throw new Error(
-        "PDF URL error"
-      );
-
+      return;
     }
 
 
     const pdfjs =
-      await loadPdfJs();
+      await import(
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
+      );
+
+
+    pdfjs.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
 
     const pdf =
@@ -109,19 +90,19 @@ async function renderPdfThumbnail(
       await pdf.getPage(1);
 
 
-    const baseViewport =
+    const base =
       page.getViewport({
         scale: 1
       });
 
 
-    const targetWidth =
+    const width =
       260;
 
 
     const scale =
-      targetWidth /
-      baseViewport.width;
+      width /
+      base.width;
 
 
     const viewport =
@@ -139,77 +120,28 @@ async function renderPdfThumbnail(
 
     await page.render({
       canvasContext:
-        canvas.getContext(
-          "2d"
-        ),
+        canvas.getContext("2d"),
 
       viewport
     }).promise;
-
 
   }
   catch (error) {
 
     console.error(
-      "Thumbnail error:",
+      "COVER ERROR:",
       error
     );
 
-    canvas.outerHTML =
-      `
-      <div class="book-placeholder">
-        表紙を表示できません
-      </div>
-      `;
-
   }
 
 }
 
-
-/*
- * 画像の1ページ目
- */
-
-async function getImageThumbnail(
-  filePath
-) {
-
-  const {
-    data,
-    error
-  } =
-    await supabase.storage
-      .from("web-viewer")
-      .createSignedUrl(
-        filePath,
-        300
-      );
-
-
-  if (
-    error ||
-    !data?.signedUrl
-  ) {
-
-    return null;
-
-  }
-
-
-  return data.signedUrl;
-
-}
-
-
-/*
- * Book一覧
- */
 
 async function loadBooks() {
 
   const {
-    data: books,
+    data,
     error
   } =
     await supabase
@@ -238,8 +170,7 @@ async function loadBooks() {
       .order(
         "created_at",
         {
-          ascending:
-            false
+          ascending: false
         }
       );
 
@@ -250,47 +181,40 @@ async function loadBooks() {
 
     container.innerHTML =
       `
-      <div class="empty">
+      <div class="book-empty">
         Bookを取得できませんでした。
       </div>
       `;
 
     return;
-
   }
 
 
-  const validBooks =
-    (books || [])
-      .filter(
-        item =>
-          item.books &&
-          item.books.enabled
-      );
+  const items =
+    (data || []).filter(
+      item =>
+        item.books &&
+        item.books.enabled
+    );
 
 
   if (
-    validBooks.length === 0
+    items.length === 0
   ) {
 
     container.innerHTML =
       `
-      <div class="empty">
+      <div class="book-empty">
         利用できるBookはありません。
       </div>
       `;
 
     return;
-
   }
 
 
-  /*
-   * 画像Book用の1ページ目を取得
-   */
-
-  const bookIds =
-    validBooks.map(
+  const ids =
+    items.map(
       item =>
         item.book_id
     );
@@ -306,7 +230,7 @@ async function loadBooks() {
       )
       .in(
         "book_id",
-        bookIds
+        ids
       )
       .eq(
         "page_number",
@@ -330,8 +254,7 @@ async function loadBooks() {
 
 
   for (
-    const item
-    of validBooks
+    const item of items
   ) {
 
     const book =
@@ -348,23 +271,25 @@ async function loadBooks() {
       "book-card";
 
 
-    card.innerHTML = `
+    const cover =
+      document.createElement(
+        "div"
+      );
 
-<div class="book-cover">
+    cover.className =
+      "book-cover";
 
-${
-  book.file_type === "pdf"
 
-  ? `<canvas></canvas>`
+    const info =
+      document.createElement(
+        "div"
+      );
 
-  : `<div class="book-placeholder">
-       表紙を読み込んでいます
-     </div>`
-}
+    info.className =
+      "book-info";
 
-</div>
 
-<div class="book-info">
+    info.innerHTML = `
 
 <div class="book-title">
 ${escapeHtml(
@@ -382,15 +307,17 @@ ${escapeHtml(
 開く
 </div>
 
-</div>
-
 `;
 
 
-    /*
-     * Book全体をクリックして
-     * 別タブでViewer
-     */
+    card.appendChild(
+      cover
+    );
+
+    card.appendChild(
+      info
+    );
+
 
     card.onclick = () => {
 
@@ -411,33 +338,28 @@ ${escapeHtml(
     );
 
 
-    /*
-     * PDF表紙
-     */
-
     if (
       book.file_type ===
       "pdf"
     ) {
 
       const canvas =
-        card.querySelector(
+        document.createElement(
           "canvas"
         );
 
 
-      await renderPdfThumbnail(
+      cover.appendChild(
+        canvas
+      );
+
+
+      await renderPdfCover(
         canvas,
         book.file_path
       );
 
     }
-
-
-    /*
-     * 画像表紙
-     */
-
     else {
 
       const firstPage =
@@ -451,43 +373,39 @@ ${escapeHtml(
       }
 
 
-      const imageUrl =
-        await getImageThumbnail(
-          firstPage.file_path
+      const {
+        data: imageData
+      } =
+        await supabase.storage
+          .from("web-viewer")
+          .createSignedUrl(
+            firstPage.file_path,
+            300
+          );
+
+
+      if (
+        imageData?.signedUrl
+      ) {
+
+        const img =
+          document.createElement(
+            "img"
+          );
+
+
+        img.src =
+          imageData.signedUrl;
+
+        img.alt =
+          book.title;
+
+
+        cover.appendChild(
+          img
         );
 
-
-      if (!imageUrl) {
-        continue;
       }
-
-
-      const cover =
-        card.querySelector(
-          ".book-cover"
-        );
-
-
-      cover.innerHTML =
-        "";
-
-
-      const image =
-        document.createElement(
-          "img"
-        );
-
-
-      image.src =
-        imageUrl;
-
-      image.alt =
-        book.title;
-
-
-      cover.appendChild(
-        image
-      );
 
     }
 
