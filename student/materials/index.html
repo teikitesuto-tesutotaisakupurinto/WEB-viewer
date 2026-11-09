@@ -1,31 +1,119 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
 <title>資料</title>
-<link rel="stylesheet" href="../../assets/css/common.css">
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
+<link
+  rel="stylesheet"
+  href="../books/style.css">
+
+<link
+  rel="stylesheet"
+  href="style.css">
+
 </head>
 
 <body>
 
-<header class="topbar">
-<button class="menu-button" onclick="location.href='../'">戻る</button>
-<div class="logo">資料</div>
+<aside class="student-side">
+
+<div class="student-brand">
+
+<div class="brand-title">
+WEB-viewer
+</div>
+
+<div class="brand-subtitle">
+教材閲覧システム
+</div>
+
+</div>
+
+
+<nav>
+
+<a
+  href="../books/">
+My Books
+</a>
+
+<a
+  class="active"
+  href="./">
+資料
+</a>
+
+<button
+  id="logout">
+ログアウト
+</button>
+
+</nav>
+
+</aside>
+
+
+<main class="student-main">
+
+<header class="student-notice">
+
+<div class="notice-title">
+お知らせ
+</div>
+
+<div>
+配信された資料を確認できます。
+</div>
+
 </header>
 
-<main class="page">
 
-<h1>資料</h1>
+<section class="student-content">
 
-<div
-  id="materials"
-  class="grid">
+<div class="content-heading">
+
+<div>
+
+<h1>
+資料
+</h1>
+
+<p>
+配信された資料
+</p>
+
 </div>
+
+</div>
+
+
+<section
+  id="materials"
+  class="material-grid">
+</section>
+
+</section>
 
 </main>
 
-<script type="module" src="app.js"></script>
+
+<script
+  type="module"
+  src="app.js?v=materials-final">
+</script>
 
 </body>
+
 </html>
