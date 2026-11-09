@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
+<title>Book管理</title>
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
+</head>
+
+<body>
+
+<header class="topbar">
+
+<button
+  class="menu-button"
+  onclick="location.href='../'">
+戻る
+</button>
+
+<div class="logo">
+Book管理
+</div>
+
+</header>
+
+
+<main class="page">
+
+<h1>Book管理</h1>
+
+
+<section class="card">
+
+<h2>Book登録</h2>
+
+<input
+  id="title"
+  placeholder="Book名">
+
+<input
+  id="serial"
+  placeholder="Bookシリアル">
+
+<textarea
+  id="description"
+  placeholder="説明">
+</textarea>
+
+<label>
+教材ファイル
+
+<input
+  id="file"
+  type="file"
+  accept=".pdf,.jpg,.jpeg,.png">
+</label>
+
+<button
+  id="create"
+  class="primary-button">
+
+登録
+
+</button>
+
+<p id="message"></p>
+
+</section>
+
+
+<div
+  id="books"
+  class="table-wrap"
+  style="margin-top:20px">
+</div>
+
+</main>
+
+
+<script
+  type="module"
+  src="app.js">
+</script>
+
+</body>
+
+</html>
