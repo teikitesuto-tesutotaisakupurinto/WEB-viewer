@@ -7,9 +7,16 @@ export async function getUser() {
   const {
     data,
     error
-  } = await supabase.auth.getUser();
+  } =
+    await supabase.auth.getUser();
 
   if (error) {
+
+    console.error(
+      "Auth user error:",
+      error
+    );
+
     return null;
   }
 
@@ -26,40 +33,70 @@ export async function getProfile() {
     return null;
   }
 
+
   const {
     data,
     error
-  } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
+  } =
+    await supabase.rpc(
+      "get_current_profile"
+    );
+
 
   if (error) {
-    console.error(error);
+
+    console.error(
+      "Profile RPC error:",
+      error
+    );
+
     return null;
   }
 
-  return data;
+
+  return data || null;
 }
 
 
 export async function requireAdmin() {
 
+  const user =
+    await getUser();
+
+
+  if (!user) {
+
+    location.replace(
+      "../login/"
+    );
+
+    return null;
+  }
+
+
   const profile =
     await getProfile();
+
 
   if (
     !profile ||
     profile.role !== "admin"
   ) {
 
+    console.error(
+      "Admin authorization failed:",
+      profile
+    );
+
+    await supabase.auth.signOut();
+
     location.replace(
-      "../../login/"
+      "../login/"
     );
 
     return null;
   }
+
 
   return profile;
 }
@@ -67,20 +104,43 @@ export async function requireAdmin() {
 
 export async function requireStudent() {
 
+  const user =
+    await getUser();
+
+
+  if (!user) {
+
+    location.replace(
+      "../login/"
+    );
+
+    return null;
+  }
+
+
   const profile =
     await getProfile();
+
 
   if (
     !profile ||
     profile.role !== "student"
   ) {
 
+    console.error(
+      "Student authorization failed:",
+      profile
+    );
+
+    await supabase.auth.signOut();
+
     location.replace(
-      "../../login/"
+      "../login/"
     );
 
     return null;
   }
+
 
   return profile;
 }
@@ -91,6 +151,6 @@ export async function logout() {
   await supabase.auth.signOut();
 
   location.replace(
-    "/login/"
+    "../login/"
   );
 }
