@@ -1,98 +1,407 @@
+
+* {
+  box-sizing: border-box;
+}
+
 html,
 body {
   width: 100%;
   height: 100%;
 
   margin: 0;
+  padding: 0;
 
   overflow: hidden;
 
-  background: #202124;
+  background: #292929;
+
+  color: #222;
+
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
-.viewer-bar {
-  position: fixed;
 
-  z-index: 20;
+/* Viewer */
 
-  top: 0;
-  left: 0;
-  right: 0;
-
-  height: 56px;
+.viewer {
+  width: 100%;
+  height: 100%;
 
   display: flex;
+  flex-direction: column;
+}
+
+
+/* 上部ツールバー */
+
+.viewer-bar {
+  position: relative;
+
+  z-index: 100;
+
+  min-height: 60px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 8px 14px;
+
+  background: #fff;
+
+  border-bottom: 1px solid #d9d9d9;
+
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, .14);
+}
+
+
+/* 左側 */
+
+.viewer-left {
+  min-width: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+
+.viewer-title {
+  max-width: 420px;
+
+  overflow: hidden;
+
+  white-space: nowrap;
+
+  text-overflow: ellipsis;
+
+  font-size: 16px;
+
+  font-weight: 700;
+}
+
+
+/* 中央 */
+
+.viewer-center {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+}
+
+
+.page-number {
+  min-width: 72px;
+
+  padding: 7px 10px;
+
+  border-radius: 7px;
+
+  background: #f1f1f1;
+
+  color: #333;
+
+  text-align: center;
+
+  font-size: 13px;
+
+  font-weight: 600;
+}
+
+
+/* 右側 */
+
+.viewer-right {
+  min-width: 0;
+
+  display: flex;
+
   align-items: center;
 
   gap: 6px;
 
-  padding: 7px;
-
   overflow-x: auto;
 
-  background: #fff;
+  scrollbar-width: none;
 }
 
-.viewer-bar button {
+.viewer-right::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* ボタン */
+
+.toolbar-button {
   flex: 0 0 auto;
 
-  white-space: nowrap;
+  padding: 8px 13px;
 
-  padding: 8px 11px;
+  border: 1px solid #d0d0d0;
 
-  border: 1px solid #ccc;
   border-radius: 7px;
 
   background: #fff;
+
   color: #222;
+
+  font-size: 13px;
+
+  font-weight: 500;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition:
+    background .15s ease,
+    border-color .15s ease,
+    box-shadow .15s ease;
 }
 
-#title {
-  min-width: 150px;
-  flex: 1;
+.toolbar-button:hover {
+  background: #f3f3f3;
 }
+
+.toolbar-button:active {
+  transform: translateY(1px);
+}
+
+
+/* ペンOFF */
+
+.pen-button {
+  min-width: 86px;
+}
+
+
+/* ペンON */
+
+.pen-button.active {
+  background: #d5ca3d;
+
+  border-color: #c8bd30;
+
+  color: #222;
+
+  font-weight: 700;
+
+  box-shadow:
+    0 0 0 2px rgba(213, 202, 61, .2);
+}
+
+
+/* Viewer本体 */
 
 .viewer-stage {
-  position: absolute;
+  position: relative;
 
-  top: 56px;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex: 1;
 
   overflow: auto;
 
   display: flex;
 
   justify-content: center;
+
   align-items: flex-start;
 
-  padding: 20px;
+  padding: 30px;
+
+  background: #292929;
+
+  overscroll-behavior: contain;
+
+  touch-action: pan-x pan-y;
 }
+
+
+/*
+ * ページ
+ */
 
 .page-container {
   position: relative;
 
+  flex: 0 0 auto;
+
   background: #fff;
 
   box-shadow:
-    0 2px 15px rgba(0,0,0,.6);
+    0 8px 30px rgba(0, 0, 0, .48);
+
+  transform-origin:
+    top center;
 }
+
+
+/*
+ * PDF
+ */
 
 #pdfCanvas {
   display: none;
+
+  position: relative;
+
+  z-index: 1;
+
+  background: #fff;
 }
+
+
+/*
+ * 画像
+ */
 
 .image-page {
   display: none;
 
+  position: relative;
+
+  z-index: 1;
+
   max-width: none;
+
+  user-select: none;
+
+  -webkit-user-select: none;
+
+  -webkit-user-drag: none;
 }
+
+
+/*
+ * 書き込みレイヤー
+ */
 
 #annotationCanvas {
   position: absolute;
 
-  inset: 0;
+  z-index: 5;
+
+  top: 0;
+  left: 0;
+
+  display: block;
 
   touch-action: none;
+
+  user-select: none;
+
+  -webkit-user-select: none;
+}
+
+
+/*
+ * ペンOFF
+ */
+
+body:not(.pen-enabled)
+#annotationCanvas {
+  cursor: default;
+}
+
+
+/*
+ * ペンON
+ */
+
+body.pen-enabled
+#annotationCanvas {
+  cursor: crosshair;
+}
+
+
+/*
+ * スワイプ可能状態
+ */
+
+.viewer-stage.swipe-enabled {
+  touch-action: pan-x pan-y;
+}
+
+
+/*
+ * 小さい画面
+ */
+
+@media (max-width: 1000px) {
+
+  .viewer-bar {
+    flex-wrap: wrap;
+
+    justify-content: flex-start;
+
+    padding: 7px;
+  }
+
+
+  .viewer-left {
+    width: 100%;
+  }
+
+
+  .viewer-center {
+    order: 2;
+  }
+
+
+  .viewer-right {
+    order: 3;
+
+    width: 100%;
+  }
+
+
+  .viewer-stage {
+    padding: 15px;
+  }
+
+}
+
+
+/*
+ * スマートフォン
+ */
+
+@media (max-width: 600px) {
+
+  .viewer-title {
+    max-width: 230px;
+
+    font-size: 14px;
+  }
+
+
+  .toolbar-button {
+    padding: 8px 10px;
+
+    font-size: 12px;
+  }
+
+
+  .page-number {
+    min-width: 60px;
+  }
+
+
+  .viewer-stage {
+    padding: 10px;
+  }
+
 }
