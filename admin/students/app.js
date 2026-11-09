@@ -1,66 +1,97 @@
 import {
-  requireAdmin
+  requireAdmin,
+  logout
 }
 from "../../assets/js/auth.js";
 
 import {
-  supabase
+  supabase,
+  SUPABASE_KEY
 }
 from "../../assets/js/supabase.js";
 
 import {
-  escapeHtml
+  escapeHtml,
+  showError
 }
 from "../../assets/js/common.js";
 
 
-const admin =
-  await requireAdmin();
+async function start() {
 
-if (!admin) {
-  throw new Error(
-    "Unauthorized"
-  );
+  const admin =
+    await requireAdmin();
+
+
+  if (!admin) {
+    return;
+  }
+
+
+  document.getElementById(
+    "logout"
+  ).onclick =
+    logout;
+
+
+  const formCard =
+    document.getElementById(
+      "formCard"
+    );
+
+
+  const message =
+    document.getElementById(
+      "message"
+    );
+
+
+  document.getElementById(
+    "showForm"
+  ).onclick = () => {
+
+    formCard.classList.remove(
+      "hidden"
+    );
+
+  };
+
+
+  document.getElementById(
+    "cancel"
+  ).onclick = () => {
+
+    formCard.classList.add(
+      "hidden"
+    );
+
+    message.textContent =
+      "";
+
+  };
+
+
+  document.getElementById(
+    "create"
+  ).onclick =
+    () => createStudent(
+      message,
+      formCard
+    );
+
+
+  await loadStudents();
+
 }
 
 
-const formCard =
-  document.getElementById(
-    "formCard"
-  );
-
-const message =
-  document.getElementById(
-    "message"
-  );
-
-
-document.getElementById(
-  "showForm"
-).onclick = () => {
-
-  formCard.classList.remove(
-    "hidden"
-  );
-
-};
-
-
-document.getElementById(
-  "cancel"
-).onclick = () => {
-
-  formCard.classList.add(
-    "hidden"
-  );
-
-  message.textContent =
-    "";
-
-};
-
-
 async function loadStudents() {
+
+  const container =
+    document.getElementById(
+      "students"
+    );
+
 
   const {
     data,
@@ -76,53 +107,69 @@ async function loadStudents() {
         "student"
       )
       .order(
-        "display_name"
+        "display_name",
+        {
+          ascending: true
+        }
       );
 
 
   if (error) {
+    throw error;
+  }
 
-    console.error(error);
+
+  if (
+    !data ||
+    data.length === 0
+  ) {
+
+    container.innerHTML =
+      `
+      <div class="list-row">
+        Studentは登録されていません。
+      </div>
+      `;
 
     return;
   }
 
 
-  document.getElementById(
-    "students"
-  ).innerHTML =
-    (data || []).map(
+  container.innerHTML =
+    data.map(
       student => `
 
-<div class="list-row">
+      <div class="list-row">
 
-<div>
-${escapeHtml(
-  student.display_name
-)}
-</div>
+        ${escapeHtml(
+          student.display_name
+        )}
 
-</div>
+      </div>
 
-`
-    ).join("") ||
-    "<p>Studentは登録されていません。</p>";
+      `
+    ).join("");
+
 }
 
 
-document.getElementById(
-  "create"
-).onclick = async () => {
+async function createStudent(
+  message,
+  formCard
+) {
 
   const displayName =
     document.getElementById(
       "displayName"
     ).value.trim();
 
+
   const email =
     document.getElementById(
       "email"
-    ).value.trim();
+    ).value.trim()
+    .toLowerCase();
+
 
   const password =
     document.getElementById(
@@ -140,6 +187,19 @@ document.getElementById(
       "氏名、メールアドレス、パスワードを入力してください。";
 
     return;
+
+  }
+
+
+  if (
+    password.length < 8
+  ) {
+
+    message.textContent =
+      "パスワードは8文字以上にしてください。";
+
+    return;
+
   }
 
 
@@ -161,9 +221,11 @@ document.getElementById(
       sessionError ||
       !sessionData.session
     ) {
+
       throw new Error(
         "ログインセッションがありません。"
       );
+
     }
 
 
@@ -175,14 +237,16 @@ document.getElementById(
             "POST",
 
           headers: {
+
             Authorization:
               `Bearer ${sessionData.session.access_token}`,
 
             apikey:
-              "sb_publishable_GZA4t1Q-c51iM-9HndtZhA_xvnB-Icu",
+              SUPABASE_KEY,
 
             "Content-Type":
               "application/json"
+
           },
 
           body:
@@ -193,13 +257,36 @@ document.getElementById(
               email,
 
               password
+
             })
+
         }
       );
 
 
-    const result =
-      await response.json();
+    const text =
+      await response.text();
+
+
+    let result;
+
+
+    try {
+
+      result =
+        JSON.parse(
+          text
+        );
+
+    }
+    catch {
+
+      result = {
+        error:
+          text
+      };
+
+    }
 
 
     if (
@@ -211,6 +298,7 @@ document.getElementById(
         result.error ||
         "Student登録に失敗しました。"
       );
+
     }
 
 
@@ -220,15 +308,18 @@ document.getElementById(
 
     document.getElementById(
       "displayName"
-    ).value = "";
+    ).value =
+      "";
 
     document.getElementById(
       "email"
-    ).value = "";
+    ).value =
+      "";
 
     document.getElementById(
       "password"
-    ).value = "";
+    ).value =
+      "";
 
 
     formCard.classList.add(
@@ -242,8 +333,10 @@ document.getElementById(
   catch (error) {
 
     console.error(
+      "STUDENT CREATE ERROR:",
       error
     );
+
 
     message.textContent =
       "登録エラー: " +
@@ -251,7 +344,25 @@ document.getElementById(
 
   }
 
-};
+}
 
 
-loadStudents();
+start()
+  .catch(
+    error => {
+
+      console.error(
+        "STUDENT PAGE ERROR:",
+        error
+      );
+
+
+      showError(
+        error.message,
+        document.querySelector(
+          ".admin-content"
+        )
+      );
+
+    }
+  );
