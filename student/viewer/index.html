@@ -7,7 +7,7 @@
 
 <meta
   name="viewport"
-  content="width=device-width,initial-scale=1">
+  content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes">
 
 <title>WEB-viewer</title>
 
@@ -23,74 +23,96 @@
 
 <header class="viewer-bar">
 
-<button id="close">
-閉じる
+<div class="viewer-left">
+
+<button
+  id="close"
+  class="toolbar-button">
+戻る
 </button>
 
-<strong id="title">
+<div
+  id="title"
+  class="viewer-title">
 WEB-viewer
-</strong>
+</div>
 
-<button id="previous">
+</div>
+
+
+<div class="viewer-center">
+
+<button
+  id="previous"
+  class="toolbar-button">
 前へ
 </button>
 
-<span id="page">
+<div
+  id="page"
+  class="page-number">
 -
-</span>
+</div>
 
-<button id="next">
+<button
+  id="next"
+  class="toolbar-button">
 次へ
 </button>
 
-<button id="zoomOut">
-縮小
+</div>
+
+
+<div class="viewer-right">
+
+<button
+  id="pen"
+  class="toolbar-button pen-button">
+ペン OFF
 </button>
 
-<span id="zoom">
-100%
-</span>
-
-<button id="zoomIn">
-拡大
-</button>
-
-<button id="pen">
-ペン
-</button>
-
-<button id="highlighter">
+<button
+  id="highlighter"
+  class="toolbar-button">
 蛍光ペン
 </button>
 
-<button id="eraser">
+<button
+  id="eraser"
+  class="toolbar-button">
 消しゴム
 </button>
 
-<button id="clear">
+<button
+  id="clear"
+  class="toolbar-button">
 消去
 </button>
+
+</div>
 
 </header>
 
 
-<main class="viewer-stage">
+<main
+  id="viewerStage"
+  class="viewer-stage">
 
 <div
-id="pageContainer"
-class="page-container">
+  id="pageContainer"
+  class="page-container">
 
 <canvas
-id="pdfCanvas">
+  id="pdfCanvas">
 </canvas>
 
 <img
-id="imagePage"
-class="image-page"
-alt="">
+  id="imagePage"
+  class="image-page"
+  alt="">
 
 <canvas
-id="annotationCanvas">
+  id="annotationCanvas">
 </canvas>
 
 </div>
@@ -101,8 +123,8 @@ id="annotationCanvas">
 
 
 <script
-type="module"
-src="app.js">
+  type="module"
+  src="app.js?v=viewer-5">
 </script>
 
 </body>
