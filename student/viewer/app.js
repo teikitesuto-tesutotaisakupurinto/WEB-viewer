@@ -17,14 +17,14 @@ if (!student) {
 }
 
 
-const parameters =
+const params =
   new URLSearchParams(
     location.search
   );
 
 
 const bookId =
-  parameters.get("book");
+  params.get("book");
 
 
 if (!bookId) {
@@ -42,6 +42,11 @@ if (!bookId) {
   );
 }
 
+
+/*
+ * StudentがこのBookを
+ * 利用できるか確認
+ */
 
 const {
   data: license,
@@ -79,10 +84,14 @@ if (
   );
 
   throw new Error(
-    "Unauthorized"
+    "Book access denied"
   );
 }
 
+
+/*
+ * Book取得
+ */
 
 const {
   data: book,
@@ -123,46 +132,79 @@ document.getElementById(
   book.title;
 
 
-const {
-  data: pages,
-  error: pagesError
-} =
-  await supabase
-    .from("book_pages")
-    .select("*")
-    .eq(
-      "book_id",
-      bookId
-    )
-    .order(
-      "page_number",
-      {
-        ascending: true
-      }
+/*
+ * PDFか画像か判定
+ */
+
+const isPdf =
+  book.file_type === "pdf";
+
+
+let imagePages = [];
+
+
+/*
+ * 画像Bookの場合
+ */
+
+if (!isPdf) {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("book_pages")
+      .select("*")
+      .eq(
+        "book_id",
+        bookId
+      )
+      .order(
+        "page_number",
+        {
+          ascending: true
+        }
+      );
+
+
+  if (
+    error ||
+    !data ||
+    data.length === 0
+  ) {
+
+    alert(
+      "画像ページが登録されていません。"
     );
 
+    throw new Error(
+      "Image pages not found"
+    );
+  }
 
-if (
-  pagesError ||
-  !pages ||
-  pages.length === 0
-) {
 
-  alert(
-    "教材ページが登録されていません。"
-  );
+  imagePages = data;
 
-  throw new Error(
-    "No pages"
-  );
 }
 
 
-let pageIndex = 0;
+/*
+ * 状態
+ */
+
+let pdf = null;
+
+let currentPage = 1;
+
 let zoom = 1;
+
 let tool = "pen";
+
 let drawing = false;
+
 let lastX = 0;
+
 let lastY = 0;
 
 
@@ -181,13 +223,19 @@ const annotationCanvas =
     "annotationCanvas"
   );
 
-const container =
+const pageContainer =
   document.getElementById(
     "pageContainer"
   );
 
 
-async function getFileUrl(path) {
+/*
+ * PDF URL
+ */
+
+async function getSignedUrl(
+  filePath
+) {
 
   const {
     data,
@@ -196,75 +244,103 @@ async function getFileUrl(path) {
     await supabase.storage
       .from("web-viewer")
       .createSignedUrl(
-        path,
+        filePath,
         300
       );
 
 
   if (error) {
-
     throw error;
-
   }
 
 
   return data.signedUrl;
+}
+
+
+/*
+ * PDF読み込み
+ */
+
+async function loadPdf() {
+
+  const url =
+    await getSignedUrl(
+      book.file_path
+    );
+
+
+  const pdfjs =
+    await import(
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.mjs"
+    );
+
+
+  pdf =
+    await pdfjs
+      .getDocument(url)
+      .promise;
+
+
+  await renderPdfPage();
 
 }
 
 
-async function render() {
+/*
+ * PDFページ表示
+ */
+
+async function renderPdfPage() {
 
   const page =
-    pages[pageIndex];
-
-
-  const url =
-    await getFileUrl(
-      page.file_path
+    await pdf.getPage(
+      currentPage
     );
 
 
+  const viewport =
+    page.getViewport({
+      scale: zoom
+    });
+
+
+  pdfCanvas.width =
+    viewport.width;
+
+  pdfCanvas.height =
+    viewport.height;
+
+
+  pageContainer.style.width =
+    viewport.width + "px";
+
+  pageContainer.style.height =
+    viewport.height + "px";
+
+
+  await page.render({
+    canvasContext:
+      pdfCanvas.getContext("2d"),
+
+    viewport
+  }).promise;
+
+
   pdfCanvas.style.display =
-    "none";
+    "block";
 
   imagePage.style.display =
     "none";
 
 
-  if (
-    page.file_type ===
-    "jpg" ||
-    page.file_type ===
-    "jpeg" ||
-    page.file_type ===
-    "png"
-  ) {
-
-    await renderImage(
-      url
-    );
-
-  }
-  else {
-
-    await renderPdf(
-      url
-    );
-
-  }
+  setupAnnotationCanvas(
+    viewport.width,
+    viewport.height
+  );
 
 
-  document.getElementById(
-    "page"
-  ).textContent =
-    `${pageIndex + 1} / ${pages.length}`;
-
-
-  document.getElementById(
-    "zoom"
-  ).textContent =
-    `${Math.round(zoom * 100)}%`;
+  updatePageInfo();
 
 
   await loadAnnotation();
@@ -272,7 +348,23 @@ async function render() {
 }
 
 
-async function renderImage(url) {
+/*
+ * 画像ページ表示
+ */
+
+async function renderImagePage() {
+
+  const page =
+    imagePages[
+      currentPage - 1
+    ];
+
+
+  const url =
+    await getSignedUrl(
+      page.file_path
+    );
+
 
   const image =
     new Image();
@@ -287,20 +379,24 @@ async function renderImage(url) {
       image.onerror =
         reject;
 
-      image.src = url;
+      image.src =
+        url;
 
     }
   );
 
 
   const width =
-    image.naturalWidth * zoom;
+    image.naturalWidth *
+    zoom;
 
   const height =
-    image.naturalHeight * zoom;
+    image.naturalHeight *
+    zoom;
 
 
-  imagePage.src = url;
+  imagePage.src =
+    url;
 
   imagePage.width =
     width;
@@ -308,14 +404,18 @@ async function renderImage(url) {
   imagePage.height =
     height;
 
+
   imagePage.style.display =
     "block";
 
+  pdfCanvas.style.display =
+    "none";
 
-  container.style.width =
+
+  pageContainer.style.width =
     width + "px";
 
-  container.style.height =
+  pageContainer.style.height =
     height + "px";
 
 
@@ -324,65 +424,30 @@ async function renderImage(url) {
     height
   );
 
+
+  updatePageInfo();
+
+
+  await loadAnnotation();
+
 }
 
 
-async function renderPdf(url) {
+/*
+ * 初期表示
+ */
 
-  const pdfjs =
-    await import(
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.7.76/pdf.min.mjs"
-    );
+async function render() {
 
+  if (isPdf) {
 
-  const pdf =
-    await pdfjs
-      .getDocument(url)
-      .promise;
+    await loadPdf();
 
+  } else {
 
-  const pdfPage =
-    await pdf.getPage(1);
+    await renderImagePage();
 
-
-  const viewport =
-    pdfPage.getViewport({
-      scale: zoom
-    });
-
-
-  pdfCanvas.width =
-    viewport.width;
-
-  pdfCanvas.height =
-    viewport.height;
-
-
-  container.style.width =
-    viewport.width + "px";
-
-  container.style.height =
-    viewport.height + "px";
-
-
-  await pdfPage.render({
-    canvasContext:
-      pdfCanvas.getContext(
-        "2d"
-      ),
-
-    viewport
-  }).promise;
-
-
-  pdfCanvas.style.display =
-    "block";
-
-
-  setupAnnotationCanvas(
-    viewport.width,
-    viewport.height
-  );
+  }
 
 }
 
@@ -407,50 +472,98 @@ function setupAnnotationCanvas(
 }
 
 
-document.getElementById(
-  "previous"
-).onclick = async () => {
+function getPageCount() {
 
-  if (
-    pageIndex <= 0
-  ) {
+  if (isPdf) {
 
-    return;
+    return pdf
+      ? pdf.numPages
+      : 0;
 
   }
 
 
-  pageIndex--;
+  return imagePages.length;
+
+}
+
+
+function updatePageInfo() {
+
+  document.getElementById(
+    "page"
+  ).textContent =
+    `${currentPage} / ${getPageCount()}`;
+
+
+  document.getElementById(
+    "zoom"
+  ).textContent =
+    `${Math.round(zoom * 100)}%`;
+
+}
+
+
+/*
+ * 前ページ
+ */
+
+document.getElementById(
+  "previous"
+).onclick = async () => {
+
+  if (currentPage <= 1) {
+    return;
+  }
+
+
+  await saveAnnotation();
+
+
+  currentPage--;
 
   await render();
 
 };
 
+
+/*
+ * 次ページ
+ */
 
 document.getElementById(
   "next"
 ).onclick = async () => {
 
   if (
-    pageIndex >=
-    pages.length - 1
+    currentPage >=
+    getPageCount()
   ) {
 
     return;
-
   }
 
 
-  pageIndex++;
+  await saveAnnotation();
+
+
+  currentPage++;
 
   await render();
 
 };
 
 
+/*
+ * 拡大
+ */
+
 document.getElementById(
   "zoomIn"
 ).onclick = async () => {
+
+  await saveAnnotation();
+
 
   zoom =
     Math.min(
@@ -458,14 +571,22 @@ document.getElementById(
       zoom + .1
     );
 
+
   await render();
 
 };
 
 
+/*
+ * 縮小
+ */
+
 document.getElementById(
   "zoomOut"
 ).onclick = async () => {
+
+  await saveAnnotation();
+
 
   zoom =
     Math.max(
@@ -473,10 +594,15 @@ document.getElementById(
       zoom - .1
     );
 
+
   await render();
 
 };
 
+
+/*
+ * ツール
+ */
 
 document.getElementById(
   "pen"
@@ -505,6 +631,10 @@ document.getElementById(
 };
 
 
+/*
+ * ページ消去
+ */
+
 document.getElementById(
   "clear"
 ).onclick = async () => {
@@ -526,6 +656,10 @@ document.getElementById(
 
 };
 
+
+/*
+ * 手書き開始
+ */
 
 annotationCanvas
   .addEventListener(
@@ -557,6 +691,10 @@ annotationCanvas
     }
   );
 
+
+/*
+ * 手書き
+ */
 
 annotationCanvas
   .addEventListener(
@@ -608,7 +746,8 @@ annotationCanvas
         tool === "highlighter"
       ) {
 
-        context.lineWidth = 16;
+        context.lineWidth =
+          16;
 
         context.strokeStyle =
           "rgba(255,235,0,.45)";
@@ -621,7 +760,8 @@ annotationCanvas
         tool === "eraser"
       ) {
 
-        context.lineWidth = 24;
+        context.lineWidth =
+          24;
 
         context.globalCompositeOperation =
           "destination-out";
@@ -629,7 +769,8 @@ annotationCanvas
       }
       else {
 
-        context.lineWidth = 3;
+        context.lineWidth =
+          3;
 
         context.strokeStyle =
           "#111";
@@ -644,11 +785,16 @@ annotationCanvas
 
 
       lastX = x;
+
       lastY = y;
 
     }
   );
 
+
+/*
+ * 手書き終了
+ */
 
 annotationCanvas
   .addEventListener(
@@ -663,12 +809,17 @@ annotationCanvas
   );
 
 
+/*
+ * 書き込み保存
+ */
+
 async function saveAnnotation() {
 
-  const data =
-    annotationCanvas.toDataURL(
-      "image/png"
-    );
+  const image =
+    annotationCanvas
+      .toDataURL(
+        "image/png"
+      );
 
 
   await supabase
@@ -682,20 +833,21 @@ async function saveAnnotation() {
           bookId,
 
         page_number:
-          pages[pageIndex]
-            .page_number,
+          currentPage,
 
-        annotation_data:
-          {
-            image: data,
-            width:
-              annotationCanvas.width,
-            height:
-              annotationCanvas.height
-          },
+        annotation_data: {
+          image,
+
+          width:
+            annotationCanvas.width,
+
+          height:
+            annotationCanvas.height
+        },
 
         updated_at:
-          new Date().toISOString()
+          new Date()
+            .toISOString()
       },
       {
         onConflict:
@@ -705,6 +857,10 @@ async function saveAnnotation() {
 
 }
 
+
+/*
+ * 書き込み読み込み
+ */
 
 async function loadAnnotation() {
 
@@ -727,8 +883,7 @@ async function loadAnnotation() {
       )
       .eq(
         "page_number",
-        pages[pageIndex]
-          .page_number
+        currentPage
       )
       .maybeSingle();
 
@@ -781,9 +936,15 @@ async function loadAnnotation() {
 }
 
 
+/*
+ * 閉じる
+ */
+
 document.getElementById(
   "close"
-).onclick = () => {
+).onclick = async () => {
+
+  await saveAnnotation();
 
   location.replace(
     "../"
