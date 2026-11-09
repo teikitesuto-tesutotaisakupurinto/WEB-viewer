@@ -6,7 +6,9 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+}
 
+body {
   font-family:
     system-ui,
     -apple-system,
@@ -18,10 +20,21 @@ body {
   color: #222;
 }
 
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
 
-/* =========================================
+button {
+  cursor: pointer;
+}
+
+
+/* =========================
    Admin Sidebar
-   ========================================= */
+   ========================= */
 
 .admin-side {
   position: fixed;
@@ -46,21 +59,16 @@ body {
   height: 150px;
 
   display: flex;
-
   flex-direction: column;
 
   align-items: center;
-
   justify-content: center;
 
   border-bottom: 1px solid #ddd;
 
   background: #fff;
 
-  color: #222;
-
   font-size: 28px;
-
   font-weight: 800;
 }
 
@@ -71,14 +79,11 @@ body {
   color: #777;
 
   font-size: 12px;
-
   font-weight: 400;
 }
 
 
 .admin-side nav {
-  display: block;
-
   padding: 12px 0;
 }
 
@@ -89,29 +94,20 @@ body {
 
   width: 100%;
 
-  margin: 0;
-
   padding: 17px 23px;
 
   border: 0;
-
-  border-radius: 0;
 
   background: transparent;
 
   color: #222;
 
-  font: inherit;
-
-  font-size: 15px;
-
-  font-weight: 600;
-
   text-align: left;
-
   text-decoration: none;
 
-  cursor: pointer;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 
@@ -128,9 +124,9 @@ body {
 }
 
 
-/* =========================================
+/* =========================
    Main
-   ========================================= */
+   ========================= */
 
 .admin-main {
   min-height: 100vh;
@@ -141,9 +137,9 @@ body {
 }
 
 
-/* =========================================
+/* =========================
    Notice
-   ========================================= */
+   ========================= */
 
 .admin-notice {
   position: sticky;
@@ -164,13 +160,11 @@ body {
 
   background: #fff;
 
-  color: #333;
-
   border-bottom: 1px solid #ddd;
 }
 
 
-.admin-notice > div {
+.admin-notice div {
   padding: 6px 15px;
 
   border-radius: 20px;
@@ -180,14 +174,13 @@ body {
   color: #fff;
 
   font-size: 13px;
-
   font-weight: 700;
 }
 
 
-/* =========================================
+/* =========================
    Content
-   ========================================= */
+   ========================= */
 
 .admin-content {
   width: 100%;
@@ -200,7 +193,6 @@ body {
 }
 
 
-.admin-heading,
 .page-heading {
   display: flex;
 
@@ -214,7 +206,6 @@ body {
 }
 
 
-.admin-heading h1,
 .page-heading h1 {
   margin: 0;
 
@@ -222,7 +213,6 @@ body {
 }
 
 
-.admin-heading p,
 .page-heading p {
   margin: 6px 0 0;
 
@@ -232,47 +222,14 @@ body {
 }
 
 
-/* =========================================
-   Cards
-   ========================================= */
+/* =========================
+   Card
+   ========================= */
 
-.admin-card,
-.card {
-  background: #fff;
-
-  border: 1px solid #ddd;
-
-  border-radius: 12px;
+.admin-card {
+  margin-bottom: 20px;
 
   padding: 22px;
-}
-
-
-.admin-card + .admin-card,
-.card + .card {
-  margin-top: 20px;
-}
-
-
-/* =========================================
-   Stats
-   ========================================= */
-
-.admin-stats {
-  display: grid;
-
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(180px, 1fr)
-    );
-
-  gap: 20px;
-}
-
-
-.admin-stat {
-  padding: 25px;
 
   background: #fff;
 
@@ -282,28 +239,11 @@ body {
 }
 
 
-.admin-stat div {
-  color: #777;
+/* =========================
+   Button
+   ========================= */
 
-  font-size: 14px;
-}
-
-
-.admin-stat strong {
-  display: block;
-
-  margin-top: 10px;
-
-  font-size: 36px;
-}
-
-
-/* =========================================
-   Buttons
-   ========================================= */
-
-.primary-button,
-.yellow-button {
+.primary-button {
   padding: 10px 17px;
 
   border: 0;
@@ -315,8 +255,6 @@ body {
   color: #222;
 
   font-weight: 700;
-
-  cursor: pointer;
 }
 
 
@@ -330,8 +268,6 @@ body {
   background: #fff;
 
   color: #222;
-
-  cursor: pointer;
 }
 
 
@@ -344,9 +280,9 @@ body {
 }
 
 
-/* =========================================
+/* =========================
    Form
-   ========================================= */
+   ========================= */
 
 label {
   display: block;
@@ -383,6 +319,18 @@ textarea {
 }
 
 
+input[type="checkbox"] {
+  width: auto;
+
+  margin: 0 7px 0 0;
+}
+
+
+.hidden {
+  display: none !important;
+}
+
+
 .message {
   min-height: 20px;
 
@@ -390,20 +338,12 @@ textarea {
 }
 
 
-/* =========================================
-   Lists
-   ========================================= */
+/* =========================
+   List
+   ========================= */
 
 .list-row {
-  display: flex;
-
-  align-items: center;
-
-  justify-content: space-between;
-
-  gap: 20px;
-
-  padding: 14px 0;
+  padding: 14px 4px;
 
   border-bottom: 1px solid #eee;
 }
@@ -414,189 +354,78 @@ textarea {
 }
 
 
-.muted {
-  margin-top: 4px;
+/* =========================
+   Error
+   ========================= */
 
-  color: #888;
+.page-error {
+  margin: 25px;
 
-  font-size: 12px;
-}
-
-
-/* =========================================
-   Tables
-   ========================================= */
-
-.table-wrap {
-  width: 100%;
-
-  overflow-x: auto;
-
-  margin-top: 18px;
+  padding: 28px;
 
   background: #fff;
 
   border: 1px solid #ddd;
 
+  border-left: 5px solid #d5ca3d;
+
   border-radius: 10px;
 }
 
 
-table {
-  width: 100%;
-
-  min-width: 650px;
-
-  border-collapse: collapse;
+.page-error h2 {
+  margin-top: 0;
 }
 
 
-th,
-td {
-  padding: 12px;
+.page-error p {
+  color: #666;
 
-  border-bottom: 1px solid #eee;
-
-  text-align: left;
+  white-space: pre-wrap;
 }
 
 
-th {
-  background: #fafafa;
-}
-
-
-/* =========================================
-   Selection
-   ========================================= */
-
-.select-row {
-  display: flex;
-
-  align-items: center;
-
-  gap: 10px;
-
-  padding: 11px;
-
-  margin: 0;
-
-  border-bottom: 1px solid #eee;
-}
-
-
-.select-row input {
-  width: auto;
-
-  margin: 0;
-}
-
-
-/* =========================================
+/* =========================
    Mobile
-   サイドバーは絶対に隠さない
-   ========================================= */
+   サイドバーを隠さない
+   ========================= */
 
-@media(max-width:700px) {
+@media (max-width: 700px) {
 
   .admin-side {
-    position: fixed;
+    width: 190px;
+  }
 
-    top: 0;
-    left: 0;
-    bottom: 0;
 
-    width: 210px;
-
-    overflow-y: auto;
+  .admin-main {
+    margin-left: 190px;
   }
 
 
   .admin-brand {
-    height: 125px;
+    height: 120px;
 
-    font-size: 22px;
-  }
-
-
-  .admin-side nav {
-    display: block;
-
-    overflow: visible;
+    font-size: 21px;
   }
 
 
   .admin-side nav a,
   .admin-side nav button {
-    width: 100%;
-
-    padding: 14px 17px;
-
-    white-space: normal;
-  }
-
-
-  .admin-main {
-    margin-left: 210px;
-
-    min-width: 0;
-  }
-
-
-  .admin-content {
-    padding: 25px 16px;
-  }
-
-
-  .admin-stats {
-    grid-template-columns: 1fr;
-  }
-
-
-  .admin-heading,
-  .page-heading {
-    align-items: flex-start;
-
-    flex-direction: column;
-  }
-
-}
-
-
-/* =========================================
-   Very small screen
-   それでもサイドバーは表示
-   ========================================= */
-
-@media(max-width:450px) {
-
-  .admin-side {
-    width: 180px;
-  }
-
-
-  .admin-main {
-    margin-left: 180px;
-  }
-
-
-  .admin-brand {
-    height: 110px;
-
-    font-size: 19px;
-  }
-
-
-  .admin-side nav a,
-  .admin-side nav button {
-    padding: 12px 13px;
+    padding: 14px 16px;
 
     font-size: 13px;
   }
 
 
   .admin-content {
-    padding: 20px 12px;
+    padding: 22px 15px;
+  }
+
+
+  .page-heading {
+    align-items: flex-start;
+
+    flex-direction: column;
   }
 
 }
