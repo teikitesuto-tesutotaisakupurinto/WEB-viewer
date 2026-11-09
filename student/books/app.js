@@ -22,6 +22,12 @@ if (!student) {
 }
 
 
+const message =
+  document.getElementById(
+    "message"
+  );
+
+
 async function loadBooks() {
 
   const {
@@ -34,6 +40,7 @@ async function loadBooks() {
         id,
         book_id,
         status,
+        code,
         books (
           title,
           description
@@ -46,6 +53,12 @@ async function loadBooks() {
       .eq(
         "status",
         "used"
+      )
+      .order(
+        "created_at",
+        {
+          ascending: false
+        }
       );
 
 
@@ -57,10 +70,29 @@ async function loadBooks() {
   }
 
 
-  document.getElementById(
-    "books"
-  ).innerHTML =
-    (data || []).map(
+  const container =
+    document.getElementById(
+      "books"
+    );
+
+
+  if (
+    !data ||
+    data.length === 0
+  ) {
+
+    container.innerHTML = `
+      <div class="card">
+        登録されたBookはありません。
+      </div>
+    `;
+
+    return;
+  }
+
+
+  container.innerHTML =
+    data.map(
       item => `
 
 <div class="card">
@@ -86,29 +118,28 @@ ${escapeHtml(
 </div>
 
 `
-    ).join("") ||
-    `<div class="card">
-    登録されたBookはありません。
-    </div>`;
+    ).join("");
 
 
-  document
+  container
     .querySelectorAll(
       "[data-book]"
     )
-    .forEach(button => {
+    .forEach(
+      button => {
 
-      button.onclick = () => {
+        button.onclick = () => {
 
-        location.href =
-          "../viewer/?book=" +
-          encodeURIComponent(
-            button.dataset.book
-          );
+          location.href =
+            "../viewer/?book=" +
+            encodeURIComponent(
+              button.dataset.book
+            );
 
-      };
+        };
 
-    });
+      }
+    );
 
 }
 
@@ -117,16 +148,34 @@ document.getElementById(
   "register"
 ).onclick = async () => {
 
+  message.textContent =
+    "確認しています。";
+
+  message.style.color =
+    "#222";
+
+
   const code =
     document.getElementById(
       "code"
-    ).value.trim();
+    ).value
+      .trim()
+      .toUpperCase();
 
 
   if (!code) {
+
+    message.textContent =
+      "シリアルコードを入力してください。";
+
     return;
   }
 
+
+  /*
+   * 自分に割り当てられた
+   * 未使用コードだけを取得
+   */
 
   const {
     data: license,
@@ -134,9 +183,13 @@ document.getElementById(
   } =
     await supabase
       .from("licenses")
-      .select(
-        "id,book_id,status,student_id"
-      )
+      .select(`
+        id,
+        book_id,
+        code,
+        student_id,
+        status
+      `)
       .eq(
         "code",
         code
@@ -144,43 +197,87 @@ document.getElementById(
       .maybeSingle();
 
 
-  if (
-    error ||
-    !license
-  ) {
+  if (error) {
 
-    document.getElementById(
-      "message"
-    ).textContent =
-      "コードが見つかりません。";
+    console.error(error);
+
+    message.textContent =
+      "シリアルコードを確認できませんでした。";
 
     return;
   }
 
 
-  if (
-    license.status !== "unused" ||
-    license.student_id
-  ) {
+  if (!license) {
 
-    document.getElementById(
-      "message"
-    ).textContent =
-      "このコードはすでに使用されています。";
+    message.textContent =
+      "シリアルコードが見つかりません。";
 
     return;
   }
 
+
+  /*
+   * 他のStudent用コード
+   */
+
+  if (
+    license.student_id !==
+    student.id
+  ) {
+
+    message.textContent =
+      "このシリアルコードはこのStudentでは使用できません。";
+
+    return;
+  }
+
+
+  /*
+   * すでに使用済み
+   */
+
+  if (
+    license.status === "used"
+  ) {
+
+    message.textContent =
+      "このシリアルコードはすでに使用されています。";
+
+    return;
+  }
+
+
+  /*
+   * 停止されたコード
+   */
+
+  if (
+    license.status === "disabled"
+  ) {
+
+    message.textContent =
+      "このシリアルコードは使用できません。";
+
+    return;
+  }
+
+
+  /*
+   * unused
+   * → used
+   */
 
   const {
-    error: claimError
+    data: updated,
+    error: updateError
   } =
     await supabase
       .from("licenses")
       .update({
-        status: "used",
-        student_id:
-          student.id,
+        status:
+          "used",
+
         used_at:
           new Date().toISOString()
       })
@@ -189,39 +286,50 @@ document.getElementById(
         license.id
       )
       .eq(
+        "student_id",
+        student.id
+      )
+      .eq(
         "status",
         "unused"
       )
-      .is(
-        "student_id",
-        null
-      );
+      .select()
+      .single();
 
 
-  if (claimError) {
+  if (updateError) {
 
     console.error(
-      claimError
+      updateError
     );
 
-    document.getElementById(
-      "message"
-    ).textContent =
-      "登録できませんでした。";
+    message.textContent =
+      "シリアルコードを登録できませんでした。";
 
     return;
   }
 
 
-  document.getElementById(
-    "message"
-  ).textContent =
-    "登録しました。";
+  if (!updated) {
+
+    message.textContent =
+      "シリアルコードを登録できませんでした。";
+
+    return;
+  }
+
+
+  message.style.color =
+    "#222";
+
+  message.textContent =
+    "Bookを登録しました。";
 
 
   document.getElementById(
     "code"
-  ).value = "";
+  ).value =
+    "";
 
 
   await loadBooks();
@@ -249,6 +357,17 @@ document.getElementById(
       "hidden"
     )
   ) {
+
+    return;
+  }
+
+
+  if (
+    window.Html5Qrcode
+  ) {
+
+    startScanner();
+
     return;
   }
 
@@ -263,7 +382,16 @@ document.getElementById(
     "https://unpkg.com/html5-qrcode";
 
 
-  script.onload = () => {
+  script.onload =
+    startScanner;
+
+
+  document.head.appendChild(
+    script
+  );
+
+
+  function startScanner() {
 
     const scanner =
       new Html5Qrcode(
@@ -289,8 +417,11 @@ document.getElementById(
 
 
         try {
+
           await scanner.stop();
-        } catch {}
+
+        }
+        catch {}
 
 
         reader.classList.add(
@@ -306,12 +437,7 @@ document.getElementById(
       () => {}
     );
 
-  };
-
-
-  document.head.appendChild(
-    script
-  );
+  }
 
 };
 
