@@ -19,29 +19,18 @@ from "../assets/js/common.js";
 const profile =
   await requireAdmin();
 
-
 if (!profile) {
-
   throw new Error(
-    "Admin authentication failed"
+    "Unauthorized"
   );
-
 }
 
-
-/*
- * Admin名
- */
 
 document.getElementById(
   "name"
 ).textContent =
-  profile.display_name || "";
+  profile.display_name;
 
-
-/*
- * サイドバー
- */
 
 document.getElementById(
   "menu"
@@ -55,24 +44,13 @@ document.getElementById(
   closeDrawer;
 
 
-/*
- * ログアウト
- */
-
 document.getElementById(
   "logout"
 ).onclick =
   logout;
 
 
-/*
- * Books件数
- */
-
-const {
-  count: bookCount,
-  error: bookError
-} =
+const books =
   await supabase
     .from("books")
     .select(
@@ -84,24 +62,7 @@ const {
     );
 
 
-if (bookError) {
-
-  console.error(
-    "Books count error:",
-    bookError
-  );
-
-}
-
-
-/*
- * シリアル件数
- */
-
-const {
-  count: licenseCount,
-  error: licenseError
-} =
+const licenses =
   await supabase
     .from("licenses")
     .select(
@@ -113,24 +74,7 @@ const {
     );
 
 
-if (licenseError) {
-
-  console.error(
-    "License count error:",
-    licenseError
-  );
-
-}
-
-
-/*
- * Student件数
- */
-
-const {
-  count: studentCount,
-  error: studentError
-} =
+const students =
   await supabase
     .from("users")
     .select(
@@ -146,33 +90,19 @@ const {
     );
 
 
-if (studentError) {
-
-  console.error(
-    "Student count error:",
-    studentError
-  );
-
-}
-
-
-/*
- * 表示
- */
-
 document.getElementById(
   "bookCount"
 ).textContent =
-  bookCount || 0;
+  books.count || 0;
 
 
 document.getElementById(
   "licenseCount"
 ).textContent =
-  licenseCount || 0;
+  licenses.count || 0;
 
 
 document.getElementById(
   "studentCount"
 ).textContent =
-  studentCount || 0;
+  students.count || 0;
