@@ -1,66 +1,128 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>マイBooks</title>
-<link rel="stylesheet" href="../../assets/css/common.css">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
+<title>WEB-viewer</title>
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
+<link
+  rel="stylesheet"
+  href="style.css">
+
 </head>
+
 <body>
 
-<header class="topbar">
-<button class="menu-button" onclick="location.href='../'">戻る</button>
-<div class="logo">マイBooks</div>
+<aside class="side">
+
+<div class="brand">
+
+<div class="brand-title">
+WEB-viewer
+</div>
+
+<div class="brand-subtitle">
+教材閲覧システム
+</div>
+
+</div>
+
+
+<nav class="side-nav">
+
+<a
+  href="../"
+  class="nav-item active">
+すべてのBook
+</a>
+
+<a
+  href="../materials/"
+  class="nav-item">
+資料
+</a>
+
+<a
+  href="../"
+  class="nav-item">
+ホーム
+</a>
+
+<button
+  id="logout"
+  class="nav-item nav-button">
+ログアウト
+</button>
+
+</nav>
+
+</aside>
+
+
+<main class="main">
+
+<header class="notice-bar">
+
+<div class="notice-label">
+お知らせ
+</div>
+
+<div id="notice">
+WEB-viewerをご利用いただけます。
+</div>
+
 </header>
 
-<main class="page">
 
-<h1>マイBooks</h1>
+<section class="content">
 
-<section class="card">
+<div class="content-header">
 
-<h2>Bookを登録</h2>
+<div>
 
-<input
-  id="code"
-  maxlength="14"
-  placeholder="シリアルコード">
+<h1>
+すべてのBook
+</h1>
 
-<div class="toolbar">
-
-<button
-  id="register"
-  class="primary-button">
-登録
-</button>
-
-<button
-  id="scan"
-  class="secondary-button">
-QR読み取り
-</button>
+<p>
+利用できる教材
+</p>
 
 </div>
 
 <div
-  id="reader"
-  class="hidden"
-  style="margin-top:15px">
+  id="studentName"
+  class="student-name">
 </div>
 
-<p id="message"></p>
+</div>
+
+
+<section
+  id="books"
+  class="book-grid">
+</section>
 
 </section>
 
-<div
-  id="books"
-  class="grid"
-  style="margin-top:20px">
-</div>
-
 </main>
 
-<script type="module" src="app.js"></script>
+
+<script
+  type="module"
+  src="app.js">
+</script>
 
 </body>
+
 </html>
