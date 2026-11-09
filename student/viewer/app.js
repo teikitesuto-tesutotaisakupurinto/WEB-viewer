@@ -1,4 +1,3 @@
-
 import {
   requireStudent
 }
@@ -10,42 +9,24 @@ import {
 from "../../assets/js/supabase.js";
 
 
-/*
- * Student認証
- */
-
 const student =
   await requireStudent();
 
-
 if (!student) {
-
-  throw new Error(
-    "Unauthorized"
-  );
-
+  throw new Error("Unauthorized");
 }
 
-
-/*
- * URL
- */
 
 const params =
   new URLSearchParams(
     location.search
   );
 
-
 const bookId =
   params.get("book");
 
 
 if (!bookId) {
-
-  alert(
-    "Bookが指定されていません。"
-  );
 
   location.replace(
     "../"
@@ -54,22 +35,27 @@ if (!bookId) {
   throw new Error(
     "Book ID missing"
   );
-
 }
 
 
-/*
- * DOM
- */
-
-const titleElement =
+const title =
   document.getElementById(
     "title"
   );
 
-const pageElement =
+const pageLabel =
   document.getElementById(
     "page"
+  );
+
+const stage =
+  document.getElementById(
+    "viewerStage"
+  );
+
+const container =
+  document.getElementById(
+    "pageContainer"
   );
 
 const pdfCanvas =
@@ -87,31 +73,17 @@ const annotationCanvas =
     "annotationCanvas"
   );
 
-const pageContainer =
-  document.getElementById(
-    "pageContainer"
-  );
-
-const viewerStage =
-  document.getElementById(
-    "viewerStage"
-  );
-
 const penButton =
   document.getElementById(
     "pen"
   );
 
 
-/*
- * 状態
- */
-
-let book = null;
+let book;
 
 let pdf = null;
 
-let imagePages = [];
+let pages = [];
 
 let currentPage = 1;
 
@@ -119,7 +91,7 @@ let zoom = 1;
 
 let penEnabled = false;
 
-let tool = "pen";
+let tool = null;
 
 let drawing = false;
 
@@ -127,114 +99,23 @@ let lastX = 0;
 
 let lastY = 0;
 
+let pinchDistance = null;
+
+let pinchZoom = 1;
+
+let swipeX = null;
+
+let swipeY = null;
+
+let swipeTime = 0;
+
+let renderTimer = null;
+
 let rendering = false;
 
 
 /*
- * ピンチズーム
- */
-
-let pinchStartDistance = null;
-
-let pinchStartZoom = 1;
-
-
-/*
- * スワイプ
- */
-
-let swipeStartX = null;
-
-let swipeStartY = null;
-
-
-/*
- * ズーム描画予約
- */
-
-let zoomRenderTimer = null;
-
-
-/*
- * PDF判定
- */
-
-let isPdf = false;
-
-
-/*
- * Book取得
- */
-
-async function loadBook() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("books")
-      .select(`
-        id,
-        title,
-        description,
-        file_path,
-        file_type,
-        enabled
-      `)
-      .eq(
-        "id",
-        bookId
-      )
-      .eq(
-        "enabled",
-        true
-      )
-      .maybeSingle();
-
-
-  if (error) {
-
-    console.error(
-      "BOOK ERROR:",
-      error
-    );
-
-    throw new Error(
-      "Bookを取得できませんでした。"
-    );
-
-  }
-
-
-  if (!data) {
-
-    throw new Error(
-      "Bookが見つかりません。"
-    );
-
-  }
-
-
-  book =
-    data;
-
-
-  titleElement.textContent =
-    book.title;
-
-
-  isPdf =
-    String(
-      book.file_type || ""
-    ).toLowerCase() ===
-    "pdf";
-
-}
-
-
-/*
- * 利用権確認
+ * 権限
  */
 
 async function checkLicense() {
@@ -245,12 +126,7 @@ async function checkLicense() {
   } =
     await supabase
       .from("licenses")
-      .select(`
-        id,
-        book_id,
-        student_id,
-        status
-      `)
+      .select("id")
       .eq(
         "book_id",
         bookId
@@ -266,47 +142,75 @@ async function checkLicense() {
       .maybeSingle();
 
 
-  if (error) {
-
-    console.error(
-      "LICENSE ERROR:",
-      error
-    );
-
-    throw new Error(
-      "Bookの利用権を確認できませんでした。"
-    );
-
-  }
-
-
-  if (!data) {
+  if (
+    error ||
+    !data
+  ) {
 
     throw new Error(
       "このBookを利用する権限がありません。"
     );
-
   }
-
 }
 
 
 /*
- * Storage署名URL
+ * Book
  */
 
-async function getSignedUrl(
-  path
-) {
+async function loadBook() {
 
-  if (!path) {
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("books")
+      .select(`
+        id,
+        title,
+        file_path,
+        file_type,
+        enabled
+      `)
+      .eq(
+        "id",
+        bookId
+      )
+      .eq(
+        "enabled",
+        true
+      )
+      .maybeSingle();
+
+
+  if (
+    error ||
+    !data
+  ) {
 
     throw new Error(
-      "教材ファイルが登録されていません。"
+      "Bookを取得できませんでした。"
     );
-
   }
 
+
+  book =
+    data;
+
+
+  title.textContent =
+    book.title;
+}
+
+
+/*
+ * 署名URL
+ */
+
+async function signedUrl(
+  path
+) {
 
   const {
     data,
@@ -320,45 +224,29 @@ async function getSignedUrl(
       );
 
 
-  if (error) {
-
-    console.error(
-      "SIGNED URL ERROR:",
-      error
-    );
+  if (
+    error ||
+    !data?.signedUrl
+  ) {
 
     throw new Error(
       "教材ファイルを取得できませんでした。"
     );
-
-  }
-
-
-  if (
-    !data ||
-    !data.signedUrl
-  ) {
-
-    throw new Error(
-      "教材ファイルのURLを取得できませんでした。"
-    );
-
   }
 
 
   return data.signedUrl;
-
 }
 
 
 /*
- * PDF読み込み
+ * PDF
  */
 
 async function loadPdf() {
 
   const url =
-    await getSignedUrl(
+    await signedUrl(
       book.file_path
     );
 
@@ -369,14 +257,8 @@ async function loadPdf() {
     );
 
 
-  if (
-    pdfjs.GlobalWorkerOptions
-  ) {
-
-    pdfjs.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
-
-  }
+  pdfjs.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
 
   pdf =
@@ -387,20 +269,12 @@ async function loadPdf() {
       .promise;
 
 
-  currentPage =
-    Math.min(
-      currentPage,
-      pdf.numPages
-    );
-
-
-  await renderPdfPage();
-
+  await render();
 }
 
 
 /*
- * 画像Book読み込み
+ * 画像
  */
 
 async function loadImages() {
@@ -412,10 +286,8 @@ async function loadImages() {
     await supabase
       .from("book_pages")
       .select(`
-        id,
         page_number,
-        file_path,
-        file_type
+        file_path
       `)
       .eq(
         "book_id",
@@ -429,45 +301,19 @@ async function loadImages() {
       );
 
 
-  if (error) {
-
-    console.error(
-      "BOOK PAGES ERROR:",
-      error
-    );
-
-    throw new Error(
-      "教材ページを取得できませんでした。"
-    );
-
-  }
-
-
   if (
-    !data ||
-    data.length === 0
+    error ||
+    !data?.length
   ) {
 
     throw new Error(
       "教材ページが登録されていません。"
     );
-
   }
 
 
-  imagePages =
+  pages =
     data;
-
-
-  currentPage =
-    Math.min(
-      currentPage,
-      imagePages.length
-    );
-
-
-  await renderImagePage();
-
 }
 
 
@@ -475,39 +321,36 @@ async function loadImages() {
  * ページ数
  */
 
-function getPageCount() {
+function countPages() {
 
-  if (isPdf) {
+  if (
+    book.file_type ===
+    "pdf"
+  ) {
 
-    return pdf
-      ? pdf.numPages
-      : 0;
-
+    return pdf?.numPages || 0;
   }
 
-
-  return imagePages.length;
-
+  return pages.length;
 }
 
 
 /*
- * ページ情報
+ * ページ表示
  */
 
-function updatePageInfo() {
+function updatePage() {
 
-  pageElement.textContent =
-    `${currentPage} / ${getPageCount()}`;
-
+  pageLabel.textContent =
+    `${currentPage} / ${countPages()}`;
 }
 
 
 /*
- * Annotation Canvas
+ * Annotation
  */
 
-function setupAnnotationCanvas(
+function setupAnnotation(
   width,
   height
 ) {
@@ -518,13 +361,11 @@ function setupAnnotationCanvas(
   annotationCanvas.height =
     Math.floor(height);
 
-
   annotationCanvas.style.width =
     `${width}px`;
 
   annotationCanvas.style.height =
     `${height}px`;
-
 }
 
 
@@ -532,7 +373,7 @@ function setupAnnotationCanvas(
  * PDF描画
  */
 
-async function renderPdfPage() {
+async function renderPdf() {
 
   if (
     !pdf ||
@@ -540,7 +381,6 @@ async function renderPdfPage() {
   ) {
 
     return;
-
   }
 
 
@@ -580,33 +420,18 @@ async function renderPdfPage() {
       `${viewport.height}px`;
 
 
-    pageContainer.style.width =
+    container.style.width =
       `${viewport.width}px`;
 
-    pageContainer.style.height =
+    container.style.height =
       `${viewport.height}px`;
-
-
-    const context =
-      pdfCanvas.getContext(
-        "2d",
-        {
-          alpha: false
-        }
-      );
-
-
-    context.clearRect(
-      0,
-      0,
-      pdfCanvas.width,
-      pdfCanvas.height
-    );
 
 
     await page.render({
       canvasContext:
-        context,
+        pdfCanvas.getContext(
+          "2d"
+        ),
 
       viewport
     }).promise;
@@ -619,13 +444,13 @@ async function renderPdfPage() {
       "none";
 
 
-    setupAnnotationCanvas(
+    setupAnnotation(
       viewport.width,
       viewport.height
     );
 
 
-    updatePageInfo();
+    updatePage();
 
 
     await loadAnnotation();
@@ -635,9 +460,7 @@ async function renderPdfPage() {
 
     rendering =
       false;
-
   }
-
 }
 
 
@@ -645,25 +468,21 @@ async function renderPdfPage() {
  * 画像描画
  */
 
-async function renderImagePage() {
+async function renderImage() {
 
   const page =
-    imagePages[
+    pages[
       currentPage - 1
     ];
 
 
   if (!page) {
-
-    throw new Error(
-      "教材ページが見つかりません。"
-    );
-
+    return;
   }
 
 
   const url =
-    await getSignedUrl(
+    await signedUrl(
       page.file_path
     );
 
@@ -672,64 +491,36 @@ async function renderImagePage() {
     new Image();
 
 
-  image.decoding =
-    "async";
-
-
   await new Promise(
-    (
-      resolve,
-      reject
-    ) => {
+    (resolve, reject) => {
 
       image.onload =
         resolve;
 
       image.onerror =
-        () =>
-          reject(
-            new Error(
-              "画像を読み込めませんでした。"
-            )
-          );
+        reject;
 
       image.src =
         url;
-
     }
   );
 
 
   const width =
-    Math.max(
-      1,
-      Math.floor(
-        image.naturalWidth *
-        zoom
-      )
+    Math.floor(
+      image.naturalWidth *
+      zoom
     );
 
-
   const height =
-    Math.max(
-      1,
-      Math.floor(
-        image.naturalHeight *
-        zoom
-      )
+    Math.floor(
+      image.naturalHeight *
+      zoom
     );
 
 
   imagePage.src =
     url;
-
-
-  imagePage.width =
-    width;
-
-  imagePage.height =
-    height;
-
 
   imagePage.style.width =
     `${width}px`;
@@ -745,64 +536,57 @@ async function renderImagePage() {
     "none";
 
 
-  pageContainer.style.width =
+  container.style.width =
     `${width}px`;
 
-  pageContainer.style.height =
+  container.style.height =
     `${height}px`;
 
 
-  setupAnnotationCanvas(
+  setupAnnotation(
     width,
     height
   );
 
 
-  updatePageInfo();
+  updatePage();
 
 
   await loadAnnotation();
-
 }
 
 
 /*
- * 初期表示
+ * render
  */
 
 async function render() {
 
-  if (isPdf) {
+  if (
+    book.file_type ===
+    "pdf"
+  ) {
 
     if (!pdf) {
-
       await loadPdf();
-
       return;
-
     }
 
-
-    await renderPdfPage();
+    await renderPdf();
 
     return;
-
   }
 
 
   if (
-    imagePages.length === 0
+    pages.length === 0
   ) {
 
     await loadImages();
-
-    return;
-
   }
 
 
-  await renderImagePage();
-
+  await renderImage();
 }
 
 
@@ -810,12 +594,7 @@ async function render() {
  * ペン状態
  */
 
-function updatePenButton() {
-
-  if (!penButton) {
-    return;
-  }
-
+function updatePen() {
 
   penButton.textContent =
     penEnabled
@@ -833,38 +612,23 @@ function updatePenButton() {
     "pen-enabled",
     penEnabled
   );
-
-
-  viewerStage.classList.toggle(
-    "swipe-enabled",
-    !penEnabled
-  );
-
 }
 
-
-/*
- * ペンON/OFF
- */
 
 penButton.onclick = () => {
 
   penEnabled =
     !penEnabled;
 
-
   tool =
     penEnabled
       ? "pen"
       : null;
 
-
   drawing =
     false;
 
-
-  updatePenButton();
-
+  updatePen();
 };
 
 
@@ -882,11 +646,7 @@ document.getElementById(
   tool =
     "highlighter";
 
-  drawing =
-    false;
-
-  updatePenButton();
-
+  updatePen();
 };
 
 
@@ -904,11 +664,7 @@ document.getElementById(
   tool =
     "eraser";
 
-  drawing =
-    false;
-
-  updatePenButton();
-
+  updatePen();
 };
 
 
@@ -920,108 +676,93 @@ document.getElementById(
   "clear"
 ).onclick = async () => {
 
-  const context =
+  const ctx =
     annotationCanvas
       .getContext("2d");
 
-
-  context.clearRect(
+  ctx.clearRect(
     0,
     0,
     annotationCanvas.width,
     annotationCanvas.height
   );
 
-
-  context.globalCompositeOperation =
-    "source-over";
-
-
   await saveAnnotation();
-
 };
 
 
 /*
- * 前ページ
+ * 前
  */
 
-document.getElementById(
-  "previous"
-).onclick = async () => {
+async function previous() {
 
   if (
     currentPage <= 1
   ) {
-
     return;
-
   }
 
 
   await saveAnnotation();
-
 
   currentPage--;
 
-
   await render();
-
-};
+}
 
 
 /*
- * 次ページ
+ * 次
  */
 
-document.getElementById(
-  "next"
-).onclick = async () => {
+async function next() {
 
   if (
     currentPage >=
-    getPageCount()
+    countPages()
   ) {
-
     return;
-
   }
 
 
   await saveAnnotation();
 
-
   currentPage++;
 
-
   await render();
+}
 
-};
+
+document.getElementById(
+  "previous"
+).onclick =
+  previous;
+
+
+document.getElementById(
+  "next"
+).onclick =
+  next;
 
 
 /*
- * Ctrl + ホイール
- *
- * PCで自由に拡大縮小
+ * PCズーム
  */
 
-viewerStage.addEventListener(
+stage.addEventListener(
   "wheel",
   event => {
 
-    if (
-      !event.ctrlKey
-    ) {
-
+    if (!event.ctrlKey) {
       return;
-
     }
 
 
     event.preventDefault();
 
 
-    const amount =
+    zoom +=
       event.deltaY > 0
         ? -0.1
         : 0.1;
@@ -1029,20 +770,26 @@ viewerStage.addEventListener(
 
     zoom =
       Math.max(
-        0.5,
+        .5,
         Math.min(
           4,
           Number(
-            (
-              zoom +
-              amount
-            ).toFixed(2)
+            zoom.toFixed(2)
           )
         )
       );
 
 
-    scheduleZoomRender();
+    clearTimeout(
+      renderTimer
+    );
+
+
+    renderTimer =
+      setTimeout(
+        () => render(),
+        80
+      );
 
   },
   {
@@ -1052,80 +799,55 @@ viewerStage.addEventListener(
 
 
 /*
- * ズーム再描画
- *
- * ホイール中に大量のPDF描画を
- * 発生させない
+ * タッチ開始
  */
 
-function scheduleZoomRender() {
-
-  if (
-    zoomRenderTimer
-  ) {
-
-    clearTimeout(
-      zoomRenderTimer
-    );
-
-  }
-
-
-  zoomRenderTimer =
-    setTimeout(
-      async () => {
-
-        zoomRenderTimer =
-          null;
-
-
-        await saveAnnotation();
-
-        await render();
-
-      },
-      80
-    );
-
-}
-
-
-/*
- * 2本指ピンチ開始
- */
-
-viewerStage.addEventListener(
+stage.addEventListener(
   "touchstart",
   event => {
 
     if (
-      event.touches.length !== 2
+      event.touches.length === 2
     ) {
 
-      return;
+      const a =
+        event.touches[0];
 
+      const b =
+        event.touches[1];
+
+
+      pinchDistance =
+        Math.hypot(
+          b.clientX - a.clientX,
+          b.clientY - a.clientY
+        );
+
+
+      pinchZoom =
+        zoom;
+
+      return;
     }
 
 
-    const first =
+    if (penEnabled) {
+      return;
+    }
+
+
+    const touch =
       event.touches[0];
 
-    const second =
-      event.touches[1];
 
+    swipeX =
+      touch.clientX;
 
-    pinchStartDistance =
-      Math.hypot(
-        second.clientX -
-          first.clientX,
+    swipeY =
+      touch.clientY;
 
-        second.clientY -
-          first.clientY
-      );
-
-
-    pinchStartZoom =
-      zoom;
+    swipeTime =
+      Date.now();
 
   },
   {
@@ -1135,64 +857,65 @@ viewerStage.addEventListener(
 
 
 /*
- * 2本指ピンチ中
+ * ピンチ
  */
 
-viewerStage.addEventListener(
+stage.addEventListener(
   "touchmove",
   event => {
 
     if (
       event.touches.length !== 2 ||
-      pinchStartDistance === null
+      pinchDistance === null
     ) {
 
       return;
-
     }
 
 
     event.preventDefault();
 
 
-    const first =
+    const a =
       event.touches[0];
 
-    const second =
+    const b =
       event.touches[1];
 
 
     const distance =
       Math.hypot(
-        second.clientX -
-          first.clientX,
-
-        second.clientY -
-          first.clientY
+        b.clientX - a.clientX,
+        b.clientY - a.clientY
       );
-
-
-    const ratio =
-      distance /
-      pinchStartDistance;
 
 
     zoom =
       Math.max(
-        0.5,
+        .5,
         Math.min(
           4,
           Number(
             (
-              pinchStartZoom *
-              ratio
+              pinchZoom *
+              distance /
+              pinchDistance
             ).toFixed(2)
           )
         )
       );
 
 
-    scheduleZoomRender();
+    clearTimeout(
+      renderTimer
+    );
+
+
+    renderTimer =
+      setTimeout(
+        () => render(),
+        80
+      );
 
   },
   {
@@ -1202,144 +925,76 @@ viewerStage.addEventListener(
 
 
 /*
- * ピンチ終了
+ * 横スワイプ
  */
 
-viewerStage.addEventListener(
+stage.addEventListener(
   "touchend",
-  event => {
-
-    if (
-      event.touches.length < 2
-    ) {
-
-      pinchStartDistance =
-        null;
-
-    }
-
-  }
-);
-
-
-/*
- * ページ左右スワイプ
- *
- * ペンOFF時のみ
- */
-
-viewerStage.addEventListener(
-  "pointerdown",
-  event => {
-
-    if (
-      penEnabled
-    ) {
-
-      return;
-
-    }
-
-
-    swipeStartX =
-      event.clientX;
-
-    swipeStartY =
-      event.clientY;
-
-  }
-);
-
-
-viewerStage.addEventListener(
-  "pointerup",
   async event => {
 
     if (
+      event.touches.length > 0
+    ) {
+      return;
+    }
+
+
+    if (
       penEnabled ||
-      swipeStartX === null ||
-      swipeStartY === null
+      swipeX === null
     ) {
 
-      swipeStartX =
+      swipeX =
         null;
 
-      swipeStartY =
+      swipeY =
         null;
 
       return;
-
     }
 
 
-    const diffX =
-      event.clientX -
-      swipeStartX;
+    const touch =
+      event.changedTouches[0];
 
 
-    const diffY =
-      event.clientY -
-      swipeStartY;
+    const dx =
+      touch.clientX -
+      swipeX;
 
 
-    swipeStartX =
+    const dy =
+      touch.clientY -
+      swipeY;
+
+
+    const elapsed =
+      Date.now() -
+      swipeTime;
+
+
+    swipeX =
       null;
 
-    swipeStartY =
+    swipeY =
       null;
 
 
     if (
-      Math.abs(diffX) < 70
+      elapsed > 700 ||
+      Math.abs(dx) < 70 ||
+      Math.abs(dx) <= Math.abs(dy)
     ) {
 
       return;
-
     }
 
 
-    if (
-      Math.abs(diffX) <
-      Math.abs(diffY)
-    ) {
-
-      return;
-
-    }
-
-
-    if (
-      diffX < 0
-    ) {
-
-      if (
-        currentPage <
-        getPageCount()
-      ) {
-
-        await saveAnnotation();
-
-        currentPage++;
-
-        await render();
-
-      }
-
+    if (dx < 0) {
+      await next();
     }
     else {
-
-      if (
-        currentPage > 1
-      ) {
-
-        await saveAnnotation();
-
-        currentPage--;
-
-        await render();
-
-      }
-
+      await previous();
     }
 
   }
@@ -1347,19 +1002,15 @@ viewerStage.addEventListener(
 
 
 /*
- * 書き込み開始
+ * 書き込み
  */
 
 annotationCanvas.addEventListener(
   "pointerdown",
   event => {
 
-    if (
-      !penEnabled
-    ) {
-
+    if (!penEnabled) {
       return;
-
     }
 
 
@@ -1378,22 +1029,13 @@ annotationCanvas.addEventListener(
         .getBoundingClientRect();
 
 
-    const scaleX =
-      annotationCanvas.width /
-      rect.width;
-
-
-    const scaleY =
-      annotationCanvas.height /
-      rect.height;
-
-
     lastX =
       (
         event.clientX -
         rect.left
       ) *
-      scaleX;
+      annotationCanvas.width /
+      rect.width;
 
 
     lastY =
@@ -1401,15 +1043,12 @@ annotationCanvas.addEventListener(
         event.clientY -
         rect.top
       ) *
-      scaleY;
+      annotationCanvas.height /
+      rect.height;
 
   }
 );
 
-
-/*
- * 書き込み中
- */
 
 annotationCanvas.addEventListener(
   "pointermove",
@@ -1419,9 +1058,7 @@ annotationCanvas.addEventListener(
       !drawing ||
       !penEnabled
     ) {
-
       return;
-
     }
 
 
@@ -1430,22 +1067,13 @@ annotationCanvas.addEventListener(
         .getBoundingClientRect();
 
 
-    const scaleX =
-      annotationCanvas.width /
-      rect.width;
-
-
-    const scaleY =
-      annotationCanvas.height /
-      rect.height;
-
-
     const x =
       (
         event.clientX -
         rect.left
       ) *
-      scaleX;
+      annotationCanvas.width /
+      rect.width;
 
 
     const y =
@@ -1453,75 +1081,71 @@ annotationCanvas.addEventListener(
         event.clientY -
         rect.top
       ) *
-      scaleY;
+      annotationCanvas.height /
+      rect.height;
 
 
-    const context =
+    const ctx =
       annotationCanvas
         .getContext("2d");
 
 
-    context.beginPath();
+    ctx.beginPath();
 
-
-    context.moveTo(
+    ctx.moveTo(
       lastX,
       lastY
     );
 
-
-    context.lineTo(
+    ctx.lineTo(
       x,
       y
     );
 
-
-    context.lineCap =
+    ctx.lineCap =
       "round";
 
 
     if (
-      tool ===
-      "highlighter"
+      tool === "highlighter"
     ) {
 
-      context.lineWidth =
+      ctx.lineWidth =
         18;
 
-      context.strokeStyle =
-        "rgba(255,235,0,0.45)";
+      ctx.strokeStyle =
+        "rgba(255,235,0,.45)";
 
-      context.globalCompositeOperation =
+      ctx.globalCompositeOperation =
         "source-over";
 
     }
     else if (
-      tool ===
-      "eraser"
+      tool === "eraser"
     ) {
 
-      context.lineWidth =
+      ctx.lineWidth =
         28;
 
-      context.globalCompositeOperation =
+      ctx.globalCompositeOperation =
         "destination-out";
 
     }
     else {
 
-      context.lineWidth =
+      ctx.lineWidth =
         3;
 
-      context.strokeStyle =
+      ctx.strokeStyle =
         "#111";
 
-      context.globalCompositeOperation =
+      ctx.globalCompositeOperation =
         "source-over";
 
     }
 
 
-    context.stroke();
+    ctx.stroke();
 
 
     lastX =
@@ -1534,18 +1158,12 @@ annotationCanvas.addEventListener(
 );
 
 
-/*
- * 書き込み終了
- */
-
 annotationCanvas.addEventListener(
   "pointerup",
   async event => {
 
     if (!drawing) {
-
       return;
-
     }
 
 
@@ -1565,39 +1183,20 @@ annotationCanvas.addEventListener(
 
 
     await saveAnnotation();
-
   }
 );
 
 
 /*
- * 書き込みキャンセル
- */
-
-annotationCanvas.addEventListener(
-  "pointercancel",
-  () => {
-
-    drawing =
-      false;
-
-  }
-);
-
-
-/*
- * 書き込み保存
+ * 保存
  */
 
 async function saveAnnotation() {
 
   if (
-    !annotationCanvas.width ||
-    !annotationCanvas.height
+    !annotationCanvas.width
   ) {
-
     return;
-
   }
 
 
@@ -1625,13 +1224,7 @@ async function saveAnnotation() {
             currentPage,
 
           annotation_data: {
-            image,
-
-            width:
-              annotationCanvas.width,
-
-            height:
-              annotationCanvas.height
+            image
           },
 
           updated_at:
@@ -1646,26 +1239,19 @@ async function saveAnnotation() {
 
 
   if (error) {
-
-    console.error(
-      "ANNOTATION SAVE ERROR:",
-      error
-    );
-
+    console.error(error);
   }
-
 }
 
 
 /*
- * 書き込み読み込み
+ * 読み込み
  */
 
 async function loadAnnotation() {
 
   const {
-    data,
-    error
+    data
   } =
     await supabase
       .from("annotations")
@@ -1687,12 +1273,12 @@ async function loadAnnotation() {
       .maybeSingle();
 
 
-  const context =
+  const ctx =
     annotationCanvas
       .getContext("2d");
 
 
-  context.clearRect(
+  ctx.clearRect(
     0,
     0,
     annotationCanvas.width,
@@ -1700,19 +1286,10 @@ async function loadAnnotation() {
   );
 
 
-  context.globalCompositeOperation =
-    "source-over";
-
-
   if (
-    error ||
-    !data ||
-    !data.annotation_data ||
-    !data.annotation_data.image
+    !data?.annotation_data?.image
   ) {
-
     return;
-
   }
 
 
@@ -1720,22 +1297,22 @@ async function loadAnnotation() {
     new Image();
 
 
-  image.onload = () => {
+  image.onload =
+    () => {
 
-    context.drawImage(
-      image,
-      0,
-      0,
-      annotationCanvas.width,
-      annotationCanvas.height
-    );
+      ctx.drawImage(
+        image,
+        0,
+        0,
+        annotationCanvas.width,
+        annotationCanvas.height
+      );
 
-  };
+    };
 
 
   image.src =
     data.annotation_data.image;
-
 }
 
 
@@ -1750,26 +1327,22 @@ document.getElementById(
   await saveAnnotation();
 
 
-  if (
-    window.opener
-  ) {
+  if (window.opener) {
 
     window.close();
 
     return;
-
   }
 
 
   location.replace(
     "../"
   );
-
 };
 
 
 /*
- * キーボード操作
+ * キーボード
  */
 
 document.addEventListener(
@@ -1777,50 +1350,15 @@ document.addEventListener(
   event => {
 
     if (
-      event.target.tagName ===
-      "INPUT" ||
-      event.target.tagName ===
-      "TEXTAREA"
+      event.key === "ArrowLeft"
     ) {
-
-      return;
-
+      previous();
     }
 
-
     if (
-      event.key ===
-      "ArrowLeft"
+      event.key === "ArrowRight"
     ) {
-
-      document.getElementById(
-        "previous"
-      ).click();
-
-    }
-
-
-    if (
-      event.key ===
-      "ArrowRight"
-    ) {
-
-      document.getElementById(
-        "next"
-      ).click();
-
-    }
-
-
-    if (
-      event.key ===
-      "Escape"
-    ) {
-
-      document.getElementById(
-        "close"
-      ).click();
-
+      next();
     }
 
   }
@@ -1835,7 +1373,7 @@ async function start() {
 
   try {
 
-    updatePenButton();
+    updatePen();
 
     await checkLicense();
 
@@ -1847,23 +1385,18 @@ async function start() {
   catch (error) {
 
     console.error(
-      "VIEWER START ERROR:",
       error
     );
-
 
     alert(
       error.message ||
       "Viewerを起動できませんでした。"
     );
 
-
     location.replace(
       "../"
     );
-
   }
-
 }
 
 
