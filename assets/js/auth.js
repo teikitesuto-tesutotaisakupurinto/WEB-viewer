@@ -16,11 +16,11 @@ export async function getUser() {
   if (error) {
 
     console.error(
-      "AUTH USER ERROR:",
+      "AUTH ERROR:",
       error
     );
 
-    return null;
+    throw error;
   }
 
 
@@ -29,20 +29,6 @@ export async function getUser() {
 
 
 export async function getProfile() {
-
-  const user =
-    await getUser();
-
-
-  if (!user) {
-
-    console.error(
-      "AUTH USER NOT FOUND"
-    );
-
-    return null;
-  }
-
 
   const {
     data,
@@ -56,26 +42,15 @@ export async function getProfile() {
   if (error) {
 
     console.error(
-      "PROFILE RPC ERROR:",
+      "PROFILE ERROR:",
       error
     );
 
-    return null;
+    throw error;
   }
 
 
-  if (!data) {
-
-    console.error(
-      "PROFILE NOT FOUND:",
-      user.id
-    );
-
-    return null;
-  }
-
-
-  return data;
+  return data || null;
 }
 
 
@@ -127,9 +102,28 @@ export async function requireStudent() {
 
 export async function logout() {
 
-  await supabase.auth.signOut();
+  try {
+
+    await supabase.auth.signOut();
+
+  }
+  catch (error) {
+
+    console.error(
+      "LOGOUT ERROR:",
+      error
+    );
+
+  }
+
+
+  /*
+   * セッションが残っていても
+   * ログイン画面へ戻す
+   */
 
   location.replace(
     "/login/"
   );
+
 }
