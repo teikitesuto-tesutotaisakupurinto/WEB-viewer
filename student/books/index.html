@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
+<title>マイBooks</title>
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
+</head>
+
+<body>
+
+<header class="topbar">
+
+<button
+  class="menu-button"
+  onclick="location.href='../'">
+戻る
+</button>
+
+<div class="logo">
+マイBooks
+</div>
+
+</header>
+
+
+<main class="page">
+
+<h1>
+マイBooks
+</h1>
+
+
+<section class="card">
+
+<h2>
+Book登録
+</h2>
+
+<input
+  id="code"
+  maxlength="14"
+  placeholder="シリアルコード">
+
+<div class="toolbar">
+
+<button
+  id="register"
+  class="primary-button">
+登録
+</button>
+
+<button
+  id="scan"
+  class="secondary-button">
+QR読み取り
+</button>
+
+</div>
+
+<div
+  id="reader"
+  class="hidden">
+</div>
+
+<p
+  id="message"
+  class="message">
+</p>
+
+</section>
+
+
+<div
+  id="books"
+  class="grid"
+  style="margin-top:20px">
+</div>
+
+</main>
+
+
+<script
+  type="module"
+  src="app.js">
+</script>
+
+</body>
+
+</html>
