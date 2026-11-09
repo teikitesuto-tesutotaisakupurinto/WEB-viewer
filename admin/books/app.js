@@ -22,6 +22,35 @@ if (!admin) {
 }
 
 
+const formCard =
+  document.getElementById("formCard");
+
+const message =
+  document.getElementById("message");
+
+
+document.getElementById(
+  "showForm"
+).onclick = () => {
+
+  formCard.classList.remove(
+    "hidden"
+  );
+
+};
+
+
+document.getElementById(
+  "cancel"
+).onclick = () => {
+
+  formCard.classList.add(
+    "hidden"
+  );
+
+};
+
+
 async function loadBooks() {
 
   const {
@@ -43,60 +72,97 @@ async function loadBooks() {
 
     console.error(error);
 
+    document.getElementById(
+      "books"
+    ).textContent =
+      "Bookを取得できませんでした。";
+
+    return;
+  }
+
+
+  if (!data || data.length === 0) {
+
+    document.getElementById(
+      "books"
+    ).innerHTML =
+      `<p>登録されたBookはありません。</p>`;
+
     return;
   }
 
 
   document.getElementById(
     "books"
-  ).innerHTML = `
+  ).innerHTML =
+    data.map(book => `
 
-<table>
+<div class="book-item">
 
-<thead>
+<div>
 
-<tr>
-  <th>Book名</th>
-  <th>Bookシリアル</th>
-  <th>形式</th>
-  <th>状態</th>
-</tr>
-
-</thead>
-
-<tbody>
-
-${(data || []).map(book => `
-
-<tr>
-
-<td>
+<div class="book-title">
 ${escapeHtml(book.title)}
-</td>
+</div>
 
-<td>
+<div class="book-meta">
+Bookシリアル:
 ${escapeHtml(book.book_serial)}
-</td>
+</div>
 
-<td>
-${escapeHtml(
-  book.file_type || ""
-)}
-</td>
+<div class="book-meta">
+形式:
+${escapeHtml(book.file_type || "")}
+</div>
 
-<td>
-${book.enabled ? "有効" : "停止"}
-</td>
+</div>
 
-</tr>
+<div>
 
-`).join("")}
+<button
+  class="secondary-button"
+  data-id="${book.id}">
+詳細
+</button>
 
-</tbody>
+</div>
 
-</table>
+</div>
 
-`;
+`).join("");
+
+
+  document
+    .querySelectorAll(
+      "[data-id]"
+    )
+    .forEach(button => {
+
+      button.onclick = () => {
+
+        const book =
+          data.find(
+            item =>
+              item.id ===
+              button.dataset.id
+          );
+
+        if (!book) {
+          return;
+        }
+
+
+        alert(
+          "Book名: " +
+          book.title +
+          "\nBookシリアル: " +
+          book.book_serial
+        );
+
+      };
+
+    });
+
 }
 
 
@@ -104,14 +170,11 @@ document.getElementById(
   "create"
 ).onclick = async () => {
 
+  message.textContent = "";
+
   const title =
     document.getElementById(
       "title"
-    ).value.trim();
-
-  const serial =
-    document.getElementById(
-      "serial"
     ).value.trim();
 
   const description =
@@ -122,20 +185,18 @@ document.getElementById(
   const files =
     Array.from(
       document.getElementById(
-        "file"
+        "files"
       ).files
     );
 
 
   if (
     !title ||
-    !serial ||
     files.length === 0
   ) {
 
-    alert(
-      "Book名、Bookシリアル、教材ファイルを入力してください。"
-    );
+    message.textContent =
+      "Book名と教材ファイルを入力してください。";
 
     return;
   }
@@ -162,264 +223,257 @@ document.getElementById(
   if (
     extensions.some(
       extension =>
-        !allowed.includes(extension)
-    )
-  ) {
-
-    alert(
-      "PDF、JPG、JPEG、PNGのみ対応しています。"
-    );
-
-    return;
-  }
-
-
-  const hasPdf =
-    extensions.includes("pdf");
-
-
-  if (
-    hasPdf &&
-    files.length !== 1
-  ) {
-
-    alert(
-      "PDFの場合は1ファイルだけ選択してください。"
-    );
-
-    return;
-  }
-
-
-  if (
-    !hasPdf &&
-    files.some(
-      file =>
-        ![
-          "jpg",
-          "jpeg",
-          "png"
-        ].includes(
-          file.name
-            .split(".")
-            .pop()
-            .toLowerCase()
+        !allowed.includes(
+          extension
         )
     )
   ) {
 
-    alert(
-      "画像BookはJPG、JPEG、PNGのみ対応しています。"
-    );
+    message.textContent =
+      "PDF、JPG、JPEG、PNGのみ対応しています。";
 
     return;
   }
 
 
-  const firstExtension =
-    extensions[0];
+  const pdfFiles =
+    files.filter(
+      file =>
+        file.name
+          .toLowerCase()
+          .endsWith(".pdf")
+    );
 
 
-  const isPdf =
-    firstExtension === "pdf";
+  if (
+    pdfFiles.length > 1 ||
+    (
+      pdfFiles.length === 1 &&
+      files.length !== 1
+    )
+  ) {
+
+    message.textContent =
+      "PDFを登録する場合は1ファイルだけ選択してください。";
+
+    return;
+  }
+
+
+  message.textContent =
+    "登録しています。";
 
 
   let bookPath = null;
 
+  let bookType = null;
 
-  if (isPdf) {
-
-    const file =
-      files[0];
-
-    const path =
-      "books/" +
-      crypto.randomUUID() +
-      ".pdf";
+  const uploadedPaths = [];
 
 
-    const upload =
-      await supabase.storage
-        .from("web-viewer")
-        .upload(
-          path,
-          file,
-          {
-            upsert: false
-          }
-        );
+  try {
 
-
-    if (upload.error) {
-
-      console.error(
-        upload.error
-      );
-
-      alert(
-        "PDFのアップロードに失敗しました。"
-      );
-
-      return;
-    }
-
-
-    bookPath = path;
-
-
-  } else {
-
-    bookPath = null;
-
-  }
-
-
-  const {
-    data: book,
-    error: bookError
-  } =
-    await supabase
-      .from("books")
-      .insert({
-        title,
-        book_serial: serial,
-        description,
-        file_path: bookPath,
-        file_type: isPdf
-          ? "pdf"
-          : firstExtension,
-        created_by: admin.id
-      })
-      .select()
-      .single();
-
-
-  if (bookError) {
-
-    console.error(bookError);
-
-    if (bookPath) {
-
-      await supabase.storage
-        .from("web-viewer")
-        .remove([
-          bookPath
-        ]);
-
-    }
-
-    alert(
-      "Book登録に失敗しました。"
-    );
-
-    return;
-  }
-
-
-  if (!isPdf) {
-
-    const pageRows = [];
-
-
-    for (
-      let index = 0;
-      index < files.length;
-      index++
+    if (
+      pdfFiles.length === 1
     ) {
 
       const file =
-        files[index];
+        pdfFiles[0];
 
-      const extension =
-        file.name
-          .split(".")
-          .pop()
-          .toLowerCase();
+      bookType = "pdf";
 
-
-      const path =
+      bookPath =
         "books/" +
         crypto.randomUUID() +
-        "." +
-        extension;
+        ".pdf";
 
 
       const upload =
         await supabase.storage
           .from("web-viewer")
           .upload(
-            path,
-            file,
-            {
-              upsert: false
-            }
+            bookPath,
+            file
           );
 
 
       if (upload.error) {
-
-        console.error(
-          upload.error
-        );
-
-        continue;
+        throw upload.error;
       }
 
 
-      pageRows.push({
-        book_id:
-          book.id,
+      uploadedPaths.push(
+        bookPath
+      );
 
-        page_number:
-          index + 1,
+    }
+    else {
 
-        file_path:
-          path,
-
-        file_type:
-          extension
-      });
+      bookType =
+        extensions[0];
 
     }
 
 
-    if (pageRows.length > 0) {
-
+    const {
+      data: book,
+      error: bookError
+    } =
       await supabase
-        .from("book_pages")
-        .insert(
-          pageRows
+        .from("books")
+        .insert({
+          title,
+          description,
+          file_path:
+            bookPath,
+          file_type:
+            bookType,
+          created_by:
+            admin.id
+        })
+        .select()
+        .single();
+
+
+    if (bookError) {
+      throw bookError;
+    }
+
+
+    if (
+      pdfFiles.length === 0
+    ) {
+
+      const pageRows = [];
+
+
+      for (
+        let index = 0;
+        index < files.length;
+        index++
+      ) {
+
+        const file =
+          files[index];
+
+        const extension =
+          file.name
+            .split(".")
+            .pop()
+            .toLowerCase();
+
+
+        const path =
+          "books/" +
+          crypto.randomUUID() +
+          "." +
+          extension;
+
+
+        const upload =
+          await supabase.storage
+            .from("web-viewer")
+            .upload(
+              path,
+              file
+            );
+
+
+        if (upload.error) {
+          throw upload.error;
+        }
+
+
+        uploadedPaths.push(
+          path
+        );
+
+
+        pageRows.push({
+          book_id:
+            book.id,
+
+          page_number:
+            index + 1,
+
+          file_path:
+            path,
+
+          file_type:
+            extension
+        });
+
+      }
+
+
+      const {
+        error: pageError
+      } =
+        await supabase
+          .from("book_pages")
+          .insert(
+            pageRows
+          );
+
+
+      if (pageError) {
+        throw pageError;
+      }
+
+    }
+
+
+    document.getElementById(
+      "title"
+    ).value = "";
+
+    document.getElementById(
+      "description"
+    ).value = "";
+
+    document.getElementById(
+      "files"
+    ).value = "";
+
+
+    message.textContent =
+      "Bookを登録しました。";
+
+
+    formCard.classList.add(
+      "hidden"
+    );
+
+
+    await loadBooks();
+
+
+  }
+  catch (error) {
+
+    console.error(
+      "Book registration error:",
+      error
+    );
+
+
+    if (
+      uploadedPaths.length > 0
+    ) {
+
+      await supabase.storage
+        .from("web-viewer")
+        .remove(
+          uploadedPaths
         );
 
     }
 
+
+    message.textContent =
+      "Book登録に失敗しました。";
+
   }
-
-
-  document.getElementById(
-    "title"
-  ).value = "";
-
-  document.getElementById(
-    "serial"
-  ).value = "";
-
-  document.getElementById(
-    "description"
-  ).value = "";
-
-  document.getElementById(
-    "file"
-  ).value = "";
-
-
-  document.getElementById(
-    "message"
-  ).textContent =
-    "Bookを登録しました。";
-
-
-  await loadBooks();
 
 };
 
