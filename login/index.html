@@ -3,68 +3,75 @@
 
 <head>
 
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
 
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0">
 
-<title>WEB-viewer ログイン</title>
+  <title>WEB-viewer ログイン</title>
 
-<link rel="stylesheet" href="style.css">
+  <link
+    rel="stylesheet"
+    href="style.css">
 
 </head>
 
 <body>
 
-<main class="login-page">
+  <main class="login-page">
 
-<section class="login-card">
+    <section class="login-card">
 
-<h1>WEB-viewer</h1>
+      <h1>WEB-viewer</h1>
 
-<form id="loginForm">
+      <form id="loginForm">
 
-<label>
-メールアドレス
+        <label for="email">
+          メールアドレス
+        </label>
 
-<input
-  id="email"
-  type="email"
-  autocomplete="username"
-  required>
-</label>
+        <input
+          id="email"
+          type="email"
+          autocomplete="username"
+          required>
 
-<label>
-パスワード
+        <label for="password">
+          パスワード
+        </label>
 
-<input
-  id="password"
-  type="password"
-  autocomplete="current-password"
-  required>
-</label>
+        <input
+          id="password"
+          type="password"
+          autocomplete="current-password"
+          required>
 
-<button
-  id="loginButton"
-  type="submit">
+        <button
+          id="loginButton"
+          type="submit">
+          ログイン
+        </button>
 
-ログイン
+        <p id="message"></p>
 
-</button>
+      </form>
 
-<p id="message"></p>
+      <p
+        id="version"
+        class="version">
+        WEB-viewer
+      </p>
 
-</form>
+    </section>
 
-</section>
+  </main>
 
-</main>
 
-<script
-  type="module"
-  src="app.js">
-</script>
+  <script
+    type="module"
+    src="app.js?v=20261109-02">
+  </script>
 
 </body>
 
