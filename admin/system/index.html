@@ -1,60 +1,23 @@
-<!DOCTYPE html>
-<html lang="ja">
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
 <title>システム管理</title>
-<link rel="stylesheet" href="../../assets/css/common.css">
-<link rel="stylesheet" href="style.css">
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
+<link
+  rel="stylesheet"
+  href="../style.css">
+
+<link
+  rel="stylesheet"
+  href="style.css">
+
 </head>
-
-<body>
-
-<header class="topbar">
-<button class="menu-button" onclick="location.href='../'">戻る</button>
-<div class="logo">システム管理</div>
-</header>
-
-<main class="page">
-
-<h1>システム管理</h1>
-
-<section class="card">
-
-<div class="system-row">
-
-<div>
-<h2>メンテナンスモード</h2>
-<p>Studentの利用を停止します。</p>
-</div>
-
-<label class="switch">
-<input
-  id="maintenance"
-  type="checkbox">
-<span class="slider"></span>
-</label>
-
-</div>
-
-<label>
-メンテナンス表示文
-<textarea id="message"></textarea>
-</label>
-
-<button
-  id="save"
-  class="primary-button">
-保存
-</button>
-
-<p id="result"></p>
-
-</section>
-
-</main>
-
-<script type="module" src="app.js"></script>
-
-</body>
-</html>
