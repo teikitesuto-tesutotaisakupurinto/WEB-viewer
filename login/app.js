@@ -26,9 +26,9 @@ form.addEventListener(
 
     event.preventDefault();
 
-    message.textContent = "";
-
     button.disabled = true;
+
+    message.textContent = "";
 
 
     const email =
