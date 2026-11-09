@@ -1,4 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  createClient
+} from "https://esm.sh/@supabase/supabase-js@2";
 
 
 const corsHeaders = {
@@ -26,6 +28,11 @@ Deno.serve(async (req) => {
 
   try {
 
+    /*
+     * SupabaseがEdge Functionに
+     * 自動提供する環境変数
+     */
+
     const supabaseUrl =
       Deno.env.get(
         "SUPABASE_URL"
@@ -42,12 +49,27 @@ Deno.serve(async (req) => {
       !serviceRoleKey
     ) {
 
-      throw new Error(
-        "Supabaseの環境変数を取得できません。"
+      return new Response(
+        JSON.stringify({
+          error:
+            "Supabaseの環境変数を取得できません。"
+        }),
+        {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            "Content-Type":
+              "application/json"
+          }
+        }
       );
 
     }
 
+
+    /*
+     * リクエストの認証
+     */
 
     const authorization =
       req.headers.get(
@@ -77,10 +99,14 @@ Deno.serve(async (req) => {
 
     const token =
       authorization.replace(
-        "Bearer ",
+        /^Bearer\s+/i,
         ""
       );
 
+
+    /*
+     * 管理者用Supabaseクライアント
+     */
 
     const adminClient =
       createClient(
@@ -97,6 +123,10 @@ Deno.serve(async (req) => {
         }
       );
 
+
+    /*
+     * 現在ログインしているユーザーを確認
+     */
 
     const {
       data: userData,
@@ -133,9 +163,13 @@ Deno.serve(async (req) => {
       userData.user;
 
 
+    /*
+     * Admin確認
+     */
+
     const {
       data: adminProfile,
-      error: profileError
+      error: adminError
     } =
       await adminClient
         .from("users")
@@ -144,11 +178,38 @@ Deno.serve(async (req) => {
           "id",
           currentUser.id
         )
-        .single();
+        .maybeSingle();
 
 
     if (
-      profileError ||
+      adminError
+    ) {
+
+      console.error(
+        "Admin profile error:",
+        adminError
+      );
+
+
+      return new Response(
+        JSON.stringify({
+          error:
+            "管理者情報を確認できません。"
+        }),
+        {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            "Content-Type":
+              "application/json"
+          }
+        }
+      );
+
+    }
+
+
+    if (
       !adminProfile ||
       adminProfile.role !== "admin"
     ) {
@@ -171,8 +232,18 @@ Deno.serve(async (req) => {
     }
 
 
+    /*
+     * リクエスト本文
+     */
+
     const body =
       await req.json();
+
+
+    const displayName =
+      String(
+        body.display_name || ""
+      ).trim();
 
 
     const email =
@@ -189,12 +260,6 @@ Deno.serve(async (req) => {
       );
 
 
-    const displayName =
-      String(
-        body.display_name || ""
-      ).trim();
-
-
     const className =
       String(
         body.class_name || ""
@@ -207,10 +272,14 @@ Deno.serve(async (req) => {
       ).trim();
 
 
+    /*
+     * 入力チェック
+     */
+
     if (
+      !displayName ||
       !email ||
-      !password ||
-      !displayName
+      !password
     ) {
 
       return new Response(
@@ -253,6 +322,10 @@ Deno.serve(async (req) => {
     }
 
 
+    /*
+     * Authユーザー作成
+     */
+
     const {
       data: created,
       error: createError
@@ -270,11 +343,17 @@ Deno.serve(async (req) => {
       !created.user
     ) {
 
+      console.error(
+        "Auth create error:",
+        createError
+      );
+
+
       return new Response(
         JSON.stringify({
           error:
             createError?.message ||
-            "Authユーザーを作成できませんでした。"
+            "Studentアカウントを作成できませんでした。"
         }),
         {
           status: 400,
@@ -292,6 +371,10 @@ Deno.serve(async (req) => {
     const studentId =
       created.user.id;
 
+
+    /*
+     * public.users作成
+     */
 
     const {
       error: insertError
@@ -316,7 +399,18 @@ Deno.serve(async (req) => {
         });
 
 
+    /*
+     * users作成失敗時は
+     * Authユーザーも削除
+     */
+
     if (insertError) {
+
+      console.error(
+        "users insert error:",
+        insertError
+      );
+
 
       await adminClient.auth.admin
         .deleteUser(
@@ -342,6 +436,10 @@ Deno.serve(async (req) => {
     }
 
 
+    /*
+     * 成功
+     */
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -360,7 +458,10 @@ Deno.serve(async (req) => {
   }
   catch (error) {
 
-    console.error(error);
+    console.error(
+      "create-student error:",
+      error
+    );
 
 
     return new Response(
