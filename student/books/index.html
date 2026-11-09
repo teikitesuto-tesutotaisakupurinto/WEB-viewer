@@ -9,7 +9,7 @@
   name="viewport"
   content="width=device-width,initial-scale=1">
 
-<title>WEB-viewer</title>
+<title>My Books</title>
 
 <link
   rel="stylesheet"
@@ -23,44 +23,39 @@
 
 <body>
 
-<aside class="side">
+<aside class="student-side">
 
-<div class="brand">
+<div class="student-brand">
 
 <div class="brand-title">
 WEB-viewer
 </div>
 
 <div class="brand-subtitle">
-教材閲覧システム
+My Books
 </div>
 
 </div>
 
-
-<nav class="side-nav">
+<nav>
 
 <a
-  href="../"
-  class="nav-item active">
-すべてのBook
+  class="active"
+  href="./">
+My Books
 </a>
 
 <a
-  href="../materials/"
-  class="nav-item">
+  href="../materials/">
 資料
 </a>
 
 <a
-  href="../"
-  class="nav-item">
+  href="../">
 ホーム
 </a>
 
-<button
-  id="logout"
-  class="nav-item nav-button">
+<button id="logout">
 ログアウト
 </button>
 
@@ -69,29 +64,29 @@ WEB-viewer
 </aside>
 
 
-<main class="main">
+<main class="student-main">
 
-<header class="notice-bar">
+<header class="student-notice">
 
-<div class="notice-label">
+<div class="notice-title">
 お知らせ
 </div>
 
-<div id="notice">
+<div>
 WEB-viewerをご利用いただけます。
 </div>
 
 </header>
 
 
-<section class="content">
+<section class="student-content">
 
-<div class="content-header">
+<div class="content-heading">
 
 <div>
 
 <h1>
-すべてのBook
+My Books
 </h1>
 
 <p>
@@ -101,8 +96,7 @@ WEB-viewerをご利用いただけます。
 </div>
 
 <div
-  id="studentName"
-  class="student-name">
+  id="studentName">
 </div>
 
 </div>
@@ -120,7 +114,7 @@ WEB-viewerをご利用いただけます。
 
 <script
   type="module"
-  src="app.js">
+  src="app.js?v=final">
 </script>
 
 </body>
