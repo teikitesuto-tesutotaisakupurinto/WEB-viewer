@@ -4,7 +4,11 @@ import {
 from "../../assets/js/auth.js";
 
 import {
-  makeCode,
+  supabase
+}
+from "../../assets/js/supabase.js";
+
+import {
   escapeHtml
 }
 from "../../assets/js/common.js";
@@ -18,38 +22,93 @@ if (!admin) {
 }
 
 
+async function loadBooks() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("books")
+      .select(
+        "id,title"
+      )
+      .eq(
+        "enabled",
+        true
+      )
+      .order(
+        "title"
+      );
+
+
+  if (error) {
+
+    console.error(error);
+
+    return;
+  }
+
+
+  document.getElementById(
+    "book"
+  ).innerHTML =
+    (data || []).map(
+      book => `
+
+<option value="${book.id}">
+${escapeHtml(book.title)}
+</option>
+
+`
+    ).join("");
+}
+
+
 document.getElementById(
   "preview"
 ).onclick = async () => {
 
-  const book =
+  const bookId =
     document.getElementById(
       "book"
     ).value;
 
-  const className =
-    document.getElementById(
-      "class"
-    ).value;
 
-  const name =
-    document.getElementById(
-      "name"
-    ).value;
+  const {
+    data: book
+  } =
+    await supabase
+      .from("books")
+      .select(
+        "id,title"
+      )
+      .eq(
+        "id",
+        bookId
+      )
+      .single();
 
-  const inputCode =
+
+  if (!book) {
+    return;
+  }
+
+
+  const code =
     document.getElementById(
       "code"
     ).value.trim();
 
-  const code =
-    inputCode ||
-    makeCode();
 
+  if (!code) {
 
-  document.getElementById(
-    "code"
-  ).value = code;
+    alert(
+      "シリアルコードを入力してください。"
+    );
+
+    return;
+  }
 
 
   document.getElementById(
@@ -59,25 +118,38 @@ document.getElementById(
 <div class="b4-sheet">
 
 <h2>
-電子教科書のご案内
+電子教材利用案内
 </h2>
 
 <div>
-Book名：
-${escapeHtml(book)}
+Book名:
+${escapeHtml(book.title)}
 </div>
 
 <div>
-クラス：
-${escapeHtml(className)}
+クラス:
+${escapeHtml(
+  document.getElementById(
+    "className"
+  ).value
+)}
+</div>
 
-氏名：
-${escapeHtml(name)}
+<div>
+氏名:
+${escapeHtml(
+  document.getElementById(
+    "studentName"
+  ).value
+)}
 </div>
 
 <div
   id="qr"
-  class="qr">
+  style="
+    width:250px;
+    height:250px;
+  ">
 </div>
 
 <div class="b4-code">
@@ -85,11 +157,7 @@ ${escapeHtml(code)}
 </div>
 
 <div>
-利用方法
-</div>
-
-<div>
-QRコードを読み取り、ログインして利用してください。
+WEB-viewerにログインして利用してください。
 </div>
 
 <div class="b4-note">
@@ -140,3 +208,6 @@ document.getElementById(
   window.print();
 
 };
+
+
+loadBooks();
