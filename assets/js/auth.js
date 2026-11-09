@@ -12,16 +12,37 @@ export async function getUser() {
   } =
     await supabase.auth.getUser();
 
+
   if (error) {
-    console.error(error);
+
+    console.error(
+      "AUTH USER ERROR:",
+      error
+    );
+
     return null;
   }
 
-  return data.user || null;
+
+  return data?.user || null;
 }
 
 
 export async function getProfile() {
+
+  const user =
+    await getUser();
+
+
+  if (!user) {
+
+    console.error(
+      "AUTH USER NOT FOUND"
+    );
+
+    return null;
+  }
+
 
   const {
     data,
@@ -31,12 +52,30 @@ export async function getProfile() {
       "get_current_profile"
     );
 
+
   if (error) {
-    console.error(error);
+
+    console.error(
+      "PROFILE RPC ERROR:",
+      error
+    );
+
     return null;
   }
 
-  return data || null;
+
+  if (!data) {
+
+    console.error(
+      "PROFILE NOT FOUND:",
+      user.id
+    );
+
+    return null;
+  }
+
+
+  return data;
 }
 
 
@@ -44,6 +83,7 @@ export async function requireAdmin() {
 
   const profile =
     await getProfile();
+
 
   if (
     !profile ||
@@ -57,6 +97,7 @@ export async function requireAdmin() {
     return null;
   }
 
+
   return profile;
 }
 
@@ -65,6 +106,7 @@ export async function requireStudent() {
 
   const profile =
     await getProfile();
+
 
   if (
     !profile ||
@@ -77,6 +119,7 @@ export async function requireStudent() {
 
     return null;
   }
+
 
   return profile;
 }
