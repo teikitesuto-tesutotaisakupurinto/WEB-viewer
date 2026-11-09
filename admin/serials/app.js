@@ -10,31 +10,9 @@ import {
 from "../../assets/js/supabase.js";
 
 import {
-  escapeHtml,
-  showError
+  escapeHtml
 }
 from "../../assets/js/common.js";
-
-
-const bookSelect =
-  document.getElementById(
-    "book"
-  );
-
-const studentsBox =
-  document.getElementById(
-    "students"
-  );
-
-const serialsBox =
-  document.getElementById(
-    "serials"
-  );
-
-const message =
-  document.getElementById(
-    "message"
-  );
 
 
 async function start() {
@@ -50,7 +28,13 @@ async function start() {
   document.getElementById(
     "logout"
   ).onclick =
-    logout;
+    event => {
+
+      event.preventDefault();
+
+      logout();
+
+    };
 
 
   document.getElementById(
@@ -104,12 +88,7 @@ async function loadBooks() {
         "enabled",
         true
       )
-      .order(
-        "title",
-        {
-          ascending: true
-        }
-      );
+      .order("title");
 
 
   if (error) {
@@ -117,7 +96,9 @@ async function loadBooks() {
   }
 
 
-  bookSelect.innerHTML =
+  document.getElementById(
+    "book"
+  ).innerHTML =
     `
     <option value="">
       Bookを選択してください
@@ -150,10 +131,7 @@ async function loadStudents() {
         "student"
       )
       .order(
-        "display_name",
-        {
-          ascending: true
-        }
+        "display_name"
       );
 
 
@@ -162,25 +140,12 @@ async function loadStudents() {
   }
 
 
-  if (
-    !data ||
-    data.length === 0
-  ) {
-
-    studentsBox.innerHTML =
-      `
-      <div class="list-row">
-        Studentが登録されていません。
-      </div>
-      `;
-
-    return;
-  }
-
-
-  studentsBox.innerHTML =
-    data.map(
+  document.getElementById(
+    "students"
+  ).innerHTML =
+    (data || []).map(
       student => `
+
       <label class="student-row">
 
         <input
@@ -188,25 +153,24 @@ async function loadStudents() {
           type="checkbox"
           value="${student.id}">
 
-        <span>
-          ${escapeHtml(
-            student.display_name
-          )}
-        </span>
+        ${escapeHtml(
+          student.display_name
+        )}
 
       </label>
+
       `
     ).join("");
 
 }
 
 
-async function issue(
-  admin
-) {
+async function issue(admin) {
 
   const bookId =
-    bookSelect.value;
+    document.getElementById(
+      "book"
+    ).value;
 
 
   const studentIds =
@@ -220,172 +184,143 @@ async function issue(
     );
 
 
+  const message =
+    document.getElementById(
+      "message"
+    );
+
+
   if (!bookId) {
 
     message.textContent =
       "Bookを選択してください。";
 
     return;
+
   }
 
 
-  if (
-    studentIds.length === 0
-  ) {
+  if (!studentIds.length) {
 
     message.textContent =
-      "Studentを選択してください。";
+      "生徒を選択してください。";
 
     return;
+
   }
 
-
-  message.style.color =
-    "#222";
 
   message.textContent =
     "発行しています。";
 
 
-  /*
-   * 既存発行を確認
-   */
+  try {
 
-  const {
-    data: existing,
-    error: existingError
-  } =
-    await supabase
-      .from("licenses")
-      .select(
-        "student_id"
-      )
-      .eq(
-        "book_id",
-        bookId
-      )
-      .in(
-        "student_id",
-        studentIds
+    const {
+      data: existing,
+      error
+    } =
+      await supabase
+        .from("licenses")
+        .select(
+          "student_id"
+        )
+        .eq(
+          "book_id",
+          bookId
+        )
+        .in(
+          "student_id",
+          studentIds
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    const existingIds =
+      new Set(
+        (existing || []).map(
+          row =>
+            row.student_id
+        )
       );
 
 
-  if (existingError) {
-
-    message.textContent =
-      "既存シリアルの確認に失敗しました: " +
-      existingError.message;
-
-    return;
-  }
-
-
-  const existingIds =
-    new Set(
-      (existing || []).map(
-        row =>
-          row.student_id
-      )
-    );
-
-
-  const newIds =
-    studentIds.filter(
-      id =>
-        !existingIds.has(id)
-    );
-
-
-  if (
-    newIds.length === 0
-  ) {
-
-    message.textContent =
-      "選択したStudentにはすでにシリアルが発行されています。";
-
-    return;
-  }
-
-
-  /*
-   * codeはDB側のDEFAULTで
-   * 自動生成
-   */
-
-  const rows =
-    newIds.map(
-      studentId => ({
-        book_id:
-          bookId,
-
-        student_id:
-          studentId,
-
-        status:
-          "unused",
-
-        created_by:
-          admin.id
-      })
-    );
-
-
-  const {
-    error
-  } =
-    await supabase
-      .from("licenses")
-      .insert(
-        rows
+    const newIds =
+      studentIds.filter(
+        id =>
+          !existingIds.has(id)
       );
 
 
-  if (error) {
+    if (!newIds.length) {
 
-    message.style.color =
-      "#b00020";
+      message.textContent =
+        "選択した生徒にはすでに発行済みです。";
+
+      return;
+
+    }
+
+
+    const {
+      error:
+        insertError
+    } =
+      await supabase
+        .from("licenses")
+        .insert(
+          newIds.map(
+            student_id => ({
+              book_id:
+                bookId,
+
+              student_id,
+
+              status:
+                "unused",
+
+              created_by:
+                admin.id
+
+            })
+          )
+        );
+
+
+    if (insertError) {
+      throw insertError;
+    }
+
+
+    message.textContent =
+      `${newIds.length}人分を発行しました。`;
+
+
+    await loadSerials();
+
+  }
+  catch (error) {
 
     message.textContent =
       "発行エラー: " +
       error.message;
 
-    return;
   }
-
-
-  message.style.color =
-    "#222";
-
-  message.textContent =
-    `${newIds.length}人分のシリアルを発行しました。`;
-
-
-  document.getElementById(
-    "selectAll"
-  ).checked =
-    false;
-
-
-  document
-    .querySelectorAll(
-      ".student-checkbox"
-    )
-    .forEach(
-      checkbox => {
-
-        checkbox.checked =
-          false;
-
-      }
-    );
-
-
-  await loadSerials();
 
 }
 
 
 async function loadSerials() {
+
+  const box =
+    document.getElementById(
+      "serials"
+    );
+
 
   const {
     data,
@@ -397,13 +332,8 @@ async function loadSerials() {
         id,
         code,
         status,
-        created_at,
-        books (
-          title
-        ),
-        users:student_id (
-          display_name
-        )
+        books(title),
+        users:student_id(display_name)
       `)
       .order(
         "created_at",
@@ -418,12 +348,9 @@ async function loadSerials() {
   }
 
 
-  if (
-    !data ||
-    data.length === 0
-  ) {
+  if (!data?.length) {
 
-    serialsBox.innerHTML =
+    box.innerHTML =
       `
       <div class="list-row">
         発行済みシリアルはありません。
@@ -431,10 +358,11 @@ async function loadSerials() {
       `;
 
     return;
+
   }
 
 
-  serialsBox.innerHTML =
+  box.innerHTML =
     data.map(
       item => `
 
@@ -458,13 +386,11 @@ async function loadSerials() {
           )}
         </div>
 
-        <div class="serial-status">
+        <div>
           ${
             item.status === "used"
               ? "使用済み"
-              : item.status === "disabled"
-                ? "停止"
-                : "未使用"
+              : "未使用"
           }
         </div>
 
@@ -480,18 +406,22 @@ start()
   .catch(
     error => {
 
-      console.error(
-        "SERIAL PAGE ERROR:",
-        error
-      );
+      console.error(error);
 
-
-      showError(
-        error.message,
+      const box =
         document.querySelector(
           ".admin-content"
-        )
-      );
+        );
+
+      box.innerHTML += `
+        <div class="page-error">
+          <h2>シリアル管理を読み込めませんでした</h2>
+          <p>${escapeHtml(error.message)}</p>
+          <button onclick="location.reload()">
+            再読み込み
+          </button>
+        </div>
+      `;
 
     }
   );
