@@ -1,47 +1,74 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  background: #2d2d2d;
+  color: #fff;
+}
+
+
 .student-side {
   position: fixed;
 
-  inset: 0 auto 0 0;
+  top: 0;
+  left: 0;
+  bottom: 0;
 
   width: 250px;
 
   background: #fff;
+  color: #222;
 
   border-right: 1px solid #ddd;
 
-  z-index: 50;
+  z-index: 100;
 }
+
 
 .student-brand {
   height: 150px;
 
   display: flex;
-
   flex-direction: column;
 
   align-items: center;
-
   justify-content: center;
 
   border-bottom: 1px solid #ddd;
 }
+
 
 .brand-title {
   font-size: 28px;
   font-weight: 800;
 }
 
+
 .brand-subtitle {
-  margin-top: 4px;
+  margin-top: 5px;
 
   color: #777;
 
   font-size: 12px;
 }
 
+
 .student-side nav {
   padding-top: 12px;
 }
+
 
 .student-side nav a,
 .student-side nav button {
@@ -55,41 +82,43 @@
 
   background: transparent;
 
-  text-align: left;
+  color: #222;
 
+  text-align: left;
   text-decoration: none;
 
+  font: inherit;
   font-weight: 600;
 
   cursor: pointer;
 }
+
 
 .student-side nav a:hover,
 .student-side nav button:hover {
   background: #f2f2f2;
 }
 
+
 .student-side nav .active {
   background: #d5ca3d;
-
   color: #fff;
 }
+
 
 .student-main {
-  margin-left: 250px;
-
   min-height: 100vh;
 
-  background: #2d2d2d;
+  margin-left: 250px;
 
-  color: #fff;
+  background: #2d2d2d;
 }
+
 
 .student-notice {
   height: 50px;
 
   display: flex;
-
   align-items: center;
 
   gap: 12px;
@@ -103,6 +132,7 @@
   border-bottom: 1px solid #ddd;
 }
 
+
 .notice-title {
   padding: 6px 15px;
 
@@ -113,23 +143,27 @@
   color: #fff;
 
   font-size: 13px;
-
   font-weight: 700;
 }
+
 
 .student-content {
   padding: 40px;
 }
 
+
 .content-heading {
   display: flex;
 
+  align-items: flex-end;
+
   justify-content: space-between;
 
-  align-items: flex-end;
+  gap: 20px;
 
   margin-bottom: 30px;
 }
+
 
 .content-heading h1 {
   margin: 0;
@@ -137,11 +171,20 @@
   font-size: 34px;
 }
 
+
 .content-heading p {
   margin: 6px 0 0;
 
   color: #aaa;
 }
+
+
+#studentName {
+  color: #ddd;
+
+  font-size: 14px;
+}
+
 
 .book-grid {
   display: grid;
@@ -155,12 +198,13 @@
   gap: 26px;
 }
 
+
 .book-card {
   overflow: hidden;
 
   background: #414141;
 
-  border-radius: 3px;
+  border-radius: 4px;
 
   cursor: pointer;
 
@@ -169,45 +213,66 @@
     background .15s ease;
 }
 
+
 .book-card:hover {
   transform: translateY(-3px);
 
   background: #484848;
 }
 
+
 .book-cover {
   aspect-ratio: .72;
-
-  overflow: hidden;
 
   display: flex;
 
   align-items: center;
-
   justify-content: center;
+
+  overflow: hidden;
 
   background: #eee;
 }
 
+
 .book-cover canvas,
 .book-cover img {
+  display: block;
+
   width: 100%;
   height: 100%;
 
   object-fit: cover;
 }
 
+
+.book-placeholder {
+  padding: 20px;
+
+  color: #777;
+
+  text-align: center;
+
+  font-size: 13px;
+}
+
+
 .book-info {
-  min-height: 90px;
+  min-height: 92px;
 
   padding: 13px;
 }
 
+
 .book-title {
+  color: #fff;
+
+  font-size: 14px;
   font-weight: 700;
 
-  line-height: 1.4;
+  line-height: 1.45;
 }
+
 
 .book-description {
   margin-top: 5px;
@@ -216,13 +281,22 @@
 
   font-size: 11px;
 
-  line-height: 1.4;
+  line-height: 1.45;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
 }
 
-.book-open {
-  margin-top: 9px;
 
+.book-open {
   display: inline-block;
+
+  margin-top: 9px;
 
   padding: 5px 12px;
 
@@ -233,19 +307,20 @@
   color: #222;
 
   font-size: 12px;
-
   font-weight: 600;
 }
+
 
 .book-empty {
   grid-column: 1 / -1;
 
   padding: 80px 20px;
 
-  text-align: center;
-
   color: #aaa;
+
+  text-align: center;
 }
+
 
 @media(max-width:700px) {
 
@@ -253,15 +328,15 @@
     position: static;
 
     width: 100%;
-
-    height: auto;
   }
+
 
   .student-side nav {
     display: flex;
 
     overflow-x: auto;
   }
+
 
   .student-side nav a,
   .student-side nav button {
@@ -270,13 +345,16 @@
     white-space: nowrap;
   }
 
+
   .student-main {
     margin-left: 0;
   }
 
+
   .student-content {
     padding: 25px 18px;
   }
+
 
   .book-grid {
     grid-template-columns:
