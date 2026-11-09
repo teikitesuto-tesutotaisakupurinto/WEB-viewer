@@ -20,6 +20,7 @@ async function start() {
   const admin =
     await requireAdmin();
 
+
   if (!admin) {
     return;
   }
@@ -33,19 +34,69 @@ async function start() {
 
   const enabled =
     document.getElementById(
-      "enabled"
+      "maintenanceEnabled"
     );
+
 
   const message =
     document.getElementById(
       "maintenanceMessage"
     );
 
+
+  const status =
+    document.getElementById(
+      "status"
+    );
+
+
   const result =
     document.getElementById(
       "result"
     );
 
+
+  /*
+   * ON/OFF表示
+   */
+
+  function updateStatus() {
+
+    if (
+      enabled.checked
+    ) {
+
+      status.textContent =
+        "現在：ON";
+
+      status.classList.add(
+        "on"
+      );
+
+    }
+    else {
+
+      status.textContent =
+        "現在：OFF";
+
+      status.classList.remove(
+        "on"
+      );
+
+    }
+
+  }
+
+
+  enabled.addEventListener(
+    "change",
+    updateStatus
+  );
+
+
+  /*
+   * 現在の設定取得
+   */
 
   const {
     data,
@@ -62,11 +113,25 @@ async function start() {
         "id",
         1
       )
-      .single();
+      .maybeSingle();
 
 
   if (error) {
-    throw error;
+
+    throw new Error(
+      "メンテナンス設定を取得できませんでした: " +
+      error.message
+    );
+
+  }
+
+
+  if (!data) {
+
+    throw new Error(
+      "メンテナンス設定が登録されていません。"
+    );
+
   }
 
 
@@ -80,52 +145,89 @@ async function start() {
     data.message || "";
 
 
+  updateStatus();
+
+
+  /*
+   * 保存
+   */
+
   document.getElementById(
     "save"
   ).onclick =
     async () => {
 
+      const saveButton =
+        document.getElementById(
+          "save"
+        );
+
+
+      saveButton.disabled =
+        true;
+
+
       result.textContent =
         "保存しています。";
 
 
-      const {
-        error
-      } =
-        await supabase
-          .from(
-            "maintenance_settings"
-          )
-          .update({
-            enabled:
-              enabled.checked,
+      try {
 
-            message:
-              message.value.trim(),
+        const {
+          error
+        } =
+          await supabase
+            .from(
+              "maintenance_settings"
+            )
+            .update({
+              enabled:
+                enabled.checked,
 
-            updated_at:
-              new Date()
-                .toISOString()
-          })
-          .eq(
-            "id",
-            1
-          );
+              message:
+                message.value.trim(),
+
+              updated_at:
+                new Date()
+                  .toISOString()
+            })
+            .eq(
+              "id",
+              1
+            );
 
 
-      if (error) {
+        if (error) {
+          throw error;
+        }
+
+
+        result.textContent =
+          "保存しました。";
+
+
+        updateStatus();
+
+      }
+      catch (error) {
+
+        console.error(
+          "MAINTENANCE SAVE ERROR:",
+          error
+        );
+
 
         result.textContent =
           "保存エラー: " +
           error.message;
 
-        return;
+      }
+      finally {
+
+        saveButton.disabled =
+          false;
 
       }
-
-
-      result.textContent =
-        "保存しました。";
 
     };
 
@@ -137,6 +239,7 @@ start()
     error => {
 
       console.error(
+        "SYSTEM PAGE ERROR:",
         error
       );
 
