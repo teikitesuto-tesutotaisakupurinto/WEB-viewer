@@ -9,47 +9,43 @@ import {
 }
 from "../../assets/js/supabase.js";
 
-
-const admin =
-  await requireAdmin();
-
-
-if (!admin) {
-  throw new Error(
-    "Unauthorized"
-  );
+import {
+  showError
 }
+from "../../assets/js/common.js";
 
 
-document.getElementById(
-  "logout"
-).onclick =
-  logout;
+async function start() {
+
+  const admin =
+    await requireAdmin();
+
+  if (!admin) {
+    return;
+  }
 
 
-const enabledInput =
   document.getElementById(
-    "maintenanceEnabled"
-  );
+    "logout"
+  ).onclick =
+    logout;
 
 
-const messageInput =
-  document.getElementById(
-    "maintenanceMessage"
-  );
+  const enabled =
+    document.getElementById(
+      "enabled"
+    );
 
+  const message =
+    document.getElementById(
+      "maintenanceMessage"
+    );
 
-const result =
-  document.getElementById(
-    "message"
-  );
+  const result =
+    document.getElementById(
+      "result"
+    );
 
-
-/*
- * 現在の設定を取得
- */
-
-async function loadSettings() {
 
   const {
     data,
@@ -70,103 +66,87 @@ async function loadSettings() {
 
 
   if (error) {
-
-    console.error(
-      "MAINTENANCE LOAD ERROR:",
-      error
-    );
-
-
-    result.textContent =
-      "設定を取得できませんでした。";
-
-    return;
-
+    throw error;
   }
 
 
-  enabledInput.checked =
+  enabled.checked =
     Boolean(
       data.enabled
     );
 
 
-  messageInput.value =
+  message.value =
     data.message || "";
+
+
+  document.getElementById(
+    "save"
+  ).onclick =
+    async () => {
+
+      result.textContent =
+        "保存しています。";
+
+
+      const {
+        error
+      } =
+        await supabase
+          .from(
+            "maintenance_settings"
+          )
+          .update({
+            enabled:
+              enabled.checked,
+
+            message:
+              message.value.trim(),
+
+            updated_at:
+              new Date()
+                .toISOString()
+          })
+          .eq(
+            "id",
+            1
+          );
+
+
+      if (error) {
+
+        result.textContent =
+          "保存エラー: " +
+          error.message;
+
+        return;
+
+      }
+
+
+      result.textContent =
+        "保存しました。";
+
+    };
 
 }
 
 
-/*
- * 保存
- */
+start()
+  .catch(
+    error => {
 
-document.getElementById(
-  "save"
-).onclick = async () => {
-
-  const enabled =
-    enabledInput.checked;
-
-
-  const message =
-    messageInput.value.trim();
-
-
-  if (!message) {
-
-    result.textContent =
-      "メンテナンス表示文を入力してください。";
-
-    return;
-
-  }
-
-
-  result.textContent =
-    "保存しています。";
-
-
-  const {
-    error
-  } =
-    await supabase
-      .from(
-        "maintenance_settings"
-      )
-      .update({
-        enabled,
-        message,
-        updated_at:
-          new Date()
-            .toISOString()
-      })
-      .eq(
-        "id",
-        1
+      console.error(
+        error
       );
 
 
-  if (error) {
+      showError(
+        error.message,
+        document.querySelector(
+          ".admin-content"
+        )
+      );
 
-    console.error(
-      "MAINTENANCE SAVE ERROR:",
-      error
-    );
-
-
-    result.textContent =
-      "保存に失敗しました。";
-
-    return;
-
-  }
-
-
-  result.textContent =
-    "保存しました。";
-
-};
-
-
-await loadSettings();
+    }
+  );
