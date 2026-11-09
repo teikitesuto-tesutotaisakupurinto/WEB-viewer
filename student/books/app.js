@@ -15,44 +15,249 @@ import {
 from "../../assets/js/common.js";
 
 
-const student =
-  await requireStudent();
-
-
-if (!student) {
-  throw new Error("Unauthorized");
-}
-
-
-document.getElementById(
-  "studentName"
-).textContent =
-  student.display_name || "";
-
-
-document.getElementById(
-  "logout"
-).onclick =
-  logout;
-
-
-const container =
+const booksContainer =
   document.getElementById(
     "books"
   );
 
 
+const registerButton =
+  document.getElementById(
+    "register"
+  );
+
+
+const serialInput =
+  document.getElementById(
+    "serialCode"
+  );
+
+
+const registerMessage =
+  document.getElementById(
+    "registerMessage"
+  );
+
+
 /*
- * PDF表紙
- *
- * PDF全体は読み込まず、
- * 1ページ目だけ取得する。
+ * ログアウト
  */
 
-async function renderPdfCover(
-  canvas,
-  filePath
-) {
+document.getElementById(
+  "logout"
+).onclick =
+  event => {
+
+    event.preventDefault();
+
+    logout();
+
+  };
+
+
+/*
+ * ========================================
+ * 生徒確認
+ * ========================================
+ */
+
+async function start() {
+
+  const student =
+    await requireStudent();
+
+
+  if (!student) {
+    return;
+  }
+
+
+  document.getElementById(
+    "studentName"
+  ).textContent =
+    student.display_name || "";
+
+
+  /*
+   * シリアル登録
+   */
+
+  registerButton.onclick =
+    () => registerBook();
+
+
+  /*
+   * Enterでも登録
+   */
+
+  serialInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key ===
+        "Enter"
+      ) {
+
+        event.preventDefault();
+
+        registerBook();
+
+      }
+
+    }
+  );
+
+
+  /*
+   * Book一覧
+   */
+
+  await loadBooks();
+
+}
+
+
+/*
+ * ========================================
+ * シリアル登録
+ * ========================================
+ */
+
+async function registerBook() {
+
+  const code =
+    serialInput.value
+      .trim()
+      .toUpperCase()
+      .replace(
+        /\s+/g,
+        ""
+      );
+
+
+  registerMessage.classList.remove(
+    "error"
+  );
+
+
+  if (!code) {
+
+    registerMessage.textContent =
+      "シリアルコードを入力してください。";
+
+    registerMessage.classList.add(
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  registerButton.disabled =
+    true;
+
+
+  registerMessage.textContent =
+    "教材を登録しています。";
+
+
+  try {
+
+    /*
+     * DB側のRPCで登録
+     */
+
+    const {
+      data,
+      error
+    } =
+      await supabase.rpc(
+        "register_book_by_serial",
+        {
+          input_code:
+            code
+        }
+      );
+
+
+    if (error) {
+
+      throw error;
+
+    }
+
+
+    if (
+      !data?.success
+    ) {
+
+      throw new Error(
+        "教材を登録できませんでした。"
+      );
+
+    }
+
+
+    registerMessage.textContent =
+      `${data.title} を登録しました。`;
+
+
+    serialInput.value =
+      "";
+
+
+    /*
+     * My Booksを即更新
+     */
+
+    await loadBooks();
+
+  }
+  catch (error) {
+
+    console.error(
+      "SERIAL REGISTER ERROR:",
+      error
+    );
+
+
+    registerMessage.textContent =
+      error.message ||
+      "シリアル登録に失敗しました。";
+
+
+    registerMessage.classList.add(
+      "error"
+    );
+
+  }
+  finally {
+
+    registerButton.disabled =
+      false;
+
+  }
+
+}
+
+
+/*
+ * ========================================
+ * Book一覧
+ * ========================================
+ */
+
+async function loadBooks() {
+
+  booksContainer.innerHTML =
+    `
+    <div class="book-empty">
+      Bookを読み込んでいます。
+    </div>
+    `;
+
 
   try {
 
@@ -60,93 +265,328 @@ async function renderPdfCover(
       data,
       error
     } =
-      await supabase.storage
-        .from("web-viewer")
-        .createSignedUrl(
-          filePath,
-          300
+      await supabase
+        .from("licenses")
+        .select(`
+          id,
+          book_id,
+          status,
+          created_at,
+          books (
+            id,
+            title,
+            description,
+            file_path,
+            file_type,
+            enabled
+          )
+        `)
+        .eq(
+          "student_id",
+          (
+            await supabase.auth
+              .getUser()
+          ).data.user.id
+        )
+        .eq(
+          "status",
+          "used"
+        )
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
         );
 
 
-    if (
-      error ||
-      !data?.signedUrl
-    ) {
+    if (error) {
+
       throw new Error(
-        "PDF URL error"
+        "Book取得エラー: " +
+        error.message
       );
+
     }
 
 
-    const pdfjs =
-      await import(
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
+    const books =
+      (data || []).filter(
+        item =>
+          item.books &&
+          item.books.enabled
       );
 
 
-    pdfjs.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+    if (
+      books.length === 0
+    ) {
+
+      booksContainer.innerHTML =
+        `
+        <div class="book-empty">
+          登録されている教材はありません。
+        </div>
+        `;
+
+      return;
+
+    }
 
 
-    const pdf =
-      await pdfjs
-        .getDocument(
-          data.signedUrl
+    /*
+     * 画像Bookの1ページ目
+     */
+
+    const bookIds =
+      books.map(
+        item =>
+          item.book_id
+      );
+
+
+    const {
+      data: pages,
+      error: pagesError
+    } =
+      await supabase
+        .from("book_pages")
+        .select(
+          "book_id,file_path"
         )
-        .promise;
+        .in(
+          "book_id",
+          bookIds
+        )
+        .eq(
+          "page_number",
+          1
+        );
 
 
-    const page =
-      await pdf.getPage(1);
+    if (pagesError) {
+      throw pagesError;
+    }
 
 
-    const base =
-      page.getViewport({
-        scale: 1
-      });
-
-
-    const width =
-      260;
-
-
-    const scale =
-      width /
-      base.width;
-
-
-    const viewport =
-      page.getViewport({
-        scale
-      });
-
-
-    canvas.width =
-      Math.floor(
-        viewport.width
+    const firstPages =
+      new Map(
+        (pages || []).map(
+          page => [
+            page.book_id,
+            page
+          ]
+        )
       );
 
 
-    canvas.height =
-      Math.floor(
-        viewport.height
+    booksContainer.innerHTML =
+      "";
+
+
+    /*
+     * 表示
+     */
+
+    for (
+      const item
+      of books
+    ) {
+
+      const book =
+        item.books;
+
+
+      const card =
+        document.createElement(
+          "article"
+        );
+
+
+      card.className =
+        "book-card";
+
+
+      card.innerHTML = `
+
+        <div class="book-cover"></div>
+
+        <div class="book-info">
+
+          <div class="book-title">
+            ${escapeHtml(
+              book.title
+            )}
+          </div>
+
+          <div class="book-description">
+            ${escapeHtml(
+              book.description || ""
+            )}
+          </div>
+
+          <div class="book-open">
+            開く
+          </div>
+
+        </div>
+
+      `;
+
+
+      /*
+       * Viewerを別タブ
+       */
+
+      card.onclick =
+        () => {
+
+          window.open(
+            "../viewer/?book=" +
+            encodeURIComponent(
+              book.id
+            ),
+            "_blank"
+          );
+
+        };
+
+
+      booksContainer.appendChild(
+        card
       );
 
 
-    await page.render({
-      canvasContext:
-        canvas.getContext("2d"),
+      const cover =
+        card.querySelector(
+          ".book-cover"
+        );
 
-      viewport
-    }).promise;
+
+      /*
+       * PDF表紙
+       */
+
+      if (
+        String(
+          book.file_type || ""
+        ).toLowerCase() ===
+        "pdf"
+      ) {
+
+        try {
+
+          await renderPdfCover(
+            cover,
+            book.file_path
+          );
+
+        }
+        catch (
+          error
+        ) {
+
+          console.error(
+            "COVER ERROR:",
+            error
+          );
+
+        }
+
+        continue;
+
+      }
+
+
+      /*
+       * 画像表紙
+       */
+
+      const firstPage =
+        firstPages.get(
+          book.id
+        );
+
+
+      if (!firstPage) {
+
+        continue;
+
+      }
+
+
+      const {
+        data: imageData
+      } =
+        await supabase.storage
+          .from("web-viewer")
+          .createSignedUrl(
+            firstPage.file_path,
+            300
+          );
+
+
+      if (
+        imageData?.signedUrl
+      ) {
+
+        const image =
+          document.createElement(
+            "img"
+          );
+
+
+        image.src =
+          imageData.signedUrl;
+
+
+        image.alt =
+          book.title;
+
+
+        cover.appendChild(
+          image
+        );
+
+      }
+
+    }
 
   }
   catch (error) {
 
     console.error(
-      "PDF COVER ERROR:",
+      "BOOK LIST ERROR:",
       error
     );
+
+
+    booksContainer.innerHTML =
+      `
+
+      <div class="page-error">
+
+        <h2>
+          教材を読み込めませんでした
+        </h2>
+
+        <p>
+          ${escapeHtml(
+            error.message
+          )}
+        </p>
+
+        <button
+          type="button"
+          onclick="location.reload()">
+
+          再読み込み
+
+        </button>
+
+      </div>
+
+      `;
 
   }
 
@@ -154,313 +594,161 @@ async function renderPdfCover(
 
 
 /*
- * Book一覧
+ * ========================================
+ * PDF表紙
+ * ========================================
  */
 
-async function loadBooks() {
+async function renderPdfCover(
+  container,
+  path
+) {
 
   const {
     data,
     error
   } =
-    await supabase
-      .from("licenses")
-      .select(`
-        id,
-        book_id,
-        status,
-        books (
-          id,
-          title,
-          description,
-          file_path,
-          file_type,
-          enabled
-        )
-      `)
-      .eq(
-        "student_id",
-        student.id
-      )
-      .eq(
-        "status",
-        "used"
-      )
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
+    await supabase.storage
+      .from("web-viewer")
+      .createSignedUrl(
+        path,
+        300
       );
 
 
   if (error) {
-
-    console.error(error);
-
-    container.innerHTML =
-      `
-      <div class="book-empty">
-        Bookを取得できませんでした。
-      </div>
-      `;
-
-    return;
+    throw error;
   }
-
-
-  const items =
-    (data || []).filter(
-      item =>
-        item.books &&
-        item.books.enabled
-    );
 
 
   if (
-    items.length === 0
+    !data?.signedUrl
   ) {
 
-    container.innerHTML =
-      `
-      <div class="book-empty">
-        利用できるBookはありません。
-      </div>
-      `;
+    throw new Error(
+      "PDFのURLを取得できませんでした。"
+    );
 
-    return;
   }
 
 
-  /*
-   * 画像Bookの1ページ目だけ取得
-   */
-
-  const bookIds =
-    items.map(
-      item =>
-        item.book_id
+  const pdfjs =
+    await import(
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
     );
 
 
-  const {
-    data: pages
-  } =
-    await supabase
-      .from("book_pages")
-      .select(
-        "book_id,file_path"
+  pdfjs.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+
+
+  const pdf =
+    await pdfjs
+      .getDocument(
+        data.signedUrl
       )
-      .in(
-        "book_id",
-        bookIds
-      )
-      .eq(
-        "page_number",
-        1
-      );
+      .promise;
 
 
-  const firstPages =
-    new Map(
-      (pages || []).map(
-        page => [
-          page.book_id,
-          page
-        ]
-      )
+  const page =
+    await pdf.getPage(1);
+
+
+  const base =
+    page.getViewport({
+      scale: 1
+    });
+
+
+  const scale =
+    260 /
+    base.width;
+
+
+  const viewport =
+    page.getViewport({
+      scale
+    });
+
+
+  const canvas =
+    document.createElement(
+      "canvas"
     );
 
 
-  container.innerHTML =
-    "";
-
-
-  for (
-    const item of items
-  ) {
-
-    const book =
-      item.books;
-
-
-    const card =
-      document.createElement(
-        "article"
-      );
-
-
-    card.className =
-      "book-card";
-
-
-    const cover =
-      document.createElement(
-        "div"
-      );
-
-
-    cover.className =
-      "book-cover";
-
-
-    const info =
-      document.createElement(
-        "div"
-      );
-
-
-    info.className =
-      "book-info";
-
-
-    info.innerHTML = `
-
-<div class="book-title">
-${escapeHtml(book.title)}
-</div>
-
-<div class="book-description">
-${escapeHtml(
-  book.description || ""
-)}
-</div>
-
-<div class="book-open">
-開く
-</div>
-
-`;
-
-
-    card.appendChild(
-      cover
-    );
-
-    card.appendChild(
-      info
+  canvas.width =
+    Math.floor(
+      viewport.width
     );
 
 
-    /*
-     * Viewerを別タブで開く。
-     *
-     * noopenerを付けないことで
-     * Viewer側からwindow.close()できる
-     * openerを保持する。
-     */
-
-    card.onclick = () => {
-
-      window.open(
-        "../viewer/?book=" +
-        encodeURIComponent(
-          book.id
-        ),
-        "_blank"
-      );
-
-    };
-
-
-    container.appendChild(
-      card
+  canvas.height =
+    Math.floor(
+      viewport.height
     );
 
 
-    /*
-     * PDF
-     */
-
-    if (
-      String(
-        book.file_type || ""
-      ).toLowerCase() ===
-      "pdf"
-    ) {
-
-      const canvas =
-        document.createElement(
-          "canvas"
-        );
+  container.appendChild(
+    canvas
+  );
 
 
-      cover.appendChild(
-        canvas
-      );
+  await page.render({
+    canvasContext:
+      canvas.getContext(
+        "2d"
+      ),
 
+    viewport
 
-      await renderPdfCover(
-        canvas,
-        book.file_path
-      );
-
-
-      continue;
-    }
-
-
-    /*
-     * 画像
-     */
-
-    const firstPage =
-      firstPages.get(
-        book.id
-      );
-
-
-    if (!firstPage) {
-
-      cover.innerHTML =
-        `
-        <div class="book-placeholder">
-          表紙なし
-        </div>
-        `;
-
-      continue;
-    }
-
-
-    const {
-      data: imageData
-    } =
-      await supabase.storage
-        .from("web-viewer")
-        .createSignedUrl(
-          firstPage.file_path,
-          300
-        );
-
-
-    if (
-      imageData?.signedUrl
-    ) {
-
-      const image =
-        document.createElement(
-          "img"
-        );
-
-
-      image.src =
-        imageData.signedUrl;
-
-
-      image.alt =
-        book.title;
-
-
-      cover.appendChild(
-        image
-      );
-
-    }
-
-  }
+  }).promise;
 
 }
 
 
-loadBooks();
+/*
+ * ========================================
+ * 起動
+ * ========================================
+ */
+
+start()
+  .catch(
+    error => {
+
+      console.error(
+        "STUDENT BOOK ERROR:",
+        error
+      );
+
+
+      booksContainer.innerHTML =
+        `
+
+        <div class="page-error">
+
+          <h2>
+            My Booksを読み込めませんでした
+          </h2>
+
+          <p>
+            ${escapeHtml(
+              error.message
+            )}
+          </p>
+
+          <button
+            type="button"
+            onclick="location.reload()">
+
+            再読み込み
+
+          </button>
+
+        </div>
+
+        `;
+
+    }
+  );
