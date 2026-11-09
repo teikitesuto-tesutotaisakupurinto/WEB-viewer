@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
+<title>WEB-viewer ログイン</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<main class="login-page">
+
+<section class="login-card">
+
+<h1>WEB-viewer</h1>
+
+<form id="loginForm">
+
+<label>
+メールアドレス
+
+<input
+  id="email"
+  type="email"
+  autocomplete="username"
+  required>
+</label>
+
+<label>
+パスワード
+
+<input
+  id="password"
+  type="password"
+  autocomplete="current-password"
+  required>
+</label>
+
+<button
+  id="loginButton"
+  type="submit">
+
+ログイン
+
+</button>
+
+<p id="message"></p>
+
+</form>
+
+</section>
+
+</main>
+
+<script
+  type="module"
+  src="app.js">
+</script>
+
+</body>
+
+</html>
