@@ -1,10 +1,13 @@
+<!DOCTYPE html>
+<html lang="ja">
+
 <head>
 
 <meta charset="UTF-8">
 
 <meta
   name="viewport"
-  content="width=device-width,initial-scale=1">
+  content="width=device-width, initial-scale=1">
 
 <title>Student管理</title>
 
@@ -21,3 +24,198 @@
   href="style.css">
 
 </head>
+
+<body>
+
+<aside class="admin-side">
+
+<div class="admin-brand">
+<div>WEB-viewer</div>
+<small>管理システム</small>
+</div>
+
+<nav>
+
+<a href="../">
+ダッシュボード
+</a>
+
+<a href="../books/">
+Book管理
+</a>
+
+<a href="../serials/">
+シリアル管理
+</a>
+
+<a
+  class="active"
+  href="./">
+Student管理
+</a>
+
+<a href="../materials/">
+資料配信
+</a>
+
+<a href="../b4/">
+B4資料
+</a>
+
+<a href="../system/">
+システム管理
+</a>
+
+<button
+  id="logout"
+  type="button">
+ログアウト
+</button>
+
+</nav>
+
+</aside>
+
+
+<main class="admin-main">
+
+<header class="admin-notice">
+
+<div>
+お知らせ
+</div>
+
+<span>
+Student管理
+</span>
+
+</header>
+
+
+<section class="admin-content">
+
+<div class="page-heading">
+
+<div>
+
+<h1>
+Student管理
+</h1>
+
+<p>
+氏名・メールアドレス・パスワードだけで登録
+</p>
+
+</div>
+
+<button
+  id="showForm"
+  class="primary-button"
+  type="button">
+Studentを追加
+</button>
+
+</div>
+
+
+<section
+  id="formCard"
+  class="admin-card hidden">
+
+<h2>
+Studentを追加
+</h2>
+
+
+<label>
+
+氏名
+
+<input
+  id="displayName"
+  type="text"
+  autocomplete="name">
+
+</label>
+
+
+<label>
+
+メールアドレス
+
+<input
+  id="email"
+  type="email"
+  autocomplete="email">
+
+</label>
+
+
+<label>
+
+初期パスワード
+
+<input
+  id="password"
+  type="password"
+  autocomplete="new-password">
+
+</label>
+
+
+<div class="toolbar">
+
+<button
+  id="create"
+  class="primary-button"
+  type="button">
+登録
+</button>
+
+<button
+  id="cancel"
+  class="secondary-button"
+  type="button">
+キャンセル
+</button>
+
+</div>
+
+
+<p
+  id="message"
+  class="message">
+</p>
+
+</section>
+
+
+<section class="admin-card">
+
+<h2>
+Student一覧
+</h2>
+
+<div id="students">
+
+<div class="list-row">
+読み込み中です。
+</div>
+
+</div>
+
+</section>
+
+</section>
+
+</main>
+
+
+<script
+  type="module"
+  src="app.js">
+</script>
+
+</body>
+
+</html>
