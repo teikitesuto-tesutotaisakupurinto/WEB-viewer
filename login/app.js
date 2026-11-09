@@ -18,72 +18,31 @@ const button =
   );
 
 
-/*
- * app.js読み込み確認
- */
-
-console.log(
-  "WEB-viewer login/app.js loaded"
-);
-
-
-/*
- * ログインフォーム
- */
-
 form.addEventListener(
   "submit",
   async event => {
 
     event.preventDefault();
 
-
     message.textContent = "";
-
-    message.style.color =
-      "#222";
-
 
     button.disabled = true;
 
 
-    /*
-     * 入力値
-     */
-
     const email =
-      document
-        .getElementById("email")
-        .value
-        .trim();
+      document.getElementById(
+        "email"
+      ).value.trim();
 
 
     const password =
-      document
-        .getElementById("password")
-        .value;
+      document.getElementById(
+        "password"
+      ).value;
 
-
-    if (
-      !email ||
-      !password
-    ) {
-
-      message.textContent =
-        "メールアドレスとパスワードを入力してください。";
-
-      button.disabled = false;
-
-      return;
-    }
-
-
-    /*
-     * Supabase Auth
-     */
 
     const {
-      data: loginData,
+      data: login,
       error: loginError
     } =
       await supabase.auth
@@ -93,25 +52,14 @@ form.addEventListener(
         });
 
 
-    /*
-     * ログインエラー
-     */
-
     if (loginError) {
 
       console.error(
-        "Login error:",
         loginError
       );
 
-
-      message.style.color =
-        "#b00020";
-
-
       message.textContent =
         "ログインできませんでした。";
-
 
       button.disabled = false;
 
@@ -119,23 +67,10 @@ form.addEventListener(
     }
 
 
-    /*
-     * ユーザー確認
-     */
-
-    const user =
-      loginData?.user;
-
-
-    if (!user) {
-
-      message.style.color =
-        "#b00020";
-
+    if (!login.user) {
 
       message.textContent =
         "ログインユーザーを取得できませんでした。";
-
 
       button.disabled = false;
 
@@ -144,81 +79,18 @@ form.addEventListener(
 
 
     console.log(
-      "Logged in UID:",
-      user.id
+      "UID:",
+      login.user.id
     );
 
-
-    /*
-     * usersテーブルからプロフィール取得
-     */
 
     const {
       data: profile,
       error: profileError
     } =
-      await supabase
-        .from("users")
-        .select(
-          "id, display_name, role"
-        )
-        .eq(
-          "id",
-          user.id
-        )
-        .maybeSingle();
-
-
-    /*
-     * プロフィール取得エラー
-     */
-
-    if (profileError) {
-
-      console.error(
-        "Profile error:",
-        profileError
+      await supabase.rpc(
+        "login_profile"
       );
-
-
-      message.style.color =
-        "#b00020";
-
-
-      message.textContent =
-        "ユーザー情報の取得に失敗しました。";
-
-
-      button.disabled = false;
-
-      return;
-    }
-
-
-    /*
-     * usersに存在しない
-     */
-
-    if (!profile) {
-
-      console.error(
-        "Profile not found:",
-        user.id
-      );
-
-
-      message.style.color =
-        "#b00020";
-
-
-      message.textContent =
-        "ユーザー情報が登録されていません。";
-
-
-      button.disabled = false;
-
-      return;
-    }
 
 
     console.log(
@@ -226,10 +98,33 @@ form.addEventListener(
       profile
     );
 
+    console.log(
+      "Profile error:",
+      profileError
+    );
 
-    /*
-     * Admin
-     */
+
+    if (profileError) {
+
+      message.textContent =
+        "ユーザー情報の取得に失敗しました。";
+
+      button.disabled = false;
+
+      return;
+    }
+
+
+    if (!profile) {
+
+      message.textContent =
+        "ユーザー情報が登録されていません。";
+
+      button.disabled = false;
+
+      return;
+    }
+
 
     if (
       profile.role === "admin"
@@ -243,10 +138,6 @@ form.addEventListener(
     }
 
 
-    /*
-     * Student
-     */
-
     if (
       profile.role === "student"
     ) {
@@ -259,17 +150,8 @@ form.addEventListener(
     }
 
 
-    /*
-     * 不明な権限
-     */
-
-    message.style.color =
-      "#b00020";
-
-
     message.textContent =
       "ユーザー権限が設定されていません。";
-
 
     button.disabled = false;
 
