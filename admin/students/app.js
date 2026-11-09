@@ -18,9 +18,7 @@ const admin =
   await requireAdmin();
 
 if (!admin) {
-  throw new Error(
-    "Unauthorized"
-  );
+  throw new Error("Unauthorized");
 }
 
 
@@ -244,14 +242,65 @@ document.getElementById(
 
   try {
 
+    /*
+     * 現在のログインセッション取得
+     */
+
     const {
-      data,
-      error
+      data: sessionData,
+      error: sessionError
     } =
-      await supabase.functions.invoke(
-        "create-student",
+      await supabase.auth
+        .getSession();
+
+
+    if (
+      sessionError ||
+      !sessionData.session
+    ) {
+
+      throw new Error(
+        "ログインセッションがありません。"
+      );
+
+    }
+
+
+    const accessToken =
+      sessionData.session
+        .access_token;
+
+
+    /*
+     * Edge Function URL
+     */
+
+    const functionUrl =
+      "https://wcddlfjtkrbpperhrxkk.supabase.co/functions/v1/create-student";
+
+
+    /*
+     * Functionへ直接POST
+     */
+
+    const response =
+      await fetch(
+        functionUrl,
         {
-          body: {
+          method: "POST",
+
+          headers: {
+            "Authorization":
+              `Bearer ${accessToken}`,
+
+            "apikey":
+              "sb_publishable_GZA4t1Q-c51iM-9HndtZhA_xvnB-Icu",
+
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
             display_name:
               displayName,
 
@@ -264,101 +313,70 @@ document.getElementById(
 
             student_number:
               studentNumber
-          }
+          })
         }
       );
 
 
-    console.log(
-      "CREATE STUDENT DATA:",
-      data
-    );
+    /*
+     * Functionの返答を取得
+     */
 
-    console.log(
-      "CREATE STUDENT ERROR:",
-      error
-    );
+    const responseText =
+      await response.text();
 
 
-    if (error) {
-
-      let detail =
-        error.message ||
-        "Functionの実行に失敗しました。";
+    let result = null;
 
 
-      /*
-       * Edge Functionが返した
-       * エラー本文を取得
-       */
+    try {
 
-      try {
-
-        if (
-          error.context
-        ) {
-
-          const response =
-            error.context;
-
-          const text =
-            await response.text();
-
-          if (text) {
-
-            try {
-
-              const json =
-                JSON.parse(text);
-
-              if (
-                json.error
-              ) {
-
-                detail =
-                  json.error;
-
-              }
-
-            }
-            catch {
-
-              detail =
-                text;
-
-            }
-
-          }
-
-        }
-
-      }
-      catch (
-        readError
-      ) {
-
-        console.error(
-          "ERROR BODY READ:",
-          readError
+      result =
+        JSON.parse(
+          responseText
         );
 
-      }
+    }
+    catch {
 
+      result = {
+        error:
+          responseText
+      };
+
+    }
+
+
+    console.log(
+      "FUNCTION STATUS:",
+      response.status
+    );
+
+    console.log(
+      "FUNCTION RESPONSE:",
+      result
+    );
+
+
+    if (
+      !response.ok
+    ) {
 
       throw new Error(
-        detail
+        result?.error ||
+        `Edge Function error: ${response.status}`
       );
 
     }
 
 
     if (
-      !data ||
-      !data.success
+      !result ||
+      !result.success
     ) {
 
       throw new Error(
-        data?.error ||
+        result?.error ||
         "Student登録に失敗しました。"
       );
 
