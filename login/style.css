@@ -7,11 +7,12 @@ body {
 
   min-height: 100vh;
 
-  background: #f4f5f7;
+  background: #f5f5f3;
 
   font-family:
     system-ui,
     -apple-system,
+    BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
 }
@@ -26,9 +27,9 @@ body {
 }
 
 .login-card {
-  width: min(400px,100%);
+  width: min(410px, 100%);
 
-  padding: 34px;
+  padding: 35px;
 
   background: #fff;
 
@@ -36,19 +37,31 @@ body {
   border-radius: 14px;
 
   box-shadow:
-    0 12px 35px rgba(0,0,0,.06);
+    0 10px 30px rgba(0,0,0,.06);
 }
 
 .login-card h1 {
-  margin: 0 0 30px;
+  margin: 0;
 
   text-align: center;
+
+  font-size: 30px;
+}
+
+.login-subtitle {
+  margin: 7px 0 28px;
+
+  text-align: center;
+
+  color: #777;
+
+  font-size: 13px;
 }
 
 .login-card label {
   display: block;
 
-  margin-top: 17px;
+  margin-top: 16px;
 
   font-size: 14px;
 }
@@ -66,17 +79,19 @@ body {
   font-size: 16px;
 }
 
-.login-card button {
+.login-button {
   width: 100%;
 
-  margin-top: 24px;
+  margin-top: 22px;
+
   padding: 13px;
 
   border: 0;
   border-radius: 8px;
 
-  background: #111;
-  color: #fff;
+  background: #d5ca3d;
+
+  font-weight: 700;
 }
 
 #message {
@@ -84,7 +99,7 @@ body {
 
   margin-top: 14px;
 
-  text-align: center;
-
   color: #b00020;
+
+  text-align: center;
 }
