@@ -9,6 +9,10 @@ import {
 from "../../assets/js/supabase.js";
 
 
+/*
+ * Student認証
+ */
+
 const student =
   await requireStudent();
 
@@ -23,7 +27,7 @@ if (!student) {
 
 
 /*
- * URL
+ * URLからBook ID取得
  */
 
 const params =
@@ -54,105 +58,7 @@ if (!bookId) {
 
 
 /*
- * 利用権確認
- */
-
-const {
-  data: license,
-  error: licenseError
-} =
-  await supabase
-    .from("licenses")
-    .select(
-      "id,book_id,student_id,status"
-    )
-    .eq(
-      "book_id",
-      bookId
-    )
-    .eq(
-      "student_id",
-      student.id
-    )
-    .eq(
-      "status",
-      "used"
-    )
-    .maybeSingle();
-
-
-if (
-  licenseError ||
-  !license
-) {
-
-  console.error(
-    "LICENSE ERROR:",
-    licenseError
-  );
-
-  alert(
-    "このBookを利用する権限がありません。"
-  );
-
-  location.replace(
-    "../"
-  );
-
-  throw new Error(
-    "Book access denied"
-  );
-
-}
-
-
-/*
- * Book取得
- */
-
-const {
-  data: book,
-  error: bookError
-} =
-  await supabase
-    .from("books")
-    .select(
-      "id,title,description,file_path,file_type,enabled"
-    )
-    .eq(
-      "id",
-      bookId
-    )
-    .eq(
-      "enabled",
-      true
-    )
-    .maybeSingle();
-
-
-if (
-  bookError ||
-  !book
-) {
-
-  console.error(
-    "BOOK ERROR:",
-    bookError
-  );
-
-  alert(
-    "Bookを取得できませんでした。"
-  );
-
-  throw new Error(
-    "Book not found"
-  );
-
-}
-
-
-/*
- * UI
+ * DOM
  */
 
 const titleElement =
@@ -190,13 +96,14 @@ const pageContainer =
     "pageContainer"
   );
 
-
-titleElement.textContent =
-  book.title;
+const viewerStage =
+  document.querySelector(
+    ".viewer-stage"
+  );
 
 
 /*
- * Viewer状態
+ * 状態
  */
 
 let pdf = null;
@@ -209,6 +116,8 @@ let zoom = 1;
 
 let tool = "pen";
 
+let penEnabled = false;
+
 let drawing = false;
 
 let lastX = 0;
@@ -217,20 +126,156 @@ let lastY = 0;
 
 let rendering = false;
 
+let swipeStartX = null;
+
+let swipeStartY = null;
+
+
+/*
+ * Book
+ */
+
+let book = null;
+
 
 /*
  * PDF判定
  */
 
-const isPdf =
-  String(
-    book.file_type || ""
-  ).toLowerCase() ===
-  "pdf";
+let isPdf = false;
 
 
 /*
- * Storage URL取得
+ * Book取得
+ */
+
+async function loadBook() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("books")
+      .select(`
+        id,
+        title,
+        description,
+        file_path,
+        file_type,
+        enabled
+      `)
+      .eq(
+        "id",
+        bookId
+      )
+      .eq(
+        "enabled",
+        true
+      )
+      .maybeSingle();
+
+
+  if (error) {
+
+    console.error(
+      "BOOK ERROR:",
+      error
+    );
+
+    throw new Error(
+      "Bookを取得できませんでした。"
+    );
+
+  }
+
+
+  if (!data) {
+
+    throw new Error(
+      "Bookが見つかりません。"
+    );
+
+  }
+
+
+  book =
+    data;
+
+
+  titleElement.textContent =
+    book.title;
+
+
+  isPdf =
+    String(
+      book.file_type || ""
+    ).toLowerCase() ===
+    "pdf";
+
+}
+
+
+/*
+ * 利用権確認
+ */
+
+async function checkLicense() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("licenses")
+      .select(`
+        id,
+        book_id,
+        student_id,
+        status
+      `)
+      .eq(
+        "book_id",
+        bookId
+      )
+      .eq(
+        "student_id",
+        student.id
+      )
+      .eq(
+        "status",
+        "used"
+      )
+      .maybeSingle();
+
+
+  if (error) {
+
+    console.error(
+      "LICENSE ERROR:",
+      error
+    );
+
+    throw new Error(
+      "Bookの利用権を確認できませんでした。"
+    );
+
+  }
+
+
+  if (!data) {
+
+    throw new Error(
+      "このBookを利用する権限がありません。"
+    );
+
+  }
+
+}
+
+
+/*
+ * Storage署名URL
  */
 
 async function getSignedUrl(
@@ -265,7 +310,9 @@ async function getSignedUrl(
       error
     );
 
-    throw error;
+    throw new Error(
+      "教材ファイルを取得できませんでした。"
+    );
 
   }
 
@@ -288,94 +335,14 @@ async function getSignedUrl(
 
 
 /*
- * PDF.js読み込み
+ * PDF.js
  */
 
 async function loadPdfJs() {
 
-  if (
-    window.pdfjsLib
-  ) {
-
-    return window.pdfjsLib;
-
-  }
-
-
-  if (
-    window.__pdfJsPromise
-  ) {
-
-    return window.__pdfJsPromise;
-
-  }
-
-
-  window.__pdfJsPromise =
-    new Promise(
-      (
-        resolve,
-        reject
-      ) => {
-
-        const script =
-          document.createElement(
-            "script"
-          );
-
-
-        script.src =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
-
-        script.type =
-          "module";
-
-
-        script.onload = () => {
-
-          if (
-            window.pdfjsLib
-          ) {
-
-            resolve(
-              window.pdfjsLib
-            );
-
-          }
-          else {
-
-            reject(
-              new Error(
-                "PDF.jsを読み込めませんでした。"
-              )
-            );
-
-          }
-
-        };
-
-
-        script.onerror =
-          () => {
-
-            reject(
-              new Error(
-                "PDF.jsの読み込みに失敗しました。"
-              )
-            );
-
-          };
-
-
-        document.head.appendChild(
-          script
-        );
-
-      }
-    );
-
-
-  return window.__pdfJsPromise;
+  return await import(
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
+  );
 
 }
 
@@ -392,24 +359,16 @@ async function loadPdf() {
     );
 
 
-  /*
-   * PDF.jsをES Moduleとして
-   * 直接読み込む
-   */
-
   const pdfjs =
-    await import(
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
-    );
+    await loadPdfJs();
 
 
   if (
     pdfjs.GlobalWorkerOptions
   ) {
 
-    pdfjs.GlobalWorkerOptions
-      .workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+    pdfjs.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
   }
 
@@ -420,6 +379,13 @@ async function loadPdf() {
         url
       })
       .promise;
+
+
+  currentPage =
+    Math.min(
+      currentPage,
+      pdf.numPages
+    );
 
 
   await renderPdfPage();
@@ -439,9 +405,12 @@ async function loadImages() {
   } =
     await supabase
       .from("book_pages")
-      .select(
-        "id,page_number,file_path,file_type"
-      )
+      .select(`
+        id,
+        page_number,
+        file_path,
+        file_type
+      `)
       .eq(
         "book_id",
         bookId
@@ -461,7 +430,9 @@ async function loadImages() {
       error
     );
 
-    throw error;
+    throw new Error(
+      "教材ページを取得できませんでした。"
+    );
 
   }
 
@@ -472,7 +443,7 @@ async function loadImages() {
   ) {
 
     throw new Error(
-      "画像ページが登録されていません。"
+      "教材ページが登録されていません。"
     );
 
   }
@@ -480,6 +451,13 @@ async function loadImages() {
 
   imagePages =
     data;
+
+
+  currentPage =
+    Math.min(
+      currentPage,
+      imagePages.length
+    );
 
 
   await renderImagePage();
@@ -508,14 +486,14 @@ function getPageCount() {
 
 
 /*
- * PDFページ描画
+ * PDF描画
  */
 
 async function renderPdfPage() {
 
   if (
-    rendering ||
-    !pdf
+    !pdf ||
+    rendering
   ) {
 
     return;
@@ -523,7 +501,8 @@ async function renderPdfPage() {
   }
 
 
-  rendering = true;
+  rendering =
+    true;
 
 
   try {
@@ -545,6 +524,7 @@ async function renderPdfPage() {
         viewport.width
       );
 
+
     pdfCanvas.height =
       Math.floor(
         viewport.height
@@ -554,12 +534,14 @@ async function renderPdfPage() {
     pdfCanvas.style.width =
       `${viewport.width}px`;
 
+
     pdfCanvas.style.height =
       `${viewport.height}px`;
 
 
     pageContainer.style.width =
       `${viewport.width}px`;
+
 
     pageContainer.style.height =
       `${viewport.height}px`;
@@ -593,6 +575,7 @@ async function renderPdfPage() {
     pdfCanvas.style.display =
       "block";
 
+
     imagePage.style.display =
       "none";
 
@@ -611,7 +594,8 @@ async function renderPdfPage() {
   }
   finally {
 
-    rendering = false;
+    rendering =
+      false;
 
   }
 
@@ -619,7 +603,7 @@ async function renderPdfPage() {
 
 
 /*
- * 画像ページ描画
+ * 画像描画
  */
 
 async function renderImagePage() {
@@ -633,7 +617,7 @@ async function renderImagePage() {
   if (!page) {
 
     throw new Error(
-      "画像ページが見つかりません。"
+      "教材ページが見つかりません。"
     );
 
   }
@@ -704,12 +688,14 @@ async function renderImagePage() {
   imagePage.width =
     width;
 
+
   imagePage.height =
     height;
 
 
   imagePage.style.width =
     `${width}px`;
+
 
   imagePage.style.height =
     `${height}px`;
@@ -725,6 +711,7 @@ async function renderImagePage() {
 
   pageContainer.style.width =
     `${width}px`;
+
 
   pageContainer.style.height =
     `${height}px`;
@@ -745,59 +732,41 @@ async function renderImagePage() {
 
 
 /*
- * 初期表示
+ * 初期描画
  */
 
 async function render() {
 
-  try {
+  if (isPdf) {
 
-    if (isPdf) {
+    if (!pdf) {
 
-      if (!pdf) {
+      await loadPdf();
 
-        await loadPdf();
-
-        return;
-
-      }
-
-
-      await renderPdfPage();
-
-    }
-    else {
-
-      if (
-        imagePages.length === 0
-      ) {
-
-        await loadImages();
-
-        return;
-
-      }
-
-
-      await renderImagePage();
+      return;
 
     }
 
-  }
-  catch (error) {
 
-    console.error(
-      "VIEWER ERROR:",
-      error
-    );
+    await renderPdfPage();
 
-
-    alert(
-      "教材を表示できませんでした。\n" +
-      error.message
-    );
+    return;
 
   }
+
+
+  if (
+    imagePages.length === 0
+  ) {
+
+    await loadImages();
+
+    return;
+
+  }
+
+
+  await renderImagePage();
 
 }
 
@@ -814,12 +783,14 @@ function setupAnnotationCanvas(
   annotationCanvas.width =
     Math.floor(width);
 
+
   annotationCanvas.height =
     Math.floor(height);
 
 
   annotationCanvas.style.width =
     `${width}px`;
+
 
   annotationCanvas.style.height =
     `${height}px`;
@@ -846,6 +817,44 @@ function updatePageInfo() {
 
 
 /*
+ * ペンボタン状態
+ */
+
+function updatePenButton() {
+
+  const button =
+    document.getElementById(
+      "pen"
+    );
+
+
+  if (!button) {
+    return;
+  }
+
+
+  button.textContent =
+    penEnabled
+      ? "ペン ON"
+      : "ペン OFF";
+
+
+  button.classList.toggle(
+    "active",
+    penEnabled
+  );
+
+}
+
+
+/*
+ * ツール初期化
+ */
+
+updatePenButton();
+
+
+/*
  * 前ページ
  */
 
@@ -866,6 +875,7 @@ document.getElementById(
 
 
   currentPage--;
+
 
   await render();
 
@@ -894,6 +904,7 @@ document.getElementById(
 
 
   currentPage++;
+
 
   await render();
 
@@ -955,41 +966,86 @@ document.getElementById(
 
 
 /*
- * ツール
+ * ペンON/OFF
  */
 
 document.getElementById(
   "pen"
 ).onclick = () => {
 
-  tool =
-    "pen";
+  penEnabled =
+    !penEnabled;
 
-};
-
-
-document.getElementById(
-  "highlighter"
-).onclick = () => {
 
   tool =
-    "highlighter";
+    penEnabled
+      ? "pen"
+      : null;
 
-};
 
-
-document.getElementById(
-  "eraser"
-).onclick = () => {
-
-  tool =
-    "eraser";
+  updatePenButton();
 
 };
 
 
 /*
- * 書き込み消去
+ * 蛍光ペン
+ *
+ * ペンがOFFの場合は
+ * 自動的にONにする
+ */
+
+document.getElementById(
+  "highlighter"
+).onclick = () => {
+
+  if (!penEnabled) {
+
+    penEnabled =
+      true;
+
+  }
+
+
+  tool =
+    "highlighter";
+
+
+  updatePenButton();
+
+};
+
+
+/*
+ * 消しゴム
+ *
+ * ペンがOFFの場合は
+ * 自動的にONにする
+ */
+
+document.getElementById(
+  "eraser"
+).onclick = () => {
+
+  if (!penEnabled) {
+
+    penEnabled =
+      true;
+
+  }
+
+
+  tool =
+    "eraser";
+
+
+  updatePenButton();
+
+};
+
+
+/*
+ * 書き込み全消去
  */
 
 document.getElementById(
@@ -1009,6 +1065,10 @@ document.getElementById(
   );
 
 
+  context.globalCompositeOperation =
+    "source-over";
+
+
   await saveAnnotation();
 
 };
@@ -1018,218 +1078,359 @@ document.getElementById(
  * 描画開始
  */
 
-annotationCanvas
-  .addEventListener(
-    "pointerdown",
-    event => {
+annotationCanvas.addEventListener(
+  "pointerdown",
+  event => {
 
-      drawing =
-        true;
+    /*
+     * ペンOFFなら
+     * 書き込み不可
+     */
 
+    if (!penEnabled) {
 
-      annotationCanvas
-        .setPointerCapture(
-          event.pointerId
-        );
-
-
-      const rect =
-        annotationCanvas
-          .getBoundingClientRect();
-
-
-      const scaleX =
-        annotationCanvas.width /
-        rect.width;
-
-
-      const scaleY =
-        annotationCanvas.height /
-        rect.height;
-
-
-      lastX =
-        (
-          event.clientX -
-          rect.left
-        ) *
-        scaleX;
-
-
-      lastY =
-        (
-          event.clientY -
-          rect.top
-        ) *
-        scaleY;
+      return;
 
     }
-  );
+
+
+    drawing =
+      true;
+
+
+    annotationCanvas
+      .setPointerCapture(
+        event.pointerId
+      );
+
+
+    const rect =
+      annotationCanvas
+        .getBoundingClientRect();
+
+
+    const scaleX =
+      annotationCanvas.width /
+      rect.width;
+
+
+    const scaleY =
+      annotationCanvas.height /
+      rect.height;
+
+
+    lastX =
+      (
+        event.clientX -
+        rect.left
+      ) *
+      scaleX;
+
+
+    lastY =
+      (
+        event.clientY -
+        rect.top
+      ) *
+      scaleY;
+
+  }
+);
 
 
 /*
- * 描画
+ * 描画中
  */
 
-annotationCanvas
-  .addEventListener(
-    "pointermove",
-    event => {
+annotationCanvas.addEventListener(
+  "pointermove",
+  event => {
 
-      if (!drawing) {
-        return;
-      }
+    if (
+      !drawing ||
+      !penEnabled
+    ) {
 
-
-      const rect =
-        annotationCanvas
-          .getBoundingClientRect();
-
-
-      const scaleX =
-        annotationCanvas.width /
-        rect.width;
-
-
-      const scaleY =
-        annotationCanvas.height /
-        rect.height;
-
-
-      const x =
-        (
-          event.clientX -
-          rect.left
-        ) *
-        scaleX;
-
-
-      const y =
-        (
-          event.clientY -
-          rect.top
-        ) *
-        scaleY;
-
-
-      const context =
-        annotationCanvas
-          .getContext("2d");
-
-
-      context.beginPath();
-
-
-      context.moveTo(
-        lastX,
-        lastY
-      );
-
-
-      context.lineTo(
-        x,
-        y
-      );
-
-
-      context.lineCap =
-        "round";
-
-
-      if (
-        tool ===
-        "highlighter"
-      ) {
-
-        context.lineWidth =
-          18;
-
-        context.strokeStyle =
-          "rgba(255,235,0,0.45)";
-
-        context.globalCompositeOperation =
-          "source-over";
-
-      }
-      else if (
-        tool ===
-        "eraser"
-      ) {
-
-        context.lineWidth =
-          28;
-
-        context.globalCompositeOperation =
-          "destination-out";
-
-      }
-      else {
-
-        context.lineWidth =
-          3;
-
-        context.strokeStyle =
-          "#111";
-
-        context.globalCompositeOperation =
-          "source-over";
-
-      }
-
-
-      context.stroke();
-
-
-      lastX =
-        x;
-
-      lastY =
-        y;
+      return;
 
     }
-  );
+
+
+    const rect =
+      annotationCanvas
+        .getBoundingClientRect();
+
+
+    const scaleX =
+      annotationCanvas.width /
+      rect.width;
+
+
+    const scaleY =
+      annotationCanvas.height /
+      rect.height;
+
+
+    const x =
+      (
+        event.clientX -
+        rect.left
+      ) *
+      scaleX;
+
+
+    const y =
+      (
+        event.clientY -
+        rect.top
+      ) *
+      scaleY;
+
+
+    const context =
+      annotationCanvas
+        .getContext("2d");
+
+
+    context.beginPath();
+
+
+    context.moveTo(
+      lastX,
+      lastY
+    );
+
+
+    context.lineTo(
+      x,
+      y
+    );
+
+
+    context.lineCap =
+      "round";
+
+
+    if (
+      tool ===
+      "highlighter"
+    ) {
+
+      context.lineWidth =
+        18;
+
+      context.strokeStyle =
+        "rgba(255,235,0,0.45)";
+
+      context.globalCompositeOperation =
+        "source-over";
+
+    }
+    else if (
+      tool ===
+      "eraser"
+    ) {
+
+      context.lineWidth =
+        28;
+
+      context.globalCompositeOperation =
+        "destination-out";
+
+    }
+    else {
+
+      context.lineWidth =
+        3;
+
+      context.strokeStyle =
+        "#111";
+
+      context.globalCompositeOperation =
+        "source-over";
+
+    }
+
+
+    context.stroke();
+
+
+    lastX =
+      x;
+
+
+    lastY =
+      y;
+
+  }
+);
 
 
 /*
  * 描画終了
  */
 
-annotationCanvas
-  .addEventListener(
+annotationCanvas.addEventListener(
+  "pointerup",
+  async event => {
+
+    if (!drawing) {
+      return;
+    }
+
+
+    drawing =
+      false;
+
+
+    try {
+
+      annotationCanvas
+        .releasePointerCapture(
+          event.pointerId
+        );
+
+    }
+    catch {}
+
+
+    await saveAnnotation();
+
+  }
+);
+
+
+/*
+ * 描画キャンセル
+ */
+
+annotationCanvas.addEventListener(
+  "pointercancel",
+  () => {
+
+    drawing =
+      false;
+
+  }
+);
+
+
+/*
+ * ページ移動用スワイプ
+ */
+
+if (viewerStage) {
+
+  viewerStage.addEventListener(
+    "pointerdown",
+    event => {
+
+      /*
+       * ペンON時は
+       * 書き込みを優先
+       */
+
+      if (penEnabled) {
+        return;
+      }
+
+
+      swipeStartX =
+        event.clientX;
+
+
+      swipeStartY =
+        event.clientY;
+
+    }
+  );
+
+
+  viewerStage.addEventListener(
     "pointerup",
     async event => {
 
-      drawing =
-        false;
+      if (
+        penEnabled ||
+        swipeStartX === null ||
+        swipeStartY === null
+      ) {
 
+        swipeStartX =
+          null;
 
-      try {
+        swipeStartY =
+          null;
 
-        annotationCanvas
-          .releasePointerCapture(
-            event.pointerId
-          );
+        return;
 
       }
-      catch {}
 
 
-      await saveAnnotation();
+      const diffX =
+        event.clientX -
+        swipeStartX;
+
+
+      const diffY =
+        event.clientY -
+        swipeStartY;
+
+
+      swipeStartX =
+        null;
+
+
+      swipeStartY =
+        null;
+
+
+      /*
+       * 横方向に十分動かした場合だけ
+       * ページを移動
+       */
+
+      if (
+        Math.abs(diffX) <
+        70
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        Math.abs(diffX) <
+        Math.abs(diffY)
+      ) {
+
+        return;
+
+      }
+
+
+      if (
+        diffX < 0
+      ) {
+
+        document.getElementById(
+          "next"
+        ).click();
+
+      }
+      else {
+
+        document.getElementById(
+          "previous"
+        ).click();
+
+      }
 
     }
   );
 
-
-annotationCanvas
-  .addEventListener(
-    "pointercancel",
-    () => {
-
-      drawing =
-        false;
-
-    }
-  );
+}
 
 
 /*
@@ -1237,6 +1438,16 @@ annotationCanvas
  */
 
 async function saveAnnotation() {
+
+  if (
+    !annotationCanvas.width ||
+    !annotationCanvas.height
+  ) {
+
+    return;
+
+  }
+
 
   const image =
     annotationCanvas
@@ -1386,8 +1597,24 @@ document.getElementById(
 
   await saveAnnotation();
 
-  location.replace(
-    "../"
+
+  window.close();
+
+
+  /*
+   * ブラウザがwindow.close()
+   * を許可しない場合
+   */
+
+  setTimeout(
+    () => {
+
+      location.replace(
+        "../"
+      );
+
+    },
+    100
   );
 
 };
@@ -1399,7 +1626,7 @@ document.getElementById(
 
 document.addEventListener(
   "keydown",
-  async event => {
+  event => {
 
     if (
       event.target.tagName ===
@@ -1436,6 +1663,18 @@ document.addEventListener(
 
     }
 
+
+    if (
+      event.key ===
+      "Escape"
+    ) {
+
+      document.getElementById(
+        "close"
+      ).click();
+
+    }
+
   }
 );
 
@@ -1444,4 +1683,40 @@ document.addEventListener(
  * 起動
  */
 
-render();
+async function start() {
+
+  try {
+
+    await checkLicense();
+
+    await loadBook();
+
+    await render();
+
+    updatePenButton();
+
+  }
+  catch (error) {
+
+    console.error(
+      "VIEWER START ERROR:",
+      error
+    );
+
+
+    alert(
+      error.message ||
+      "Viewerを起動できませんでした。"
+    );
+
+
+    location.replace(
+      "../"
+    );
+
+  }
+
+}
+
+
+start();
