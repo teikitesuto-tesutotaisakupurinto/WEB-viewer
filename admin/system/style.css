@@ -1,28 +1,53 @@
-.system-row {
+.maintenance-setting {
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
 
   gap: 20px;
 
   padding-bottom: 20px;
 
+  margin-bottom: 20px;
+
   border-bottom: 1px solid #eee;
 }
+
+.maintenance-setting h3 {
+  margin: 0;
+}
+
+.maintenance-setting p {
+  margin: 6px 0 0;
+
+  color: #777;
+
+  font-size: 13px;
+}
+
+
+/* スイッチ */
 
 .switch {
   position: relative;
 
+  display: block;
+
   width: 58px;
+
   height: 32px;
 
   flex: 0 0 auto;
 }
 
 .switch input {
+  position: absolute;
+
   opacity: 0;
 
   width: 0;
+
   height: 0;
 }
 
@@ -31,13 +56,14 @@
 
   inset: 0;
 
-  background: #aaa;
-
   border-radius: 20px;
+
+  background: #aaa;
 
   cursor: pointer;
 
-  transition: .2s;
+  transition:
+    background .18s ease;
 }
 
 .slider::before {
@@ -46,22 +72,26 @@
   position: absolute;
 
   width: 24px;
+
   height: 24px;
 
   top: 4px;
-  left: 4px;
 
-  background: #fff;
+  left: 4px;
 
   border-radius: 50%;
 
-  transition: .2s;
+  background: #fff;
+
+  transition:
+    transform .18s ease;
 }
 
 .switch input:checked + .slider {
-  background: #111;
+  background: #d5ca3d;
 }
 
 .switch input:checked + .slider::before {
-  transform: translateX(26px);
+  transform:
+    translateX(26px);
 }
