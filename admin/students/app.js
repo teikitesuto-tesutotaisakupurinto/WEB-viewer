@@ -29,7 +29,6 @@ const formCard =
     "formCard"
   );
 
-
 const message =
   document.getElementById(
     "message"
@@ -85,7 +84,10 @@ async function loadStudents() {
 
   if (error) {
 
-    console.error(error);
+    console.error(
+      "STUDENT LIST ERROR:",
+      error
+    );
 
     document.getElementById(
       "students"
@@ -121,19 +123,9 @@ async function loadStudents() {
 <thead>
 
 <tr>
-
-<th>
-氏名
-</th>
-
-<th>
-クラス
-</th>
-
-<th>
-学籍番号
-</th>
-
+<th>氏名</th>
+<th>クラス</th>
+<th>学籍番号</th>
 </tr>
 
 </thead>
@@ -183,6 +175,9 @@ document.getElementById(
   "create"
 ).onclick = async () => {
 
+  message.style.color =
+    "#222";
+
   message.textContent =
     "登録しています。";
 
@@ -223,6 +218,9 @@ document.getElementById(
     !password
   ) {
 
+    message.style.color =
+      "#b00020";
+
     message.textContent =
       "氏名、メールアドレス、パスワードを入力してください。";
 
@@ -234,6 +232,9 @@ document.getElementById(
     password.length < 8
   ) {
 
+    message.style.color =
+      "#b00020";
+
     message.textContent =
       "パスワードは8文字以上にしてください。";
 
@@ -241,12 +242,13 @@ document.getElementById(
   }
 
 
-  const {
-    data,
-    error
-  } =
-    await supabase.functions
-      .invoke(
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabase.functions.invoke(
         "create-student",
         {
           body: {
@@ -267,62 +269,153 @@ document.getElementById(
       );
 
 
-  if (error) {
+    console.log(
+      "CREATE STUDENT DATA:",
+      data
+    );
 
-    console.error(
-      "Student function error:",
+    console.log(
+      "CREATE STUDENT ERROR:",
       error
     );
 
 
+    if (error) {
+
+      let detail =
+        error.message ||
+        "Functionの実行に失敗しました。";
+
+
+      /*
+       * Edge Functionが返した
+       * エラー本文を取得
+       */
+
+      try {
+
+        if (
+          error.context
+        ) {
+
+          const response =
+            error.context;
+
+          const text =
+            await response.text();
+
+          if (text) {
+
+            try {
+
+              const json =
+                JSON.parse(text);
+
+              if (
+                json.error
+              ) {
+
+                detail =
+                  json.error;
+
+              }
+
+            }
+            catch {
+
+              detail =
+                text;
+
+            }
+
+          }
+
+        }
+
+      }
+      catch (
+        readError
+      ) {
+
+        console.error(
+          "ERROR BODY READ:",
+          readError
+        );
+
+      }
+
+
+      throw new Error(
+        detail
+      );
+
+    }
+
+
+    if (
+      !data ||
+      !data.success
+    ) {
+
+      throw new Error(
+        data?.error ||
+        "Student登録に失敗しました。"
+      );
+
+    }
+
+
+    message.style.color =
+      "#222";
+
     message.textContent =
-      "Student登録に失敗しました。";
+      "Studentを登録しました。";
 
 
-    return;
+    document.getElementById(
+      "displayName"
+    ).value = "";
+
+    document.getElementById(
+      "email"
+    ).value = "";
+
+    document.getElementById(
+      "password"
+    ).value = "";
+
+    document.getElementById(
+      "className"
+    ).value = "";
+
+    document.getElementById(
+      "studentNumber"
+    ).value = "";
+
+
+    await loadStudents();
+
   }
+  catch (error) {
+
+    console.error(
+      "CREATE STUDENT ERROR:",
+      error
+    );
 
 
-  if (
-    !data ||
-    !data.success
-  ) {
+    message.style.color =
+      "#b00020";
+
 
     message.textContent =
-      data?.error ||
-      "Student登録に失敗しました。";
+      "登録エラー: " +
+      (
+        error?.message ||
+        "Student登録に失敗しました。"
+      );
 
-
-    return;
   }
-
-
-  message.textContent =
-    "Studentを登録しました。";
-
-
-  document.getElementById(
-    "displayName"
-  ).value = "";
-
-  document.getElementById(
-    "email"
-  ).value = "";
-
-  document.getElementById(
-    "password"
-  ).value = "";
-
-  document.getElementById(
-    "className"
-  ).value = "";
-
-  document.getElementById(
-    "studentNumber"
-  ).value = "";
-
-
-  await loadStudents();
 
 };
 
