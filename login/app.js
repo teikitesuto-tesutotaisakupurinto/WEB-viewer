@@ -21,234 +21,179 @@ const button =
   );
 
 
-if (!form) {
-
-  throw new Error(
-    "loginFormが見つかりません。"
-  );
-
-}
-
-
 form.addEventListener(
   "submit",
   async event => {
 
     event.preventDefault();
 
+    button.disabled = true;
 
-    button.disabled =
-      true;
-
-    message.textContent =
-      "";
+    message.textContent = "";
 
 
-    const email =
-      document
-        .getElementById(
-          "email"
-        )
-        .value
-        .trim()
-        .toLowerCase();
+    try {
+
+      const email =
+        document
+          .getElementById(
+            "email"
+          )
+          .value
+          .trim()
+          .toLowerCase();
 
 
-    const password =
-      document
-        .getElementById(
-          "password"
-        )
-        .value;
+      const password =
+        document
+          .getElementById(
+            "password"
+          )
+          .value;
 
 
-    if (
-      !email ||
-      !password
-    ) {
+      if (
+        !email ||
+        !password
+      ) {
 
-      message.textContent =
-        "メールアドレスとパスワードを入力してください。";
+        throw new Error(
+          "メールアドレスとパスワードを入力してください。"
+        );
 
-      button.disabled =
-        false;
+      }
 
-      return;
+
+      /*
+       * Authログイン
+       */
+
+      const {
+        data,
+        error
+      } =
+        await supabase.auth
+          .signInWithPassword({
+            email,
+            password
+          });
+
+
+      if (error) {
+        throw new Error(
+          "メールアドレスまたはパスワードが正しくありません。"
+        );
+      }
+
+
+      if (!data?.user) {
+
+        throw new Error(
+          "ログインユーザーを取得できませんでした。"
+        );
+
+      }
+
+
+      /*
+       * usersを直接取得
+       */
+
+      const {
+        data: profile,
+        error: profileError
+      } =
+        await supabase
+          .from("users")
+          .select(
+            "id,display_name,role"
+          )
+          .eq(
+            "id",
+            data.user.id
+          )
+          .maybeSingle();
+
+
+      if (profileError) {
+
+        throw new Error(
+          "ユーザー情報取得エラー: " +
+          profileError.message
+        );
+
+      }
+
+
+      if (!profile) {
+
+        throw new Error(
+          "このログインアカウントはusersに登録されていません。"
+        );
+
+      }
+
+
+      /*
+       * Admin
+       *
+       * メンテナンス中でも入れる
+       */
+
+      if (
+        profile.role ===
+        "admin"
+      ) {
+
+        window.location.replace(
+          "../admin/"
+        );
+
+        return;
+
+      }
+
+
+      /*
+       * Student
+       */
+
+      if (
+        profile.role ===
+        "student"
+      ) {
+
+        window.location.replace(
+          "../student/"
+        );
+
+        return;
+
+      }
+
+
+      throw new Error(
+        "ユーザー権限が設定されていません。"
+      );
 
     }
-
-
-    /*
-     * Supabase Auth
-     */
-
-    const {
-      data: loginData,
-      error: loginError
-    } =
-      await supabase.auth
-        .signInWithPassword({
-          email,
-          password
-        });
-
-
-    if (loginError) {
+    catch (error) {
 
       console.error(
         "LOGIN ERROR:",
-        loginError
+        error
       );
 
 
       message.textContent =
-        "メールアドレスまたはパスワードが正しくありません。";
+        error.message ||
+        "ログインに失敗しました。";
 
 
       button.disabled =
         false;
 
-      return;
-
     }
-
-
-    const user =
-      loginData?.user;
-
-
-    if (!user) {
-
-      message.textContent =
-        "ログインユーザーを取得できませんでした。";
-
-
-      button.disabled =
-        false;
-
-      return;
-
-    }
-
-
-    console.log(
-      "LOGIN UID:",
-      user.id
-    );
-
-
-    /*
-     * usersプロフィール取得
-     */
-
-    const {
-      data: profile,
-      error: profileError
-    } =
-      await supabase.rpc(
-        "get_current_profile"
-      );
-
-
-    console.log(
-      "PROFILE:",
-      profile
-    );
-
-
-    console.log(
-      "PROFILE ERROR:",
-      profileError
-    );
-
-
-    if (profileError) {
-
-      console.error(
-        "PROFILE RPC ERROR:",
-        profileError
-      );
-
-
-      message.textContent =
-        "プロフィール取得エラー: " +
-        profileError.message;
-
-
-      button.disabled =
-        false;
-
-      return;
-
-    }
-
-
-    if (!profile) {
-
-      message.textContent =
-        "ユーザー情報が登録されていません。";
-
-
-      button.disabled =
-        false;
-
-      return;
-
-    }
-
-
-    /*
-     * Admin
-     *
-     * メンテナンス中でも
-     * そのままAdminへ入る。
-     */
-
-    if (
-      profile.role ===
-      "admin"
-    ) {
-
-      location.replace(
-        "../admin/"
-      );
-
-      return;
-
-    }
-
-
-    /*
-     * Student
-     *
-     * メンテナンス判定は
-     * student/app.js側で行う。
-     */
-
-    if (
-      profile.role ===
-      "student"
-    ) {
-
-      location.replace(
-        "../student/"
-      );
-
-      return;
-
-    }
-
-
-    /*
-     * 不明な権限
-     */
-
-    message.textContent =
-      "ユーザー権限が設定されていません。";
-
-
-    button.disabled =
-      false;
 
   }
 );
