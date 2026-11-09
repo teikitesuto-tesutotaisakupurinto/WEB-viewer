@@ -1,5 +1,6 @@
 import {
-  requireAdmin
+  requireAdmin,
+  logout
 }
 from "../../assets/js/auth.js";
 
@@ -9,19 +10,10 @@ import {
 from "../../assets/js/supabase.js";
 
 import {
-  escapeHtml
+  escapeHtml,
+  showError
 }
 from "../../assets/js/common.js";
-
-
-const admin =
-  await requireAdmin();
-
-if (!admin) {
-  throw new Error(
-    "Unauthorized"
-  );
-}
 
 
 const bookSelect =
@@ -29,14 +21,14 @@ const bookSelect =
     "book"
   );
 
-const studentList =
+const studentsBox =
   document.getElementById(
     "students"
   );
 
-const selectAll =
+const serialsBox =
   document.getElementById(
-    "selectAll"
+    "serials"
   );
 
 const message =
@@ -45,12 +37,57 @@ const message =
   );
 
 
-let students = [];
+async function start() {
+
+  const admin =
+    await requireAdmin();
+
+  if (!admin) {
+    return;
+  }
 
 
-/*
- * Book一覧
- */
+  document.getElementById(
+    "logout"
+  ).onclick =
+    logout;
+
+
+  document.getElementById(
+    "selectAll"
+  ).onchange =
+    event => {
+
+      document
+        .querySelectorAll(
+          ".student-checkbox"
+        )
+        .forEach(
+          checkbox => {
+
+            checkbox.checked =
+              event.target.checked;
+
+          }
+        );
+
+    };
+
+
+  document.getElementById(
+    "issue"
+  ).onclick =
+    () => issue(admin);
+
+
+  await loadBooks();
+
+  await loadStudents();
+
+  await loadSerials();
+
+}
+
 
 async function loadBooks() {
 
@@ -76,39 +113,26 @@ async function loadBooks() {
 
 
   if (error) {
-
-    console.error(
-      "BOOK ERROR:",
-      error
-    );
-
-    message.textContent =
-      "Bookを取得できませんでした。";
-
-    return;
+    throw error;
   }
 
 
   bookSelect.innerHTML =
+    `
+    <option value="">
+      Bookを選択してください
+    </option>
+    ` +
     (data || []).map(
       book => `
-
-<option value="${book.id}">
-${escapeHtml(book.title)}
-</option>
-
-`
+      <option value="${book.id}">
+        ${escapeHtml(book.title)}
+      </option>
+      `
     ).join("");
-
-
-  await loadStudents();
 
 }
 
-
-/*
- * Student一覧
- */
 
 async function loadStudents() {
 
@@ -134,119 +158,63 @@ async function loadStudents() {
 
 
   if (error) {
-
-    console.error(
-      "STUDENT ERROR:",
-      error
-    );
-
-    studentList.textContent =
-      "Studentを取得できませんでした。";
-
-    return;
+    throw error;
   }
 
-
-  students =
-    data || [];
-
-
-  renderStudents();
-
-}
-
-
-/*
- * Student表示
- */
-
-function renderStudents() {
 
   if (
-    students.length === 0
+    !data ||
+    data.length === 0
   ) {
 
-    studentList.innerHTML =
-      "<p>登録されたStudentはいません。</p>";
+    studentsBox.innerHTML =
+      `
+      <div class="list-row">
+        Studentが登録されていません。
+      </div>
+      `;
 
     return;
   }
 
 
-  studentList.innerHTML =
-    students.map(
+  studentsBox.innerHTML =
+    data.map(
       student => `
+      <label class="student-row">
 
-<label
-  class="student-select-item">
+        <input
+          class="student-checkbox"
+          type="checkbox"
+          value="${student.id}">
 
-<input
-  type="checkbox"
-  class="student-checkbox"
-  value="${student.id}">
+        <span>
+          ${escapeHtml(
+            student.display_name
+          )}
+        </span>
 
-<span>
-${escapeHtml(
-  student.display_name
-)}
-</span>
-
-</label>
-
-`
+      </label>
+      `
     ).join("");
 
 }
 
 
-/*
- * 全選択
- */
-
-selectAll.onchange = () => {
-
-  document
-    .querySelectorAll(
-      ".student-checkbox"
-    )
-    .forEach(
-      checkbox => {
-
-        checkbox.checked =
-          selectAll.checked;
-
-      }
-    );
-
-};
-
-
-/*
- * 一括発行
- */
-
-document.getElementById(
-  "issue"
-).onclick = async () => {
-
-  message.style.color =
-    "#222";
-
-  message.textContent =
-    "発行しています。";
-
+async function issue(
+  admin
+) {
 
   const bookId =
     bookSelect.value;
 
 
-  const selected =
+  const studentIds =
     Array.from(
       document.querySelectorAll(
         ".student-checkbox:checked"
       )
-    )
-    .map(
+    ).map(
       checkbox =>
         checkbox.value
     );
@@ -262,7 +230,7 @@ document.getElementById(
 
 
   if (
-    selected.length === 0
+    studentIds.length === 0
   ) {
 
     message.textContent =
@@ -272,8 +240,15 @@ document.getElementById(
   }
 
 
+  message.style.color =
+    "#222";
+
+  message.textContent =
+    "発行しています。";
+
+
   /*
-   * 既存の利用権を確認
+   * 既存発行を確認
    */
 
   const {
@@ -291,18 +266,15 @@ document.getElementById(
       )
       .in(
         "student_id",
-        selected
+        studentIds
       );
 
 
   if (existingError) {
 
-    console.error(
-      existingError
-    );
-
     message.textContent =
-      "既存シリアルの確認に失敗しました。";
+      "既存シリアルの確認に失敗しました: " +
+      existingError.message;
 
     return;
   }
@@ -310,23 +282,22 @@ document.getElementById(
 
   const existingIds =
     new Set(
-      (existing || [])
-        .map(
-          row =>
-            row.student_id
-        )
+      (existing || []).map(
+        row =>
+          row.student_id
+      )
     );
 
 
-  const newStudents =
-    selected.filter(
+  const newIds =
+    studentIds.filter(
       id =>
         !existingIds.has(id)
     );
 
 
   if (
-    newStudents.length === 0
+    newIds.length === 0
   ) {
 
     message.textContent =
@@ -337,11 +308,12 @@ document.getElementById(
 
 
   /*
-   * コードはDB側で自動生成
+   * codeはDB側のDEFAULTで
+   * 自動生成
    */
 
   const rows =
-    newStudents.map(
+    newIds.map(
       studentId => ({
         book_id:
           bookId,
@@ -363,18 +335,18 @@ document.getElementById(
   } =
     await supabase
       .from("licenses")
-      .insert(rows);
+      .insert(
+        rows
+      );
 
 
   if (error) {
 
-    console.error(
-      "LICENSE INSERT ERROR:",
-      error
-    );
+    message.style.color =
+      "#b00020";
 
     message.textContent =
-      "シリアル発行に失敗しました: " +
+      "発行エラー: " +
       error.message;
 
     return;
@@ -385,10 +357,12 @@ document.getElementById(
     "#222";
 
   message.textContent =
-    `${newStudents.length}人分のシリアルを発行しました。`;
+    `${newIds.length}人分のシリアルを発行しました。`;
 
 
-  selectAll.checked =
+  document.getElementById(
+    "selectAll"
+  ).checked =
     false;
 
 
@@ -408,12 +382,8 @@ document.getElementById(
 
   await loadSerials();
 
-};
+}
 
-
-/*
- * 発行済み一覧
- */
 
 async function loadSerials() {
 
@@ -444,96 +414,84 @@ async function loadSerials() {
 
 
   if (error) {
+    throw error;
+  }
 
-    console.error(
-      "SERIAL LIST ERROR:",
-      error
-    );
+
+  if (
+    !data ||
+    data.length === 0
+  ) {
+
+    serialsBox.innerHTML =
+      `
+      <div class="list-row">
+        発行済みシリアルはありません。
+      </div>
+      `;
 
     return;
   }
 
 
-  document.getElementById(
-    "serials"
-  ).innerHTML = `
+  serialsBox.innerHTML =
+    data.map(
+      item => `
 
-<div class="table-wrap">
+      <div class="serial-row">
 
-<table>
+        <div>
+          ${escapeHtml(
+            item.books?.title || ""
+          )}
+        </div>
 
-<thead>
+        <div>
+          ${escapeHtml(
+            item.users?.display_name || ""
+          )}
+        </div>
 
-<tr>
+        <div class="serial-code">
+          ${escapeHtml(
+            item.code || ""
+          )}
+        </div>
 
-<th>
-Book
-</th>
+        <div class="serial-status">
+          ${
+            item.status === "used"
+              ? "使用済み"
+              : item.status === "disabled"
+                ? "停止"
+                : "未使用"
+          }
+        </div>
 
-<th>
-Student
-</th>
+      </div>
 
-<th>
-シリアル
-</th>
-
-<th>
-状態
-</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-${(data || []).map(
-  item => `
-
-<tr>
-
-<td>
-${escapeHtml(
-  item.books?.title || ""
-)}
-</td>
-
-<td>
-${escapeHtml(
-  item.users?.display_name || ""
-)}
-</td>
-
-<td>
-${escapeHtml(
-  item.code
-)}
-</td>
-
-<td>
-${item.status === "used"
-  ? "使用済み"
-  : item.status === "disabled"
-    ? "停止"
-    : "未使用"}
-</td>
-
-</tr>
-
-`
-).join("")}
-
-</tbody>
-
-</table>
-
-</div>
-
-`;
+      `
+    ).join("");
 
 }
 
 
-await loadBooks();
-await loadSerials();
+start()
+  .catch(
+    error => {
+
+      console.error(
+        "SERIAL PAGE ERROR:",
+        error
+      );
+
+
+      showError(
+        error.message,
+        document.querySelector(
+          ".admin-content"
+        )
+      );
+
+    }
+  );
