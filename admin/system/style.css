@@ -1,97 +1,15 @@
-.maintenance-setting {
+.maintenance-switch {
   display: flex;
 
   align-items: center;
 
-  justify-content: space-between;
-
-  gap: 20px;
-
-  padding-bottom: 20px;
+  gap: 10px;
 
   margin-bottom: 20px;
-
-  border-bottom: 1px solid #eee;
 }
 
-.maintenance-setting h3 {
+.maintenance-switch input {
+  width: auto;
+
   margin: 0;
-}
-
-.maintenance-setting p {
-  margin: 6px 0 0;
-
-  color: #777;
-
-  font-size: 13px;
-}
-
-
-/* スイッチ */
-
-.switch {
-  position: relative;
-
-  display: block;
-
-  width: 58px;
-
-  height: 32px;
-
-  flex: 0 0 auto;
-}
-
-.switch input {
-  position: absolute;
-
-  opacity: 0;
-
-  width: 0;
-
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-
-  inset: 0;
-
-  border-radius: 20px;
-
-  background: #aaa;
-
-  cursor: pointer;
-
-  transition:
-    background .18s ease;
-}
-
-.slider::before {
-  content: "";
-
-  position: absolute;
-
-  width: 24px;
-
-  height: 24px;
-
-  top: 4px;
-
-  left: 4px;
-
-  border-radius: 50%;
-
-  background: #fff;
-
-  transition:
-    transform .18s ease;
-}
-
-.switch input:checked + .slider {
-  background: #d5ca3d;
-}
-
-.switch input:checked + .slider::before {
-  transform:
-    translateX(26px);
 }
