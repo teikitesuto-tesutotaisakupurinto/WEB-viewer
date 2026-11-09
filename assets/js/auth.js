@@ -8,7 +8,7 @@ const AUTH_TIMEOUT = 5000;
 
 
 /*
- * タイムアウト付き処理
+ * タイムアウト
  */
 
 function withTimeout(
@@ -45,7 +45,7 @@ function withTimeout(
 
 
 /*
- * ログインユーザー取得
+ * 現在のユーザー
  */
 
 export async function getUser() {
@@ -64,9 +64,7 @@ export async function getUser() {
   }
 
 
-  if (
-    !data?.user
-  ) {
+  if (!data?.user) {
 
     throw new Error(
       "ログインしてください。"
@@ -81,7 +79,7 @@ export async function getUser() {
 
 
 /*
- * プロフィール取得
+ * usersプロフィール
  */
 
 export async function getProfile() {
@@ -95,6 +93,7 @@ export async function getProfile() {
     error
   } =
     await withTimeout(
+
       supabase
         .from("users")
         .select(
@@ -104,7 +103,10 @@ export async function getProfile() {
           "id",
           user.id
         )
-        .maybeSingle()
+        .maybeSingle(),
+
+      AUTH_TIMEOUT
+
     );
 
 
@@ -128,7 +130,7 @@ export async function getProfile() {
 
 
 /*
- * Admin認証
+ * Admin
  */
 
 export async function requireAdmin() {
@@ -142,7 +144,7 @@ export async function requireAdmin() {
     "admin"
   ) {
 
-    location.replace(
+    window.location.replace(
       "/login/"
     );
 
@@ -157,7 +159,7 @@ export async function requireAdmin() {
 
 
 /*
- * Student認証
+ * Student
  */
 
 export async function requireStudent() {
@@ -171,7 +173,7 @@ export async function requireStudent() {
     "student"
   ) {
 
-    location.replace(
+    window.location.replace(
       "/login/"
     );
 
@@ -186,8 +188,7 @@ export async function requireStudent() {
 
 
 /*
- * Supabase Authのローカルデータを
- * 可能な限り全部削除
+ * Auth Storage削除
  */
 
 function clearAuthStorage() {
@@ -198,7 +199,7 @@ function clearAuthStorage() {
 
   try {
 
-    const localKeys = [];
+    const keys = [];
 
 
     for (
@@ -216,12 +217,6 @@ function clearAuthStorage() {
       }
 
 
-      /*
-       * Supabase v2
-       *
-       * sb-xxxx-auth-token
-       */
-
       if (
         key.startsWith("sb-")
         &&
@@ -236,23 +231,19 @@ function clearAuthStorage() {
         )
       ) {
 
-        localKeys.push(
+        keys.push(
           key
         );
 
       }
 
 
-      /*
-       * 古い形式
-       */
-
       if (
         key ===
         "supabase.auth.token"
       ) {
 
-        localKeys.push(
+        keys.push(
           key
         );
 
@@ -261,20 +252,20 @@ function clearAuthStorage() {
     }
 
 
-    localKeys.forEach(
-      key => {
+    for (
+      const key of keys
+    ) {
 
-        try {
+      try {
 
-          localStorage.removeItem(
-            key
-          );
-
-        }
-        catch {}
+        localStorage.removeItem(
+          key
+        );
 
       }
-    );
+      catch {}
+
+    }
 
   }
   catch (
@@ -295,7 +286,7 @@ function clearAuthStorage() {
 
   try {
 
-    const sessionKeys = [];
+    const keys = [];
 
 
     for (
@@ -327,7 +318,7 @@ function clearAuthStorage() {
         )
       ) {
 
-        sessionKeys.push(
+        keys.push(
           key
         );
 
@@ -339,7 +330,7 @@ function clearAuthStorage() {
         "supabase.auth.token"
       ) {
 
-        sessionKeys.push(
+        keys.push(
           key
         );
 
@@ -348,20 +339,20 @@ function clearAuthStorage() {
     }
 
 
-    sessionKeys.forEach(
-      key => {
+    for (
+      const key of keys
+    ) {
 
-        try {
+      try {
 
-          sessionStorage.removeItem(
-            key
-          );
-
-        }
-        catch {}
+        sessionStorage.removeItem(
+          key
+        );
 
       }
-    );
+      catch {}
+
+    }
 
   }
   catch (
@@ -381,19 +372,14 @@ function clearAuthStorage() {
 /*
  * ログアウト
  *
- * 重要：
- * signOutが失敗しても
- * 絶対にログイン画面へ戻す
+ * Supabaseが失敗しても
+ * 必ずログイン画面へ戻す。
  */
 
 export async function logout() {
 
-  /*
-   * 二重クリック防止
-   */
-
   if (
-    window.__loggingOut
+    window.__webViewerLoggingOut
   ) {
 
     return;
@@ -401,12 +387,12 @@ export async function logout() {
   }
 
 
-  window.__loggingOut =
+  window.__webViewerLoggingOut =
     true;
 
 
   /*
-   * 先にボタンを無効化
+   * ボタンを全部無効化
    */
 
   document
@@ -427,9 +413,7 @@ export async function logout() {
 
 
   /*
-   * Supabase側セッションを削除
-   *
-   * 失敗しても続行
+   * Supabaseセッション削除
    */
 
   try {
@@ -455,25 +439,97 @@ export async function logout() {
 
 
   /*
-   * ローカルセッションを削除
+   * ブラウザ側セッション削除
    */
 
   clearAuthStorage();
 
 
   /*
-   * 最終的に必ずログイン画面へ
+   * 必ずログイン画面へ
    */
 
-  const loginUrl =
+  window.location.replace(
     new URL(
       "/login/",
       window.location.origin
-    ).href;
-
-
-  window.location.replace(
-    loginUrl
+    ).href
   );
+
+}
+
+
+/*
+ * 全画面の #logout を自動接続
+ *
+ * Admin
+ * Student
+ * 資料
+ * B4
+ * システム
+ * メンテナンス画面
+ */
+
+function bindLogoutButtons() {
+
+  document
+    .querySelectorAll(
+      "#logout"
+    )
+    .forEach(
+      button => {
+
+        if (
+          button.dataset.logoutBound ===
+          "true"
+        ) {
+
+          return;
+
+        }
+
+
+        button.dataset.logoutBound =
+          "true";
+
+
+        button.addEventListener(
+          "click",
+          event => {
+
+            event.preventDefault();
+
+            logout();
+
+          }
+        );
+
+      }
+    );
+
+}
+
+
+/*
+ * DOM読み込み時
+ */
+
+if (
+  document.readyState ===
+  "loading"
+) {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    bindLogoutButtons,
+    {
+      once: true
+    }
+  );
+
+}
+else {
+
+  bindLogoutButtons();
 
 }
