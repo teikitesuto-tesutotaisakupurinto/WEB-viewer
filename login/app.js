@@ -1,3 +1,4 @@
+
 import {
   supabase
 }
@@ -20,31 +21,79 @@ const button =
   );
 
 
+/*
+ * ログインフォーム確認
+ */
+
+if (!form) {
+
+  throw new Error(
+    "loginFormが見つかりません。"
+  );
+
+}
+
+
 form.addEventListener(
   "submit",
   async event => {
 
     event.preventDefault();
 
-    button.disabled = true;
 
-    message.textContent = "";
+    button.disabled =
+      true;
 
+
+    message.textContent =
+      "";
+
+
+    /*
+     * 入力値
+     */
 
     const email =
-      document.getElementById(
-        "email"
-      ).value.trim();
+      document
+        .getElementById(
+          "email"
+        )
+        .value
+        .trim()
+        .toLowerCase();
+
 
     const password =
-      document.getElementById(
-        "password"
-      ).value;
+      document
+        .getElementById(
+          "password"
+        )
+        .value;
 
+
+    if (
+      !email ||
+      !password
+    ) {
+
+      message.textContent =
+        "メールアドレスとパスワードを入力してください。";
+
+      button.disabled =
+        false;
+
+      return;
+
+    }
+
+
+    /*
+     * Supabase Auth
+     */
 
     const {
-      data,
-      error
+      data: loginData,
+      error: loginError
     } =
       await supabase.auth
         .signInWithPassword({
@@ -53,27 +102,59 @@ form.addEventListener(
         });
 
 
-    if (error) {
+    if (loginError) {
+
+      console.error(
+        "LOGIN ERROR:",
+        loginError
+      );
+
 
       message.textContent =
-        "ログインできませんでした。";
+        "メールアドレスまたはパスワードが正しくありません。";
 
-      button.disabled = false;
+
+      button.disabled =
+        false;
 
       return;
+
     }
 
 
-    if (!data.user) {
+    /*
+     * Authユーザー確認
+     */
+
+    const user =
+      loginData?.user;
+
+
+    if (!user) {
 
       message.textContent =
-        "ログイン情報を取得できませんでした。";
+        "ログインユーザーを取得できませんでした。";
 
-      button.disabled = false;
+
+      button.disabled =
+        false;
 
       return;
+
     }
 
+
+    console.log(
+      "LOGIN UID:",
+      user.id
+    );
+
+
+    /*
+     * usersプロフィール取得
+     *
+     * クラス・学籍番号は使用しない
+     */
 
     const {
       data: profile,
@@ -84,26 +165,62 @@ form.addEventListener(
       );
 
 
-    if (
-      profileError ||
-      !profile
-    ) {
+    console.log(
+      "PROFILE:",
+      profile
+    );
 
-      console.error(
-        profileError
-      );
+
+    console.log(
+      "PROFILE ERROR:",
+      profileError
+    );
+
+
+    /*
+     * RPCエラー
+     */
+
+    if (profileError) {
 
       message.textContent =
-        "ユーザー情報を取得できませんでした。";
+        "プロフィール取得エラー: " +
+        profileError.message;
 
-      button.disabled = false;
+
+      button.disabled =
+        false;
 
       return;
+
     }
 
 
+    /*
+     * usersに登録されていない
+     */
+
+    if (!profile) {
+
+      message.textContent =
+        "ユーザー情報が登録されていません。";
+
+
+      button.disabled =
+        false;
+
+      return;
+
+    }
+
+
+    /*
+     * Admin
+     */
+
     if (
-      profile.role === "admin"
+      profile.role ===
+      "admin"
     ) {
 
       location.replace(
@@ -111,11 +228,17 @@ form.addEventListener(
       );
 
       return;
+
     }
 
 
+    /*
+     * Student
+     */
+
     if (
-      profile.role === "student"
+      profile.role ===
+      "student"
     ) {
 
       location.replace(
@@ -123,13 +246,20 @@ form.addEventListener(
       );
 
       return;
+
     }
 
+
+    /*
+     * 不明な権限
+     */
 
     message.textContent =
       "ユーザー権限が設定されていません。";
 
-    button.disabled = false;
+
+    button.disabled =
+      false;
 
   }
 );
