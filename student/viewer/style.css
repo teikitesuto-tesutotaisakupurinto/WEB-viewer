@@ -23,6 +23,7 @@ body {
     sans-serif;
 }
 
+
 .viewer {
   width: 100%;
   height: 100%;
@@ -30,6 +31,7 @@ body {
   display: flex;
   flex-direction: column;
 }
+
 
 .viewer-bar {
   min-height: 62px;
@@ -54,6 +56,7 @@ body {
   z-index: 100;
 }
 
+
 .viewer-title-area,
 .viewer-page-controls,
 .viewer-tools {
@@ -64,9 +67,11 @@ body {
   gap: 7px;
 }
 
+
 .viewer-title-area {
   min-width: 0;
 }
+
 
 .viewer-title {
   max-width: 360px;
@@ -79,6 +84,7 @@ body {
 
   font-weight: 750;
 }
+
 
 .viewer-button {
   padding: 8px 12px;
@@ -98,9 +104,11 @@ body {
   cursor: pointer;
 }
 
+
 .viewer-button:hover {
   background: #f2f2f2;
 }
+
 
 .pen-button.active {
   background: #d5ca3d;
@@ -108,11 +116,8 @@ body {
   border-color: #c7bc2e;
 
   font-weight: 750;
-
-  box-shadow:
-    0 0 0 2px
-    rgba(213,202,61,.2);
 }
+
 
 .page-number {
   min-width: 70px;
@@ -130,6 +135,7 @@ body {
   font-weight: 650;
 }
 
+
 .viewer-stage {
   flex: 1;
 
@@ -145,10 +151,13 @@ body {
 
   background: #e9e9e6;
 
-  touch-action: pan-x pan-y;
+  touch-action:
+    pan-x pan-y;
 
-  overscroll-behavior: contain;
+  overscroll-behavior:
+    contain;
 }
+
 
 .page-container {
   position: relative;
@@ -159,14 +168,8 @@ body {
 
   box-shadow:
     0 5px 25px rgba(0,0,0,.18);
-
-  transform-origin:
-    top center;
-
-  transition:
-    transform .18s ease,
-    opacity .18s ease;
 }
+
 
 #pdfCanvas {
   display: none;
@@ -177,6 +180,7 @@ body {
 
   background: #fff;
 }
+
 
 .image-page {
   display: none;
@@ -192,6 +196,7 @@ body {
   -webkit-user-drag: none;
 }
 
+
 #annotationCanvas {
   position: absolute;
 
@@ -205,56 +210,12 @@ body {
   user-select: none;
 }
 
+
 body.pen-enabled
 #annotationCanvas {
   cursor: crosshair;
 }
 
-.page-container.slide-next {
-  animation:
-    slide-next .2s ease;
-}
-
-.page-container.slide-previous {
-  animation:
-    slide-previous .2s ease;
-}
-
-@keyframes slide-next {
-
-  from {
-    transform:
-      translateX(30px);
-
-    opacity: .5;
-  }
-
-  to {
-    transform:
-      translateX(0);
-
-    opacity: 1;
-  }
-
-}
-
-@keyframes slide-previous {
-
-  from {
-    transform:
-      translateX(-30px);
-
-    opacity: .5;
-  }
-
-  to {
-    transform:
-      translateX(0);
-
-    opacity: 1;
-  }
-
-}
 
 @media(max-width:950px) {
 
@@ -264,9 +225,11 @@ body.pen-enabled
     justify-content: flex-start;
   }
 
+
   .viewer-title-area {
     width: 100%;
   }
+
 
   .viewer-tools {
     width: 100%;
@@ -276,17 +239,20 @@ body.pen-enabled
 
 }
 
+
 @media(max-width:600px) {
 
   .viewer-stage {
     padding: 10px;
   }
 
+
   .viewer-button {
     padding: 8px 10px;
 
     font-size: 12px;
   }
+
 
   .viewer-title {
     max-width: 220px;
