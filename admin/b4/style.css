@@ -1,10 +1,87 @@
+.page-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 20px;
+}
+
+.page-header h1 {
+  margin: 0;
+}
+
+.page-header p {
+  margin: 6px 0 0;
+
+  color: #666;
+}
+
+.select-all-row {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 10px;
+}
+
+.select-all-row input {
+  width: auto;
+
+  margin: 0;
+}
+
+.student-list {
+  max-height: 400px;
+
+  overflow-y: auto;
+
+  margin-top: 10px;
+
+  border: 1px solid #ddd;
+
+  border-radius: 8px;
+}
+
+.student-item {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 12px;
+
+  border-bottom: 1px solid #eee;
+}
+
+.student-item:last-child {
+  border-bottom: 0;
+}
+
+.student-item input {
+  width: auto;
+
+  margin: 0;
+}
+
+.sheets {
+  margin-top: 30px;
+}
+
 .b4-sheet {
   width: 100%;
+
   max-width: 900px;
 
   aspect-ratio: 1.414 / 1;
 
-  margin: 30px auto;
+  margin: 0 auto 30px;
 
   padding: 45px;
 
@@ -13,24 +90,46 @@
   border: 1px solid #222;
 
   display: flex;
+
   flex-direction: column;
 
   justify-content: space-between;
+
   align-items: center;
 
   text-align: center;
+
+  page-break-after: always;
 }
 
 .b4-sheet h2 {
   margin: 0;
+
   font-size: 30px;
+}
+
+.b4-student {
+  font-size: 22px;
+
+  font-weight: 600;
 }
 
 .b4-code {
   font-size: 24px;
+
   font-weight: 700;
 
   letter-spacing: 2px;
+}
+
+.b4-qr {
+  width: 250px;
+
+  height: 250px;
+
+  display: grid;
+
+  place-items: center;
 }
 
 .b4-note {
@@ -43,18 +142,33 @@
     visibility: hidden;
   }
 
-  #sheet,
-  #sheet * {
+  #sheets,
+  #sheets * {
     visibility: visible;
   }
 
-  #sheet {
+  #sheets {
     position: absolute;
 
     top: 0;
+
     left: 0;
 
     width: 100%;
+  }
+
+  .b4-sheet {
+    margin: 0;
+
+    border: 0;
+
+    max-width: none;
+
+    width: 100vw;
+
+    height: 100vh;
+
+    aspect-ratio: auto;
   }
 
 }
