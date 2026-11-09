@@ -13,27 +13,15 @@ export async function getUser() {
     await supabase.auth.getUser();
 
   if (error) {
-
     console.error(error);
-
     return null;
-
   }
 
   return data.user || null;
-
 }
 
 
 export async function getProfile() {
-
-  const user =
-    await getUser();
-
-  if (!user) {
-    return null;
-  }
-
 
   const {
     data,
@@ -43,18 +31,12 @@ export async function getProfile() {
       "get_current_profile"
     );
 
-
   if (error) {
-
     console.error(error);
-
     return null;
-
   }
 
-
   return data || null;
-
 }
 
 
@@ -63,23 +45,19 @@ export async function requireAdmin() {
   const profile =
     await getProfile();
 
-
   if (
     !profile ||
     profile.role !== "admin"
   ) {
 
     location.replace(
-      "../../login/"
+      "/login/"
     );
 
     return null;
-
   }
 
-
   return profile;
-
 }
 
 
@@ -88,23 +66,19 @@ export async function requireStudent() {
   const profile =
     await getProfile();
 
-
   if (
     !profile ||
     profile.role !== "student"
   ) {
 
     location.replace(
-      "../../login/"
+      "/login/"
     );
 
     return null;
-
   }
 
-
   return profile;
-
 }
 
 
@@ -115,5 +89,4 @@ export async function logout() {
   location.replace(
     "/login/"
   );
-
 }
