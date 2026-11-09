@@ -30,43 +30,18 @@
 <aside class="admin-side">
 
 <div class="admin-brand">
-
-<div>
-WEB-viewer
+<div>WEB-viewer</div>
+<small>管理システム</small>
 </div>
-
-<small>
-管理システム
-</small>
-
-</div>
-
 
 <nav>
 
-<a href="../">
-ダッシュボード
-</a>
-
-<a href="../books/">
-Book管理
-</a>
-
-<a href="../serials/">
-シリアル管理
-</a>
-
-<a href="../students/">
-Student管理
-</a>
-
-<a href="../materials/">
-資料配信
-</a>
-
-<a href="../b4/">
-B4資料
-</a>
+<a href="../">ダッシュボード</a>
+<a href="../books/">Book管理</a>
+<a href="../serials/">シリアル管理</a>
+<a href="../students/">Student管理</a>
+<a href="../materials/">資料配信</a>
+<a href="../b4/">B4資料</a>
 
 <a
   class="active"
@@ -74,7 +49,9 @@ B4資料
 システム管理
 </a>
 
-<button id="logout">
+<button
+  id="logout"
+  type="button">
 ログアウト
 </button>
 
@@ -86,15 +63,8 @@ B4資料
 <main class="admin-main">
 
 <header class="admin-notice">
-
-<div>
-お知らせ
-</div>
-
-<span>
-システム管理
-</span>
-
+<div>お知らせ</div>
+<span>システム管理</span>
 </header>
 
 
@@ -103,15 +73,8 @@ B4資料
 <div class="page-heading">
 
 <div>
-
-<h1>
-システム管理
-</h1>
-
-<p>
-WEB-viewerの運用設定
-</p>
-
+<h1>システム管理</h1>
+<p>メンテナンス設定</p>
 </div>
 
 </div>
@@ -120,42 +83,26 @@ WEB-viewerの運用設定
 <section class="admin-card">
 
 <h2>
-メンテナンス設定
+メンテナンスモード
 </h2>
 
 
-<div class="maintenance-setting">
-
-<div>
-
-<h3>
-メンテナンスモード
-</h3>
-
-<p>
-Student側にメンテナンス画面を表示します。
-</p>
-
-</div>
-
-
-<label class="switch">
+<label class="maintenance-switch">
 
 <input
-  id="maintenanceEnabled"
+  id="enabled"
   type="checkbox">
 
-<span class="slider">
+<span>
+Student側にメンテナンス画面を表示する
 </span>
 
 </label>
 
-</div>
-
 
 <label>
 
-メンテナンス表示文
+表示文
 
 <textarea
   id="maintenanceMessage"
@@ -164,21 +111,15 @@ Student側にメンテナンス画面を表示します。
 </label>
 
 
-<div class="toolbar">
-
 <button
   id="save"
-  class="primary-button">
+  class="primary-button"
+  type="button">
 保存
 </button>
 
-</div>
 
-
-<p
-  id="message"
-  class="message">
-</p>
+<p id="result"></p>
 
 </section>
 
@@ -189,7 +130,7 @@ Student側にメンテナンス画面を表示します。
 
 <script
   type="module"
-  src="app.js?v=maintenance-2">
+  src="app.js">
 </script>
 
 </body>
