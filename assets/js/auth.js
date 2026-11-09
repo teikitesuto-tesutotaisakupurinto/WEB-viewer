@@ -1,12 +1,15 @@
-
 import {
   supabase
 }
 from "./supabase.js";
 
 
-const TIMEOUT = 8000;
+const AUTH_TIMEOUT = 8000;
 
+
+/*
+ * タイムアウト
+ */
 
 function withTimeout(
   promise,
@@ -30,7 +33,7 @@ function withTimeout(
             );
 
           },
-          TIMEOUT
+          AUTH_TIMEOUT
         );
 
       }
@@ -42,24 +45,27 @@ function withTimeout(
 
 
 /*
- * 現在のログインユーザー
+ * 現在のユーザー
  */
 
 export async function getUser() {
 
-  const result =
+  const {
+    data,
+    error
+  } =
     await withTimeout(
       supabase.auth.getUser(),
       "ログイン情報の取得がタイムアウトしました。"
     );
 
 
-  if (result.error) {
-    throw result.error;
+  if (error) {
+    throw error;
   }
 
 
-  if (!result.data?.user) {
+  if (!data?.user) {
 
     throw new Error(
       "ログインしてください。"
@@ -68,13 +74,13 @@ export async function getUser() {
   }
 
 
-  return result.data.user;
+  return data.user;
 
 }
 
 
 /*
- * プロフィール
+ * usersプロフィール
  */
 
 export async function getProfile() {
@@ -83,13 +89,12 @@ export async function getProfile() {
     await getUser();
 
 
-  /*
-   * RPCが固まる場合に備えて
-   * 直接usersを取得
-   */
-
-  const result =
+  const {
+    data,
+    error
+  } =
     await withTimeout(
+
       supabase
         .from("users")
         .select(
@@ -102,26 +107,25 @@ export async function getProfile() {
         .maybeSingle(),
 
       "ユーザー情報の取得がタイムアウトしました。"
+
     );
 
 
-  if (result.error) {
-
-    throw result.error;
-
+  if (error) {
+    throw error;
   }
 
 
-  if (!result.data) {
+  if (!data) {
 
     throw new Error(
-      "usersにユーザー情報がありません。"
+      "ユーザー情報が登録されていません。"
     );
 
   }
 
 
-  return result.data;
+  return data;
 
 }
 
@@ -186,19 +190,27 @@ export async function requireStudent() {
 
 /*
  * ログアウト
+ *
+ * Student / Admin 共通
  */
 
 export async function logout() {
 
+  /*
+   * Supabase側のセッションを削除
+   */
+
   try {
 
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({
+      scope: "local"
+    });
 
   }
   catch (error) {
 
     console.error(
-      "LOGOUT ERROR:",
+      "SUPABASE SIGNOUT ERROR:",
       error
     );
 
@@ -206,11 +218,131 @@ export async function logout() {
 
 
   /*
-   * 強制的にログイン画面へ
+   * Supabase AuthのローカルStorageを削除
+   *
+   * sb-xxxxxxxx-auth-token
    */
 
+  try {
+
+    const keys = [];
+
+    for (
+      let i = 0;
+      i < localStorage.length;
+      i++
+    ) {
+
+      const key =
+        localStorage.key(i);
+
+
+      if (
+        key &&
+        key.startsWith("sb-") &&
+        key.endsWith(
+          "-auth-token"
+        )
+      ) {
+
+        keys.push(key);
+
+      }
+
+    }
+
+
+    keys.forEach(
+      key => {
+
+        localStorage.removeItem(
+          key
+        );
+
+      }
+    );
+
+  }
+  catch (error) {
+
+    console.error(
+      "LOCAL STORAGE CLEAR ERROR:",
+      error
+    );
+
+  }
+
+
+  /*
+   * SessionStorageにも残っている場合に備える
+   */
+
+  try {
+
+    const keys = [];
+
+    for (
+      let i = 0;
+      i < sessionStorage.length;
+      i++
+    ) {
+
+      const key =
+        sessionStorage.key(i);
+
+
+      if (
+        key &&
+        key.startsWith("sb-") &&
+        key.endsWith(
+          "-auth-token"
+        )
+      ) {
+
+        keys.push(key);
+
+      }
+
+    }
+
+
+    keys.forEach(
+      key => {
+
+        sessionStorage.removeItem(
+          key
+        );
+
+      }
+    );
+
+  }
+  catch (error) {
+
+    console.error(
+      "SESSION STORAGE CLEAR ERROR:",
+      error
+    );
+
+  }
+
+
+  /*
+   * ログイン画面へ
+   *
+   * 絶対パスではなく、
+   * 現在のサイトから確実に作る
+   */
+
+  const loginUrl =
+    new URL(
+      "/login/",
+      window.location.origin
+    ).href;
+
+
   window.location.replace(
-    "/login/"
+    loginUrl
   );
 
 }
