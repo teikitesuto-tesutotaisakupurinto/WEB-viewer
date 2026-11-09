@@ -10,8 +10,7 @@ import {
 from "../../assets/js/supabase.js";
 
 import {
-  escapeHtml,
-  showError
+  escapeHtml
 }
 from "../../assets/js/common.js";
 
@@ -28,7 +27,14 @@ async function start() {
 
   document.getElementById(
     "logout"
-  ).onclick = logout;
+  ).onclick =
+    event => {
+
+      event.preventDefault();
+
+      logout();
+
+    };
 
 
   const target =
@@ -43,14 +49,16 @@ async function start() {
     );
 
 
-  target.onchange = () => {
+  target.onchange =
+    () => {
 
-    studentArea.classList.toggle(
-      "hidden",
-      target.value !== "selected"
-    );
+      studentArea.classList.toggle(
+        "hidden",
+        target.value !==
+          "selected"
+      );
 
-  };
+    };
 
 
   document.getElementById(
@@ -83,6 +91,120 @@ async function start() {
   await loadStudents();
 
   await loadMaterials();
+
+
+  async function loadStudents() {
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .from("users")
+        .select(
+          "id,display_name"
+        )
+        .eq(
+          "role",
+          "student"
+        )
+        .order(
+          "display_name"
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    document.getElementById(
+      "students"
+    ).innerHTML =
+      (data || []).map(
+        student => `
+
+        <label class="student-row">
+
+          <input
+            class="student-check"
+            type="checkbox"
+            value="${student.id}">
+
+          ${escapeHtml(
+            student.display_name
+          )}
+
+        </label>
+
+        `
+      ).join("");
+
+  }
+
+
+  async function loadMaterials() {
+
+    const box =
+      document.getElementById(
+        "materials"
+      );
+
+
+    const {
+      data,
+      error
+    } =
+      await supabase
+        .from("materials")
+        .select(`
+          id,
+          title,
+          description,
+          all_students,
+          created_at
+        `)
+        .order(
+          "created_at",
+          {
+            ascending: false
+          }
+        );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    box.innerHTML =
+      (data || []).map(
+        material => `
+
+        <div class="material-row">
+
+          <div class="material-title">
+            ${escapeHtml(
+              material.title
+            )}
+          </div>
+
+          <div class="material-target">
+            ${
+              material.all_students
+                ? "全生徒"
+                : "指定生徒"
+            }
+          </div>
+
+        </div>
+
+        `
+      ).join("")
+      ||
+      "配信済み資料はありません。";
+
+  }
 
 
   async function createMaterial() {
@@ -137,7 +259,9 @@ async function start() {
         "jpg",
         "jpeg",
         "png"
-      ].includes(extension)
+      ].includes(
+        extension
+      )
     ) {
 
       message.textContent =
@@ -146,25 +270,6 @@ async function start() {
       return;
 
     }
-
-
-    if (
-      target.value === "selected" &&
-      document.querySelectorAll(
-        ".student-check:checked"
-      ).length === 0
-    ) {
-
-      message.textContent =
-        "対象Studentを選択してください。";
-
-      return;
-
-    }
-
-
-    message.textContent =
-      "配信しています。";
 
 
     try {
@@ -194,7 +299,8 @@ async function start() {
 
 
       const allStudents =
-        target.value === "all";
+        target.value ===
+        "all";
 
 
       const {
@@ -219,6 +325,7 @@ async function start() {
 
             created_by:
               admin.id
+
           })
           .select()
           .single();
@@ -240,6 +347,15 @@ async function start() {
             checkbox =>
               checkbox.value
           );
+
+
+        if (!ids.length) {
+
+          throw new Error(
+            "対象生徒を選択してください。"
+          );
+
+        }
 
 
         const {
@@ -273,156 +389,16 @@ async function start() {
         "資料を配信しました。";
 
 
-      document.getElementById(
-        "title"
-      ).value = "";
-
-      document.getElementById(
-        "description"
-      ).value = "";
-
-      document.getElementById(
-        "file"
-      ).value = "";
-
-
       await loadMaterials();
 
     }
     catch (error) {
-
-      console.error(error);
 
       message.textContent =
         "登録エラー: " +
         error.message;
 
     }
-
-  }
-
-
-  async function loadStudents() {
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("users")
-        .select(
-          "id,display_name"
-        )
-        .eq(
-          "role",
-          "student"
-        )
-        .order(
-          "display_name"
-        );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    document.getElementById(
-      "students"
-    ).innerHTML =
-      (data || []).map(
-        student => `
-
-<label class="student-row">
-
-<input
-  class="student-check"
-  type="checkbox"
-  value="${student.id}">
-
-${escapeHtml(
-  student.display_name
-)}
-
-</label>
-
-`
-      ).join("");
-
-  }
-
-
-  async function loadMaterials() {
-
-    const box =
-      document.getElementById(
-        "materials"
-      );
-
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("materials")
-        .select(`
-          id,
-          title,
-          description,
-          all_students,
-          created_at
-        `)
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    if (
-      !data ||
-      data.length === 0
-    ) {
-
-      box.innerHTML =
-        "配信済み資料はありません。";
-
-      return;
-
-    }
-
-
-    box.innerHTML =
-      data.map(
-        material => `
-
-<div class="material-row">
-
-<div class="material-title">
-${escapeHtml(
-  material.title
-)}
-</div>
-
-<div class="material-target">
-${
-  material.all_students
-    ? "全Student"
-    : "指定Student"
-}
-</div>
-
-</div>
-
-`
-      ).join("");
 
   }
 
@@ -435,12 +411,25 @@ start()
 
       console.error(error);
 
-      showError(
-        error.message,
-        document.querySelector(
-          ".admin-content"
-        )
-      );
+      document.querySelector(
+        ".admin-content"
+      ).innerHTML += `
+
+        <div class="page-error">
+
+          <h2>
+            資料画面を読み込めませんでした
+          </h2>
+
+          <p>
+            ${escapeHtml(
+              error.message
+            )}
+          </p>
+
+        </div>
+
+      `;
 
     }
   );
