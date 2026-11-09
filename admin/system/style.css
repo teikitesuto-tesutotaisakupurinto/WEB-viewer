@@ -1,12 +1,11 @@
 .system-row {
   display: flex;
-
   align-items: center;
   justify-content: space-between;
 
   gap: 20px;
 
-  padding: 15px 0;
+  padding-bottom: 20px;
 
   border-bottom: 1px solid #eee;
 }
@@ -16,6 +15,8 @@
 
   width: 58px;
   height: 32px;
+
+  flex: 0 0 auto;
 }
 
 .switch input {
@@ -47,8 +48,8 @@
   width: 24px;
   height: 24px;
 
-  left: 4px;
   top: 4px;
+  left: 4px;
 
   background: #fff;
 
