@@ -18,9 +18,7 @@ const admin =
   await requireAdmin();
 
 if (!admin) {
-  throw new Error(
-    "Unauthorized"
-  );
+  throw new Error("Unauthorized");
 }
 
 
@@ -29,85 +27,16 @@ const bookSelect =
     "book"
   );
 
-const studentList =
+const studentsBox =
   document.getElementById(
     "students"
   );
 
-const selectAll =
-  document.getElementById(
-    "selectAll"
-  );
-
-const sheets =
-  document.getElementById(
-    "sheets"
-  );
-
-const message =
-  document.getElementById(
-    "message"
-  );
-
-
-let students = [];
-
-
-/*
- * QRライブラリ
- */
-
-function loadQRCode() {
-
-  return new Promise(
-    (resolve, reject) => {
-
-      if (
-        window.QRCode
-      ) {
-
-        resolve();
-
-        return;
-      }
-
-
-      const script =
-        document.createElement(
-          "script"
-        );
-
-
-      script.src =
-        "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
-
-
-      script.onload =
-        resolve;
-
-      script.onerror =
-        reject;
-
-
-      document.head.appendChild(
-        script
-      );
-
-    }
-  );
-
-}
-
-
-/*
- * Book取得
- */
 
 async function loadBooks() {
 
   const {
-    data,
-    error
+    data
   } =
     await supabase
       .from("books")
@@ -118,53 +47,24 @@ async function loadBooks() {
         "enabled",
         true
       )
-      .order(
-        "title",
-        {
-          ascending: true
-        }
-      );
-
-
-  if (error) {
-
-    console.error(
-      error
-    );
-
-    message.textContent =
-      "Bookを取得できませんでした。";
-
-    return;
-  }
+      .order("title");
 
 
   bookSelect.innerHTML =
     (data || []).map(
       book => `
-
 <option value="${book.id}">
 ${escapeHtml(book.title)}
 </option>
-
 `
     ).join("");
-
-
-  await loadStudents();
-
 }
 
-
-/*
- * Student取得
- */
 
 async function loadStudents() {
 
   const {
-    data,
-    error
+    data
   } =
     await supabase
       .from("users")
@@ -176,308 +76,201 @@ async function loadStudents() {
         "student"
       )
       .order(
-        "display_name",
-        {
-          ascending: true
+        "display_name"
+      );
+
+
+  studentsBox.innerHTML =
+    `
+    <div class="student-select">
+    ${
+      (data || []).map(
+        student => `
+        <label class="student-row">
+          <input
+            class="student-check"
+            type="checkbox"
+            value="${student.id}">
+          ${escapeHtml(
+            student.display_name
+          )}
+        </label>
+        `
+      ).join("")
+    }
+    </div>
+    `;
+}
+
+
+document.getElementById(
+  "selectAll"
+).onchange =
+  event => {
+
+    document
+      .querySelectorAll(
+        ".student-check"
+      )
+      .forEach(
+        checkbox => {
+
+          checkbox.checked =
+            event.target.checked;
+
         }
       );
 
+  };
 
-  if (error) {
-
-    console.error(
-      error
-    );
-
-    message.textContent =
-      "Studentを取得できませんでした。";
-
-    return;
-  }
-
-
-  students =
-    data || [];
-
-
-  renderStudents();
-
-}
-
-
-function renderStudents() {
-
-  if (
-    students.length === 0
-  ) {
-
-    studentList.innerHTML =
-      "<p>登録されたStudentはいません。</p>";
-
-    return;
-  }
-
-
-  studentList.innerHTML =
-    students.map(
-      student => `
-
-<label class="student-item">
-
-<input
-  type="checkbox"
-  class="student-checkbox"
-  value="${student.id}">
-
-<span>
-${escapeHtml(
-  student.display_name
-)}
-</span>
-
-</label>
-
-`
-    ).join("");
-
-}
-
-
-selectAll.onchange = () => {
-
-  document
-    .querySelectorAll(
-      ".student-checkbox"
-    )
-    .forEach(
-      checkbox => {
-
-        checkbox.checked =
-          selectAll.checked;
-
-      }
-    );
-
-};
-
-
-/*
- * B4作成
- */
 
 document.getElementById(
   "create"
-).onclick = async () => {
+).onclick =
+  async () => {
 
-  message.style.color =
-    "#222";
-
-  message.textContent =
-    "作成しています。";
+    const bookId =
+      bookSelect.value;
 
 
-  const bookId =
-    bookSelect.value;
-
-
-  const selectedStudents =
-    Array.from(
-      document.querySelectorAll(
-        ".student-checkbox:checked"
-      )
-    ).map(
-      checkbox =>
-        checkbox.value
-    );
-
-
-  if (!bookId) {
-
-    message.textContent =
-      "Bookを選択してください。";
-
-    return;
-  }
-
-
-  if (
-    selectedStudents.length === 0
-  ) {
-
-    message.textContent =
-      "Studentを選択してください。";
-
-    return;
-  }
-
-
-  /*
-   * Book
-   */
-
-  const {
-    data: book,
-    error: bookError
-  } =
-    await supabase
-      .from("books")
-      .select(
-        "id,title"
-      )
-      .eq(
-        "id",
-        bookId
-      )
-      .single();
-
-
-  if (
-    bookError ||
-    !book
-  ) {
-
-    message.textContent =
-      "Bookを取得できませんでした。";
-
-    return;
-  }
-
-
-  /*
-   * Studentごとの固有シリアル
-   */
-
-  const {
-    data: licenses,
-    error: licenseError
-  } =
-    await supabase
-      .from("licenses")
-      .select(
-        "id,code,student_id,status"
-      )
-      .eq(
-        "book_id",
-        bookId
-      )
-      .in(
-        "student_id",
-        selectedStudents
-      );
-
-
-  if (licenseError) {
-
-    console.error(
-      licenseError
-    );
-
-    message.textContent =
-      "シリアルを取得できませんでした。";
-
-    return;
-  }
-
-
-  const licenseMap =
-    new Map(
-      (licenses || []).map(
-        license => [
-          license.student_id,
-          license
-        ]
-      )
-    );
-
-
-  /*
-   * シリアルがないStudentがいる場合
-   */
-
-  const missingStudents =
-    selectedStudents.filter(
-      studentId =>
-        !licenseMap.has(
-          studentId
+    const studentIds =
+      Array.from(
+        document.querySelectorAll(
+          ".student-check:checked"
         )
-    );
-
-
-  if (
-    missingStudents.length > 0
-  ) {
-
-    message.textContent =
-      "シリアルが発行されていないStudentが含まれています。";
-
-    return;
-  }
-
-
-  /*
-   * QRライブラリ
-   */
-
-  try {
-
-    await loadQRCode();
-
-  }
-  catch {
-
-    message.textContent =
-      "QRコード機能を読み込めませんでした。";
-
-    return;
-  }
-
-
-  sheets.innerHTML =
-    "";
-
-
-  /*
-   * B4生成
-   */
-
-  for (
-    const studentId
-    of selectedStudents
-  ) {
-
-    const student =
-      students.find(
-        item =>
-          item.id ===
-          studentId
-      );
-
-
-    const license =
-      licenseMap.get(
-        studentId
+      ).map(
+        checkbox =>
+          checkbox.value
       );
 
 
     if (
-      !student ||
-      !license
+      !bookId ||
+      studentIds.length === 0
     ) {
-      continue;
+
+      document.getElementById(
+        "message"
+      ).textContent =
+        "BookとStudentを選択してください。";
+
+      return;
     }
 
 
-    const sheet =
-      document.createElement(
-        "div"
+    const {
+      data: book
+    } =
+      await supabase
+        .from("books")
+        .select(
+          "title"
+        )
+        .eq(
+          "id",
+          bookId
+        )
+        .single();
+
+
+    const {
+      data: licenses
+    } =
+      await supabase
+        .from("licenses")
+        .select(
+          "student_id,code"
+        )
+        .eq(
+          "book_id",
+          bookId
+        )
+        .in(
+          "student_id",
+          studentIds
+        );
+
+
+    const licenseMap =
+      new Map(
+        (licenses || []).map(
+          license => [
+            license.student_id,
+            license.code
+          ]
+        )
       );
 
 
-    sheet.className =
-      "b4-sheet";
+    const {
+      data: students
+    } =
+      await supabase
+        .from("users")
+        .select(
+          "id,display_name"
+        )
+        .in(
+          "id",
+          studentIds
+        );
 
 
-    sheet.innerHTML = `
+    const qrScript =
+      document.createElement(
+        "script"
+      );
+
+    qrScript.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
+
+    await new Promise(
+      resolve => {
+
+        qrScript.onload =
+          resolve;
+
+        document.head.appendChild(
+          qrScript
+        );
+
+      }
+    );
+
+
+    const sheets =
+      document.getElementById(
+        "sheets"
+      );
+
+    sheets.innerHTML =
+      "";
+
+
+    (students || []).forEach(
+      student => {
+
+        const code =
+          licenseMap.get(
+            student.id
+          );
+
+
+        if (!code) {
+          return;
+        }
+
+
+        const sheet =
+          document.createElement(
+            "section"
+          );
+
+        sheet.className =
+          "b4-sheet";
+
+
+        sheet.innerHTML = `
 
 <h2>
 WEB-viewer
@@ -489,25 +282,22 @@ ${escapeHtml(
 )}
 </div>
 
-<div class="b4-student">
+<div class="b4-name">
 ${escapeHtml(
   student.display_name
 )}
 </div>
 
 <div
-  class="b4-qr"
-  id="qr-${student.id}">
+  class="b4-qr">
 </div>
 
 <div class="b4-code">
-${escapeHtml(
-  license.code
-)}
+${escapeHtml(code)}
 </div>
 
 <div>
-QRコードを読み取って利用してください。
+WEB-viewerで教材を利用してください。
 </div>
 
 <div class="b4-note">
@@ -517,59 +307,33 @@ QRコードを読み取って利用してください。
 `;
 
 
-    sheets.appendChild(
-      sheet
-    );
+        sheets.appendChild(
+          sheet
+        );
 
 
-    new QRCode(
-      sheet.querySelector(
-        "#qr-" +
-        student.id
-      ),
-      {
-        text:
-          license.code,
+        new QRCode(
+          sheet.querySelector(
+            ".b4-qr"
+          ),
+          {
+            text: code,
+            width: 250,
+            height: 250
+          }
+        );
 
-        width:
-          250,
-
-        height:
-          250
       }
     );
 
-  }
 
+    document.getElementById(
+      "message"
+    ).textContent =
+      "B4資料を作成しました。";
 
-  message.style.color =
-    "#222";
-
-  message.textContent =
-    `${selectedStudents.length}人分のB4資料を作成しました。`;
-
-};
-
-
-document.getElementById(
-  "printAll"
-).onclick = () => {
-
-  if (
-    !sheets.children.length
-  ) {
-
-    alert(
-      "先にB4資料を作成してください。"
-    );
-
-    return;
-  }
-
-
-  window.print();
-
-};
+  };
 
 
 await loadBooks();
+await loadStudents();
