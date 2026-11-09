@@ -1,6 +1,3 @@
-<!DOCTYPE html>
-<html lang="ja">
-
 <head>
 
 <meta charset="UTF-8">
@@ -15,133 +12,12 @@
   rel="stylesheet"
   href="../../assets/css/common.css">
 
+<link
+  rel="stylesheet"
+  href="../style.css">
+
+<link
+  rel="stylesheet"
+  href="style.css">
+
 </head>
-
-<body>
-
-<header class="topbar">
-
-<button
-  class="menu-button"
-  onclick="location.href='../'">
-戻る
-</button>
-
-<div class="logo">
-Student管理
-</div>
-
-</header>
-
-
-<main class="page">
-
-<div class="page-heading">
-
-<div>
-
-<h1>
-Student管理
-</h1>
-
-<p>
-利用者の登録と管理
-</p>
-
-</div>
-
-<button
-  id="showForm"
-  class="primary-button">
-Studentを追加
-</button>
-
-</div>
-
-
-<section
-  id="formCard"
-  class="card hidden">
-
-<h2>
-Studentを追加
-</h2>
-
-
-<label>
-氏名
-
-<input
-  id="displayName"
-  type="text"
-  autocomplete="name">
-</label>
-
-
-<label>
-メールアドレス
-
-<input
-  id="email"
-  type="email"
-  autocomplete="email">
-</label>
-
-
-<label>
-初期パスワード
-
-<input
-  id="password"
-  type="password"
-  autocomplete="new-password">
-</label>
-
-
-<div class="toolbar">
-
-<button
-  id="create"
-  class="primary-button">
-登録
-</button>
-
-<button
-  id="cancel"
-  class="secondary-button">
-キャンセル
-</button>
-
-</div>
-
-
-<p
-  id="message"
-  class="message">
-</p>
-
-</section>
-
-
-<section class="card">
-
-<h2>
-Student一覧
-</h2>
-
-<div id="students">
-</div>
-
-</section>
-
-</main>
-
-
-<script
-  type="module"
-  src="app.js?v=student-final">
-</script>
-
-</body>
-
-</html>
