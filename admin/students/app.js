@@ -29,8 +29,13 @@ const {
   await supabase
     .from("users")
     .select("*")
-    .eq("role", "student")
-    .order("display_name");
+    .eq(
+      "role",
+      "student"
+    )
+    .order(
+      "display_name"
+    );
 
 
 if (error) {
@@ -44,13 +49,16 @@ document.getElementById(
   "students"
 ).innerHTML = `
 
+<div class="card">
+
+<div class="table-wrap">
+
 <table>
 
 <thead>
 
 <tr>
 <th>氏名</th>
-<th>メール</th>
 <th>クラス</th>
 <th>番号</th>
 </tr>
@@ -59,32 +67,40 @@ document.getElementById(
 
 <tbody>
 
-${(data || []).map(student => `
+${(data || []).map(
+  student => `
 
 <tr>
 
 <td>
-${escapeHtml(student.display_name)}
+${escapeHtml(
+  student.display_name
+)}
 </td>
 
 <td>
-${escapeHtml(student.email)}
+${escapeHtml(
+  student.class_name
+)}
 </td>
 
 <td>
-${escapeHtml(student.class_name)}
-</td>
-
-<td>
-${escapeHtml(student.student_number)}
+${escapeHtml(
+  student.student_number
+)}
 </td>
 
 </tr>
 
-`).join("")}
+`
+).join("")}
 
 </tbody>
 
 </table>
+
+</div>
+
+</div>
 
 `;
