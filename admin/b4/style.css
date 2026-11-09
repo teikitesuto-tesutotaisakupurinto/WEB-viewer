@@ -1,479 +1,185 @@
-import {
-  requireAdmin,
-  logout
+.check-all {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  margin-bottom: 12px;
 }
-from "../../assets/js/auth.js";
 
-import {
-  supabase
+
+.check-all input {
+  width: auto;
+
+  margin: 0;
 }
-from "../../assets/js/supabase.js";
 
-import {
-  escapeHtml,
-  showError
+
+.student-list {
+  max-height: 380px;
+
+  overflow-y: auto;
+
+  margin-bottom: 20px;
+
+  border: 1px solid #ddd;
+
+  border-radius: 9px;
+
+  background: #fff;
 }
-from "../../assets/js/common.js";
 
 
-async function start() {
+.student-row {
+  display: flex;
 
-  const admin =
-    await requireAdmin();
+  align-items: center;
 
-  if (!admin) {
-    return;
+  gap: 9px;
+
+  padding: 12px;
+
+  border-bottom: 1px solid #eee;
+}
+
+
+.student-row:last-child {
+  border-bottom: 0;
+}
+
+
+.student-row input {
+  width: auto;
+
+  margin: 0;
+}
+
+
+/*
+ * B4本体
+ */
+
+.b4-sheets {
+  margin-top: 30px;
+}
+
+
+.b4-sheet {
+  width: 210mm;
+
+  min-height: 297mm;
+
+  margin: 25px auto;
+
+  padding: 30mm 25mm;
+
+  background: #fff;
+
+  border: 1px solid #ddd;
+
+  text-align: center;
+
+  page-break-after: always;
+}
+
+
+.b4-sheet h2 {
+  margin-top: 0;
+
+  font-size: 30px;
+}
+
+
+.b4-book {
+  margin-top: 12px;
+
+  font-size: 20px;
+}
+
+
+.b4-name {
+  margin: 30px 0;
+
+  font-size: 26px;
+
+  font-weight: 700;
+}
+
+
+.b4-qr {
+  width: 250px;
+
+  height: 250px;
+
+  margin: 25px auto;
+}
+
+
+.b4-code {
+  font-size: 22px;
+
+  font-weight: 700;
+
+  letter-spacing: 2px;
+}
+
+
+.b4-note {
+  margin-top: 50px;
+
+  color: #666;
+
+  font-size: 11px;
+}
+
+
+@media print {
+
+  body * {
+    visibility: hidden;
   }
 
 
-  document.getElementById(
-    "logout"
-  ).onclick =
-    logout;
-
-
-  document.getElementById(
-    "selectAll"
-  ).onchange =
-    event => {
-
-      document
-        .querySelectorAll(
-          ".student-check"
-        )
-        .forEach(
-          checkbox => {
-
-            checkbox.checked =
-              event.target.checked;
-
-          }
-        );
-
-    };
-
-
-  document.getElementById(
-    "create"
-  ).onclick =
-    createSheets;
-
-
-  document.getElementById(
-    "print"
-  ).onclick =
-    () => window.print();
-
-
-  await loadBooks();
-
-  await loadStudents();
-
-
-  async function loadBooks() {
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("books")
-        .select(
-          "id,title"
-        )
-        .eq(
-          "enabled",
-          true
-        )
-        .order(
-          "title"
-        );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    document.getElementById(
-      "book"
-    ).innerHTML =
-      `
-      <option value="">
-        Bookを選択してください
-      </option>
-      ` +
-      (data || []).map(
-        book => `
-
-<option value="${book.id}">
-${escapeHtml(book.title)}
-</option>
-
-`
-      ).join("");
-
+  #sheets,
+  #sheets * {
+    visibility: visible;
   }
 
 
-  async function loadStudents() {
+  #sheets {
+    position: absolute;
 
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("users")
-        .select(
-          "id,display_name"
-        )
-        .eq(
-          "role",
-          "student"
-        )
-        .order(
-          "display_name"
-        );
+    top: 0;
+    left: 0;
 
+    width: 100%;
 
-    if (error) {
-      throw error;
-    }
-
-
-    document.getElementById(
-      "students"
-    ).innerHTML =
-      (data || []).map(
-        student => `
-
-<label class="student-row">
-
-<input
-  class="student-check"
-  type="checkbox"
-  value="${student.id}">
-
-${escapeHtml(
-  student.display_name
-)}
-
-</label>
-
-`
-      ).join("");
-
+    margin: 0;
   }
 
 
-  async function createSheets() {
+  .b4-sheet {
+    margin: 0;
 
-    const bookId =
-      document.getElementById(
-        "book"
-      ).value;
+    border: 0;
 
+    width: 210mm;
 
-    const studentIds =
-      Array.from(
-        document.querySelectorAll(
-          ".student-check:checked"
-        )
-      ).map(
-        checkbox =>
-          checkbox.value
-      );
-
-
-    const message =
-      document.getElementById(
-        "message"
-      );
-
-
-    if (!bookId) {
-
-      message.textContent =
-        "Bookを選択してください。";
-
-      return;
-    }
-
-
-    if (
-      studentIds.length === 0
-    ) {
-
-      message.textContent =
-        "Studentを選択してください。";
-
-      return;
-    }
-
-
-    message.textContent =
-      "作成しています。";
-
-
-    try {
-
-      const {
-        data: book,
-        error: bookError
-      } =
-        await supabase
-          .from("books")
-          .select(
-            "title"
-          )
-          .eq(
-            "id",
-            bookId
-          )
-          .single();
-
-
-      if (bookError) {
-        throw bookError;
-      }
-
-
-      const {
-        data: licenses,
-        error: licenseError
-      } =
-        await supabase
-          .from("licenses")
-          .select(
-            "student_id,code,status"
-          )
-          .eq(
-            "book_id",
-            bookId
-          )
-          .in(
-            "student_id",
-            studentIds
-          );
-
-
-      if (licenseError) {
-        throw licenseError;
-      }
-
-
-      const licenseMap =
-        new Map(
-          (licenses || []).map(
-            license => [
-              license.student_id,
-              license
-            ]
-          )
-        );
-
-
-      const {
-        data: students,
-        error: studentError
-      } =
-        await supabase
-          .from("users")
-          .select(
-            "id,display_name"
-          )
-          .in(
-            "id",
-            studentIds
-          );
-
-
-      if (studentError) {
-        throw studentError;
-      }
-
-
-      /*
-       * QRライブラリ
-       */
-
-      if (
-        !window.QRCode
-      ) {
-
-        await new Promise(
-          (
-            resolve,
-            reject
-          ) => {
-
-            const script =
-              document.createElement(
-                "script"
-              );
-
-
-            script.src =
-              "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js";
-
-
-            script.onload =
-              resolve;
-
-            script.onerror =
-              reject;
-
-
-            document.head.appendChild(
-              script
-            );
-
-          }
-        );
-
-      }
-
-
-      const sheets =
-        document.getElementById(
-          "sheets"
-        );
-
-
-      sheets.innerHTML =
-        "";
-
-
-      for (
-        const student
-        of students || []
-      ) {
-
-        const license =
-          licenseMap.get(
-            student.id
-          );
-
-
-        if (
-          !license ||
-          !license.code
-        ) {
-
-          continue;
-
-        }
-
-
-        const sheet =
-          document.createElement(
-            "section"
-          );
-
-
-        sheet.className =
-          "b4-sheet";
-
-
-        sheet.innerHTML = `
-
-<h2>
-WEB-viewer
-</h2>
-
-<div class="b4-book">
-${escapeHtml(
-  book.title
-)}
-</div>
-
-<div class="b4-name">
-${escapeHtml(
-  student.display_name
-)}
-</div>
-
-<div class="b4-qr"></div>
-
-<div class="b4-code">
-${escapeHtml(
-  license.code
-)}
-</div>
-
-<p>
-WEB-viewerで教材を利用してください。
-</p>
-
-<div class="b4-note">
-※ 紛失の場合はこちらでは対応しかねますのでご注意ください。
-</div>
-
-`;
-
-
-        sheets.appendChild(
-          sheet
-        );
-
-
-        new QRCode(
-          sheet.querySelector(
-            ".b4-qr"
-          ),
-          {
-            text:
-              license.code,
-
-            width:
-              250,
-
-            height:
-              250
-          }
-        );
-
-      }
-
-
-      message.textContent =
-        "B4資料を作成しました。";
-
-
-    }
-    catch (error) {
-
-      console.error(
-        error
-      );
-
-
-      message.textContent =
-        "作成エラー: " +
-        error.message;
-
-    }
-
+    min-height: 297mm;
   }
 
 }
 
 
-start()
-  .catch(
-    error => {
+@media(max-width:700px) {
 
-      console.error(
-        error
-      );
+  .b4-sheet {
+    width: 100%;
 
+    min-height: auto;
 
-      showError(
-        error.message,
-        document.querySelector(
-          ".admin-content"
-        )
-      );
+    padding: 40px 20px;
+  }
 
-    }
-  );
+}
