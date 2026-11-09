@@ -1,15 +1,7 @@
-import { supabase }
+import {
+  supabase
+}
 from "../assets/js/supabase.js";
-
-
-const VERSION =
-  "20261109-02";
-
-
-console.log(
-  "WEB-viewer login loaded:",
-  VERSION
-);
 
 
 const form =
@@ -27,19 +19,6 @@ const button =
     "loginButton"
   );
 
-const version =
-  document.getElementById(
-    "version"
-  );
-
-
-version.textContent =
-  "WEB-viewer";
-
-
-/*
- * ログイン
- */
 
 form.addEventListener(
   "submit",
@@ -47,49 +26,25 @@ form.addEventListener(
 
     event.preventDefault();
 
-
     message.textContent = "";
-
-    message.style.color =
-      "#b00020";
 
     button.disabled = true;
 
 
     const email =
-      document
-        .getElementById("email")
-        .value
-        .trim();
-
+      document.getElementById(
+        "email"
+      ).value.trim();
 
     const password =
-      document
-        .getElementById("password")
-        .value;
+      document.getElementById(
+        "password"
+      ).value;
 
-
-    if (
-      !email ||
-      !password
-    ) {
-
-      message.textContent =
-        "メールアドレスとパスワードを入力してください。";
-
-      button.disabled = false;
-
-      return;
-    }
-
-
-    /*
-     * Supabase Auth
-     */
 
     const {
-      data: loginData,
-      error: loginError
+      data,
+      error
     } =
       await supabase.auth
         .signInWithPassword({
@@ -98,119 +53,54 @@ form.addEventListener(
         });
 
 
-    if (loginError) {
-
-      console.error(
-        "LOGIN ERROR:",
-        loginError
-      );
-
+    if (error) {
 
       message.textContent =
         "ログインできませんでした。";
 
-
       button.disabled = false;
 
       return;
     }
 
 
-    const user =
-      loginData?.user;
-
-
-    if (!user) {
-
-      console.error(
-        "USER NOT FOUND"
-      );
-
+    if (!data.user) {
 
       message.textContent =
-        "ログインユーザーを取得できませんでした。";
-
+        "ログイン情報を取得できませんでした。";
 
       button.disabled = false;
 
       return;
     }
 
-
-    console.log(
-      "LOGIN UID:",
-      user.id
-    );
-
-
-    /*
-     * users取得
-     */
 
     const {
       data: profile,
       error: profileError
     } =
-      await supabase
-        .from("users")
-        .select(
-          "id, display_name, role"
-        )
-        .eq(
-          "id",
-          user.id
-        )
-        .maybeSingle();
+      await supabase.rpc(
+        "get_current_profile"
+      );
 
 
-    console.log(
-      "PROFILE:",
-      profile
-    );
+    if (
+      profileError ||
+      !profile
+    ) {
 
-
-    console.log(
-      "PROFILE ERROR:",
-      profileError
-    );
-
-
-    /*
-     * users取得エラー
-     */
-
-    if (profileError) {
+      console.error(
+        profileError
+      );
 
       message.textContent =
-        "Supabaseエラー: " +
-        profileError.message;
-
+        "ユーザー情報を取得できませんでした。";
 
       button.disabled = false;
 
       return;
     }
 
-
-    /*
-     * usersに存在しない
-     */
-
-    if (!profile) {
-
-      message.textContent =
-        "ユーザー情報が登録されていません。";
-
-
-      button.disabled = false;
-
-      return;
-    }
-
-
-    /*
-     * Admin
-     */
 
     if (
       profile.role === "admin"
@@ -224,10 +114,6 @@ form.addEventListener(
     }
 
 
-    /*
-     * Student
-     */
-
     if (
       profile.role === "student"
     ) {
@@ -240,13 +126,8 @@ form.addEventListener(
     }
 
 
-    /*
-     * 不明な権限
-     */
-
     message.textContent =
       "ユーザー権限が設定されていません。";
-
 
     button.disabled = false;
 
