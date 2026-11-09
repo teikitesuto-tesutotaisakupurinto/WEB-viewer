@@ -1,5 +1,6 @@
 import {
-  requireStudent
+  requireStudent,
+  logout
 }
 from "../../assets/js/auth.js";
 
@@ -17,21 +18,198 @@ from "../../assets/js/common.js";
 const student =
   await requireStudent();
 
+
 if (!student) {
-  throw new Error("Unauthorized");
+  throw new Error(
+    "Unauthorized"
+  );
 }
 
 
-const message =
+document.getElementById(
+  "studentName"
+).textContent =
+  student.display_name || "";
+
+
+document.getElementById(
+  "logout"
+).onclick =
+  logout;
+
+
+const container =
   document.getElementById(
-    "message"
+    "books"
   );
 
+
+/*
+ * PDF.js
+ */
+
+async function loadPdfJs() {
+
+  return await import(
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs"
+  );
+
+}
+
+
+/*
+ * PDFの1ページ目を
+ * Book表紙として描画
+ */
+
+async function renderPdfThumbnail(
+  canvas,
+  filePath
+) {
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabase.storage
+        .from("web-viewer")
+        .createSignedUrl(
+          filePath,
+          300
+        );
+
+
+    if (
+      error ||
+      !data?.signedUrl
+    ) {
+
+      throw new Error(
+        "PDF URL error"
+      );
+
+    }
+
+
+    const pdfjs =
+      await loadPdfJs();
+
+
+    const pdf =
+      await pdfjs
+        .getDocument(
+          data.signedUrl
+        )
+        .promise;
+
+
+    const page =
+      await pdf.getPage(1);
+
+
+    const baseViewport =
+      page.getViewport({
+        scale: 1
+      });
+
+
+    const targetWidth =
+      260;
+
+
+    const scale =
+      targetWidth /
+      baseViewport.width;
+
+
+    const viewport =
+      page.getViewport({
+        scale
+      });
+
+
+    canvas.width =
+      viewport.width;
+
+    canvas.height =
+      viewport.height;
+
+
+    await page.render({
+      canvasContext:
+        canvas.getContext(
+          "2d"
+        ),
+
+      viewport
+    }).promise;
+
+
+  }
+  catch (error) {
+
+    console.error(
+      "Thumbnail error:",
+      error
+    );
+
+    canvas.outerHTML =
+      `
+      <div class="book-placeholder">
+        表紙を表示できません
+      </div>
+      `;
+
+  }
+
+}
+
+
+/*
+ * 画像の1ページ目
+ */
+
+async function getImageThumbnail(
+  filePath
+) {
+
+  const {
+    data,
+    error
+  } =
+    await supabase.storage
+      .from("web-viewer")
+      .createSignedUrl(
+        filePath,
+        300
+      );
+
+
+  if (
+    error ||
+    !data?.signedUrl
+  ) {
+
+    return null;
+
+  }
+
+
+  return data.signedUrl;
+
+}
+
+
+/*
+ * Book一覧
+ */
 
 async function loadBooks() {
 
   const {
-    data,
+    data: books,
     error
   } =
     await supabase
@@ -40,10 +218,13 @@ async function loadBooks() {
         id,
         book_id,
         status,
-        code,
         books (
+          id,
           title,
-          description
+          description,
+          file_path,
+          file_type,
+          enabled
         )
       `)
       .eq(
@@ -57,7 +238,8 @@ async function loadBooks() {
       .order(
         "created_at",
         {
-          ascending: false
+          ascending:
+            false
         }
       );
 
@@ -66,380 +248,252 @@ async function loadBooks() {
 
     console.error(error);
 
+    container.innerHTML =
+      `
+      <div class="empty">
+        Bookを取得できませんでした。
+      </div>
+      `;
+
     return;
+
   }
 
 
-  const container =
-    document.getElementById(
-      "books"
-    );
+  const validBooks =
+    (books || [])
+      .filter(
+        item =>
+          item.books &&
+          item.books.enabled
+      );
 
 
   if (
-    !data ||
-    data.length === 0
+    validBooks.length === 0
   ) {
 
-    container.innerHTML = `
-      <div class="card">
-        登録されたBookはありません。
+    container.innerHTML =
+      `
+      <div class="empty">
+        利用できるBookはありません。
       </div>
-    `;
+      `;
 
     return;
+
   }
+
+
+  /*
+   * 画像Book用の1ページ目を取得
+   */
+
+  const bookIds =
+    validBooks.map(
+      item =>
+        item.book_id
+    );
+
+
+  const {
+    data: pages
+  } =
+    await supabase
+      .from("book_pages")
+      .select(
+        "book_id,page_number,file_path,file_type"
+      )
+      .in(
+        "book_id",
+        bookIds
+      )
+      .eq(
+        "page_number",
+        1
+      );
+
+
+  const firstPages =
+    new Map(
+      (pages || []).map(
+        page => [
+          page.book_id,
+          page
+        ]
+      )
+    );
 
 
   container.innerHTML =
-    data.map(
-      item => `
-
-<div class="card">
-
-<h2>
-${escapeHtml(
-  item.books?.title || ""
-)}
-</h2>
-
-<p>
-${escapeHtml(
-  item.books?.description || ""
-)}
-</p>
-
-<button
-  class="primary-button"
-  data-book="${item.book_id}">
-開く
-</button>
-
-</div>
-
-`
-    ).join("");
-
-
-  container
-    .querySelectorAll(
-      "[data-book]"
-    )
-    .forEach(
-      button => {
-
-        button.onclick = () => {
-
-          location.href =
-            "../viewer/?book=" +
-            encodeURIComponent(
-              button.dataset.book
-            );
-
-        };
-
-      }
-    );
-
-}
-
-
-document.getElementById(
-  "register"
-).onclick = async () => {
-
-  message.textContent =
-    "確認しています。";
-
-  message.style.color =
-    "#222";
-
-
-  const code =
-    document.getElementById(
-      "code"
-    ).value
-      .trim()
-      .toUpperCase();
-
-
-  if (!code) {
-
-    message.textContent =
-      "シリアルコードを入力してください。";
-
-    return;
-  }
-
-
-  /*
-   * 自分に割り当てられた
-   * 未使用コードだけを取得
-   */
-
-  const {
-    data: license,
-    error
-  } =
-    await supabase
-      .from("licenses")
-      .select(`
-        id,
-        book_id,
-        code,
-        student_id,
-        status
-      `)
-      .eq(
-        "code",
-        code
-      )
-      .maybeSingle();
-
-
-  if (error) {
-
-    console.error(error);
-
-    message.textContent =
-      "シリアルコードを確認できませんでした。";
-
-    return;
-  }
-
-
-  if (!license) {
-
-    message.textContent =
-      "シリアルコードが見つかりません。";
-
-    return;
-  }
-
-
-  /*
-   * 他のStudent用コード
-   */
-
-  if (
-    license.student_id !==
-    student.id
-  ) {
-
-    message.textContent =
-      "このシリアルコードはこのStudentでは使用できません。";
-
-    return;
-  }
-
-
-  /*
-   * すでに使用済み
-   */
-
-  if (
-    license.status === "used"
-  ) {
-
-    message.textContent =
-      "このシリアルコードはすでに使用されています。";
-
-    return;
-  }
-
-
-  /*
-   * 停止されたコード
-   */
-
-  if (
-    license.status === "disabled"
-  ) {
-
-    message.textContent =
-      "このシリアルコードは使用できません。";
-
-    return;
-  }
-
-
-  /*
-   * unused
-   * → used
-   */
-
-  const {
-    data: updated,
-    error: updateError
-  } =
-    await supabase
-      .from("licenses")
-      .update({
-        status:
-          "used",
-
-        used_at:
-          new Date().toISOString()
-      })
-      .eq(
-        "id",
-        license.id
-      )
-      .eq(
-        "student_id",
-        student.id
-      )
-      .eq(
-        "status",
-        "unused"
-      )
-      .select()
-      .single();
-
-
-  if (updateError) {
-
-    console.error(
-      updateError
-    );
-
-    message.textContent =
-      "シリアルコードを登録できませんでした。";
-
-    return;
-  }
-
-
-  if (!updated) {
-
-    message.textContent =
-      "シリアルコードを登録できませんでした。";
-
-    return;
-  }
-
-
-  message.style.color =
-    "#222";
-
-  message.textContent =
-    "Bookを登録しました。";
-
-
-  document.getElementById(
-    "code"
-  ).value =
     "";
 
 
-  await loadBooks();
-
-};
-
-
-document.getElementById(
-  "scan"
-).onclick = () => {
-
-  const reader =
-    document.getElementById(
-      "reader"
-    );
-
-
-  reader.classList.toggle(
-    "hidden"
-  );
-
-
-  if (
-    reader.classList.contains(
-      "hidden"
-    )
+  for (
+    const item
+    of validBooks
   ) {
 
-    return;
-  }
+    const book =
+      item.books;
 
 
-  if (
-    window.Html5Qrcode
-  ) {
-
-    startScanner();
-
-    return;
-  }
-
-
-  const script =
-    document.createElement(
-      "script"
-    );
-
-
-  script.src =
-    "https://unpkg.com/html5-qrcode";
-
-
-  script.onload =
-    startScanner;
-
-
-  document.head.appendChild(
-    script
-  );
-
-
-  function startScanner() {
-
-    const scanner =
-      new Html5Qrcode(
-        "reader"
+    const card =
+      document.createElement(
+        "article"
       );
 
 
-    scanner.start(
-      {
-        facingMode:
-          "environment"
-      },
-      {
-        fps: 10,
-        qrbox: 250
-      },
-      async decoded => {
-
-        document.getElementById(
-          "code"
-        ).value =
-          decoded;
+    card.className =
+      "book-card";
 
 
-        try {
+    card.innerHTML = `
 
-          await scanner.stop();
+<div class="book-cover">
 
-        }
-        catch {}
+${
+  book.file_type === "pdf"
+
+  ? `<canvas></canvas>`
+
+  : `<div class="book-placeholder">
+       表紙を読み込んでいます
+     </div>`
+}
+
+</div>
+
+<div class="book-info">
+
+<div class="book-title">
+${escapeHtml(
+  book.title
+)}
+</div>
+
+<div class="book-description">
+${escapeHtml(
+  book.description || ""
+)}
+</div>
+
+<div class="book-open">
+開く
+</div>
+
+</div>
+
+`;
 
 
-        reader.classList.add(
-          "hidden"
+    /*
+     * Book全体をクリックして
+     * 別タブでViewer
+     */
+
+    card.onclick = () => {
+
+      window.open(
+        "../viewer/?book=" +
+        encodeURIComponent(
+          book.id
+        ),
+        "_blank",
+        "noopener"
+      );
+
+    };
+
+
+    container.appendChild(
+      card
+    );
+
+
+    /*
+     * PDF表紙
+     */
+
+    if (
+      book.file_type ===
+      "pdf"
+    ) {
+
+      const canvas =
+        card.querySelector(
+          "canvas"
         );
 
 
-        document.getElementById(
-          "register"
-        ).click();
+      await renderPdfThumbnail(
+        canvas,
+        book.file_path
+      );
 
-      },
-      () => {}
-    );
+    }
+
+
+    /*
+     * 画像表紙
+     */
+
+    else {
+
+      const firstPage =
+        firstPages.get(
+          book.id
+        );
+
+
+      if (!firstPage) {
+        continue;
+      }
+
+
+      const imageUrl =
+        await getImageThumbnail(
+          firstPage.file_path
+        );
+
+
+      if (!imageUrl) {
+        continue;
+      }
+
+
+      const cover =
+        card.querySelector(
+          ".book-cover"
+        );
+
+
+      cover.innerHTML =
+        "";
+
+
+      const image =
+        document.createElement(
+          "img"
+        );
+
+
+      image.src =
+        imageUrl;
+
+      image.alt =
+        book.title;
+
+
+      cover.appendChild(
+        image
+      );
+
+    }
 
   }
 
-};
+}
 
 
 loadBooks();
