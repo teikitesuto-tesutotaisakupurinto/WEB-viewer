@@ -7,7 +7,7 @@
 
 <meta
   name="viewport"
-  content="width=device-width, initial-scale=1">
+  content="width=device-width,initial-scale=1">
 
 <title>My Books</title>
 
@@ -41,8 +41,9 @@ WEB-viewer
 <nav>
 
 <a
+  id="booksNav"
   class="active"
-  href="../books/">
+  href="#">
 My Books
 </a>
 
@@ -79,6 +80,11 @@ WEB-viewerをご利用いただけます。
 
 <section class="student-content">
 
+<!-- =========================
+     My Books
+     ========================= -->
+
+<section id="booksView">
 
 <div class="content-heading">
 
@@ -94,24 +100,51 @@ My Books
 
 </div>
 
-<div
-  id="studentName">
-</div>
+<div id="studentName"></div>
 
 </div>
+
+
+<div class="books-toolbar">
+
+<button
+  id="openRegister"
+  type="button"
+  class="register-open-button">
+教材を登録
+</button>
+
+</div>
+
+
+<section
+  id="books"
+  class="book-grid">
+
+<div class="book-empty">
+読み込み中です。
+</div>
+
+</section>
+
+</section>
 
 
 <!-- =========================
-     シリアル登録
+     教材登録
      ========================= -->
 
-<section class="register-card">
+<section
+  id="registerView"
+  class="register-view hidden">
+
+<div class="content-heading">
 
 <div>
 
-<h2>
+<h1>
 教材を登録
-</h2>
+</h1>
 
 <p>
 発行されたシリアルコードを入力してください。
@@ -119,8 +152,14 @@ My Books
 
 </div>
 
+</div>
 
-<div class="register-form">
+
+<section class="register-card">
+
+<label>
+
+シリアルコード
 
 <input
   id="serialCode"
@@ -130,14 +169,23 @@ My Books
   spellcheck="false"
   placeholder="XXXX-XXXX-XXXX">
 
+</label>
+
+
+<div class="toolbar">
 
 <button
   id="register"
   type="button"
   class="register-button">
-
 登録
+</button>
 
+<button
+  id="cancelRegister"
+  type="button"
+  class="secondary-register-button">
+戻る
 </button>
 
 </div>
@@ -150,21 +198,7 @@ My Books
 
 </section>
 
-
-<!-- =========================
-     Book
-     ========================= -->
-
-<section
-  id="books"
-  class="book-grid">
-
-<div class="book-empty">
-読み込み中です。
-</div>
-
 </section>
-
 
 </section>
 
@@ -173,7 +207,7 @@ My Books
 
 <script
   type="module"
-  src="app.js?v=serial-register-final">
+  src="app.js?v=serial-register-final-2">
 </script>
 
 </body>
