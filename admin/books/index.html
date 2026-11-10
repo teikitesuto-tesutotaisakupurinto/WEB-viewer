@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -24,6 +25,7 @@
   href="style.css">
 
 </head>
+
 
 <body>
 
@@ -59,7 +61,7 @@ Book管理
 </a>
 
 <a href="../students/">
-Student管理
+生徒管理
 </a>
 
 <a href="../materials/">
@@ -102,6 +104,7 @@ Book管理
 
 <section class="admin-content">
 
+
 <div class="page-heading">
 
 <div>
@@ -121,11 +124,17 @@ Book管理
   id="showForm"
   type="button"
   class="primary-button">
+
 Bookを追加
+
 </button>
 
 </div>
 
+
+<!-- =====================================
+     Book登録
+     ===================================== -->
 
 <section
   id="formCard"
@@ -143,7 +152,8 @@ Book名
 <input
   id="title"
   type="text"
-  autocomplete="off">
+  autocomplete="off"
+  placeholder="Book名">
 
 </label>
 
@@ -153,7 +163,8 @@ Book名
 説明
 
 <textarea
-  id="description">
+  id="description"
+  placeholder="Bookの説明">
 </textarea>
 
 </label>
@@ -174,10 +185,16 @@ Book名
 
 <p class="form-help">
 
-PDFは1ファイルで登録できます。
+PDFは1ファイルで1冊として登録します。
 
-画像は複数選択すると、
-選択順にページとして登録されます。
+<br>
+
+画像は複数選択できます。
+選択した順番がページ順になります。
+
+<br>
+
+PDFと画像を同時に選択することはできません。
 
 </p>
 
@@ -188,14 +205,19 @@ PDFは1ファイルで登録できます。
   id="create"
   type="button"
   class="primary-button">
+
 登録
+
 </button>
+
 
 <button
   id="cancel"
   type="button"
   class="secondary-button">
+
 キャンセル
+
 </button>
 
 </div>
@@ -209,22 +231,43 @@ PDFは1ファイルで登録できます。
 </section>
 
 
+<!-- =====================================
+     Book一覧
+     ===================================== -->
+
 <section class="admin-card">
+
+<div class="section-heading">
+
+<div>
 
 <h2>
 登録済みBook
 </h2>
 
-<div
-  id="books">
+<p>
+登録されている教材
+</p>
 
-<div class="list-row">
+</div>
+
+</div>
+
+
+<div
+  id="books"
+  class="book-admin-list">
+
+<div class="book-empty">
+
 読み込み中です。
+
 </div>
 
 </div>
 
 </section>
+
 
 </section>
 
@@ -233,7 +276,7 @@ PDFは1ファイルで登録できます。
 
 <script
   type="module"
-  src="app.js">
+  src="app.js?v=book-image-multiple-final">
 </script>
 
 </body>
