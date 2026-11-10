@@ -14,7 +14,9 @@ const student =
 
 
 if (!student) {
-  throw new Error("Unauthorized");
+  throw new Error(
+    "Unauthorized"
+  );
 }
 
 
@@ -37,8 +39,13 @@ if (!bookId) {
   throw new Error(
     "Book ID missing"
   );
+
 }
 
+
+/* =========================================================
+   DOM
+   ========================================================= */
 
 const title =
   document.getElementById(
@@ -52,7 +59,7 @@ const pageLabel =
 
 const stage =
   document.getElementById(
-    "viewerStage"
+    "stage"
   );
 
 const container =
@@ -81,6 +88,10 @@ const penButton =
   );
 
 
+/* =========================================================
+   State
+   ========================================================= */
+
 let book = null;
 
 let pdf = null;
@@ -101,64 +112,80 @@ let lastX = 0;
 
 let lastY = 0;
 
-let rendering = false;
 
-let pinchDistance = null;
+/*
+ * スワイプ
+ */
 
-let pinchZoom = 1;
+let touchStartX =
+  null;
 
-let swipeX = null;
+let touchStartY =
+  null;
 
-let swipeY = null;
-
-let swipeTime = 0;
-
-let renderTimer = null;
+let touchStartTime =
+  0;
 
 
 /*
- * 利用権
+ * ピンチ
  */
 
-async function checkLicense() {
+let pinchDistance =
+  null;
+
+let pinchStartZoom =
+  1;
+
+
+/*
+ * 画像先読み
+ */
+
+const imageCache =
+  new Map();
+
+
+/* =========================================================
+   Storage URL
+   ========================================================= */
+
+async function getSignedUrl(
+  path
+) {
 
   const {
     data,
     error
   } =
-    await supabase
-      .from("licenses")
-      .select("id")
-      .eq(
-        "book_id",
-        bookId
-      )
-      .eq(
-        "student_id",
-        student.id
-      )
-      .eq(
-        "status",
-        "used"
-      )
-      .maybeSingle();
+    await supabase.storage
+      .from("web-viewer")
+      .createSignedUrl(
+        path,
+        600
+      );
 
 
   if (
     error ||
-    !data
+    !data?.signedUrl
   ) {
 
     throw new Error(
-      "このBookを利用する権限がありません。"
+      "教材ファイルを取得できませんでした。"
     );
+
   }
+
+
+  return data.signedUrl;
+
 }
 
 
-/*
- * Book
- */
+/* =========================================================
+   Book取得
+   ========================================================= */
 
 async function loadBook() {
 
@@ -194,6 +221,7 @@ async function loadBook() {
     throw new Error(
       "Bookを取得できませんでした。"
     );
+
   }
 
 
@@ -203,52 +231,62 @@ async function loadBook() {
 
   title.textContent =
     book.title;
+
 }
 
 
-/*
- * Storage URL
- */
+/* =========================================================
+   利用権限確認
+   ========================================================= */
 
-async function signedUrl(
-  path
-) {
+async function checkLicense() {
 
   const {
     data,
     error
   } =
-    await supabase.storage
-      .from("web-viewer")
-      .createSignedUrl(
-        path,
-        600
-      );
+    await supabase
+      .from("licenses")
+      .select(
+        "id"
+      )
+      .eq(
+        "book_id",
+        bookId
+      )
+      .eq(
+        "student_id",
+        student.id
+      )
+      .eq(
+        "status",
+        "used"
+      )
+      .maybeSingle();
 
 
   if (
     error ||
-    !data?.signedUrl
+    !data
   ) {
 
     throw new Error(
-      "教材ファイルを取得できませんでした。"
+      "このBookを利用する権限がありません。"
     );
+
   }
 
-
-  return data.signedUrl;
 }
 
 
-/*
- * PDF
- */
+/* =========================================================
+   PDF読み込み
+   ========================================================= */
 
 async function loadPdf() {
 
   const url =
-    await signedUrl(
+    await getSignedUrl(
       book.file_path
     );
 
@@ -269,14 +307,15 @@ async function loadPdf() {
         url
       })
       .promise;
+
 }
 
 
-/*
- * 画像
- */
+/* =========================================================
+   画像ページ取得
+   ========================================================= */
 
-async function loadImages() {
+async function loadImagePages() {
 
   const {
     data,
@@ -284,9 +323,11 @@ async function loadImages() {
   } =
     await supabase
       .from("book_pages")
-      .select(
-        "page_number,file_path"
-      )
+      .select(`
+        page_number,
+        file_path,
+        file_type
+      `)
       .eq(
         "book_id",
         bookId
@@ -307,181 +348,236 @@ async function loadImages() {
     throw new Error(
       "教材ページが登録されていません。"
     );
+
   }
 
 
   pages =
     data;
+
 }
 
 
-/*
- * ページ数
- */
+/* =========================================================
+   ページ数
+   ========================================================= */
 
-function pageCount() {
+function getPageCount() {
 
-  if (
-    book.file_type ===
-    "pdf"
-  ) {
+  if (pdf) {
 
-    return pdf?.numPages || 0;
+    return pdf.numPages;
+
   }
 
 
   return pages.length;
+
 }
 
 
-/*
- * ページ番号
- */
+/* =========================================================
+   ページ表示
+   ========================================================= */
 
-function updatePage() {
+function updatePageLabel() {
 
   pageLabel.textContent =
-    `${currentPage} / ${pageCount()}`;
+    `${currentPage} / ${getPageCount()}`;
+
 }
 
 
-/*
- * 書き込みCanvas
- */
+/* =========================================================
+   Annotation Canvas
+   ========================================================= */
 
-function setupAnnotation(
+function setupAnnotationCanvas(
   width,
   height
 ) {
 
   annotationCanvas.width =
-    Math.floor(width);
+    Math.floor(
+      width
+    );
+
 
   annotationCanvas.height =
-    Math.floor(height);
+    Math.floor(
+      height
+    );
+
 
   annotationCanvas.style.width =
     `${width}px`;
 
+
   annotationCanvas.style.height =
     `${height}px`;
+
 }
 
 
-/*
- * PDF描画
- */
+/* =========================================================
+   PDF描画
+   ========================================================= */
 
 async function renderPdf() {
 
-  if (
-    !pdf ||
-    rendering
-  ) {
-
-    return;
-  }
+  const page =
+    await pdf.getPage(
+      currentPage
+    );
 
 
-  rendering =
-    true;
+  const viewport =
+    page.getViewport({
+      scale:
+        zoom
+    });
 
 
-  try {
-
-    const page =
-      await pdf.getPage(
-        currentPage
-      );
+  pdfCanvas.width =
+    Math.floor(
+      viewport.width
+    );
 
 
-    const viewport =
-      page.getViewport({
-        scale: zoom
-      });
-
-
-    pdfCanvas.width =
-      Math.floor(
-        viewport.width
-      );
-
-    pdfCanvas.height =
-      Math.floor(
-        viewport.height
-      );
-
-
-    pdfCanvas.style.width =
-      `${viewport.width}px`;
-
-    pdfCanvas.style.height =
-      `${viewport.height}px`;
-
-
-    container.style.width =
-      `${viewport.width}px`;
-
-    container.style.height =
-      `${viewport.height}px`;
-
-
-    await page.render({
-      canvasContext:
-        pdfCanvas.getContext(
-          "2d"
-        ),
-
-      viewport
-    }).promise;
-
-
-    pdfCanvas.style.display =
-      "block";
-
-    imagePage.style.display =
-      "none";
-
-
-    setupAnnotation(
-      viewport.width,
+  pdfCanvas.height =
+    Math.floor(
       viewport.height
     );
 
 
-    updatePage();
+  pdfCanvas.style.width =
+    `${viewport.width}px`;
 
 
-    await loadAnnotation();
+  pdfCanvas.style.height =
+    `${viewport.height}px`;
 
-  }
-  finally {
 
-    rendering =
-      false;
-  }
+  container.style.width =
+    `${viewport.width}px`;
+
+
+  container.style.height =
+    `${viewport.height}px`;
+
+
+  pdfCanvas.style.display =
+    "block";
+
+
+  imagePage.style.display =
+    "none";
+
+
+  await page.render({
+
+    canvasContext:
+      pdfCanvas.getContext(
+        "2d"
+      ),
+
+    viewport
+
+  }).promise;
+
+
+  setupAnnotationCanvas(
+    viewport.width,
+    viewport.height
+  );
+
+
+  updatePageLabel();
+
+
+  await loadAnnotation();
+
+
+  /*
+   * 次ページを先読み
+   */
+
+  preloadPdfPage(
+    currentPage + 1
+  );
+
 }
 
 
-/*
- * 画像描画
- */
+/* =========================================================
+   PDF先読み
+   ========================================================= */
 
-async function renderImage() {
+async function preloadPdfPage(
+  pageNumber
+) {
+
+  if (
+    !pdf ||
+    pageNumber < 1 ||
+    pageNumber > pdf.numPages
+  ) {
+
+    return;
+
+  }
+
+
+  try {
+
+    await pdf.getPage(
+      pageNumber
+    );
+
+  }
+  catch {}
+
+}
+
+
+/* =========================================================
+   画像取得
+   ========================================================= */
+
+async function getImage(
+  pageNumber
+) {
+
+  const cached =
+    imageCache.get(
+      pageNumber
+    );
+
+
+  if (cached) {
+
+    return cached;
+
+  }
+
 
   const page =
     pages[
-      currentPage - 1
+      pageNumber - 1
     ];
 
 
   if (!page) {
-    return;
+
+    throw new Error(
+      "ページが見つかりません。"
+    );
+
   }
 
 
   const url =
-    await signedUrl(
+    await getSignedUrl(
       page.file_path
     );
 
@@ -490,19 +586,59 @@ async function renderImage() {
     new Image();
 
 
+  image.decoding =
+    "async";
+
+
+  image.src =
+    url;
+
+
   await new Promise(
-    (resolve, reject) => {
+    (
+      resolve,
+      reject
+    ) => {
 
       image.onload =
         resolve;
 
       image.onerror =
-        reject;
+        () => reject(
+          new Error(
+            "画像を読み込めませんでした。"
+          )
+        );
 
-      image.src =
-        url;
     }
   );
+
+
+  imageCache.set(
+    pageNumber,
+    image
+  );
+
+
+  return image;
+
+}
+
+
+/* =========================================================
+   画像描画
+   ========================================================= */
+
+async function renderImage() {
+
+  /*
+   * 現在ページを取得
+   */
+
+  const image =
+    await getImage(
+      currentPage
+    );
 
 
   const width =
@@ -511,6 +647,7 @@ async function renderImage() {
       zoom
     );
 
+
   const height =
     Math.floor(
       image.naturalHeight *
@@ -518,14 +655,21 @@ async function renderImage() {
     );
 
 
+  /*
+   * 画像を表示
+   */
+
   imagePage.src =
-    url;
+    image.src;
+
 
   imagePage.style.width =
     `${width}px`;
 
+
   imagePage.style.height =
     `${height}px`;
+
 
   imagePage.style.display =
     "block";
@@ -538,62 +682,162 @@ async function renderImage() {
   container.style.width =
     `${width}px`;
 
+
   container.style.height =
     `${height}px`;
 
 
-  setupAnnotation(
+  setupAnnotationCanvas(
     width,
     height
   );
 
 
-  updatePage();
+  updatePageLabel();
 
 
   await loadAnnotation();
+
+
+  /*
+   * 前後ページを先読み
+   *
+   * これでスワイプした瞬間に
+   * 次画像を表示しやすくする
+   */
+
+  preloadImage(
+    currentPage + 1
+  );
+
+
+  preloadImage(
+    currentPage - 1
+  );
+
 }
 
 
-/*
- * 表示
- */
+/* =========================================================
+   画像先読み
+   ========================================================= */
+
+async function preloadImage(
+  pageNumber
+) {
+
+  if (
+    pageNumber < 1 ||
+    pageNumber > pages.length
+  ) {
+
+    return;
+
+  }
+
+
+  try {
+
+    await getImage(
+      pageNumber
+    );
+
+  }
+  catch {}
+
+}
+
+
+/* =========================================================
+   Render
+   ========================================================= */
 
 async function render() {
 
-  if (
-    book.file_type ===
-    "pdf"
-  ) {
-
-    if (!pdf) {
-      await loadPdf();
-    }
-
+  if (pdf) {
 
     await renderPdf();
 
     return;
-  }
 
-
-  if (
-    pages.length === 0
-  ) {
-
-    await loadImages();
   }
 
 
   await renderImage();
+
 }
 
 
-/*
- * ペン状態
- */
+/* =========================================================
+   ページ移動
+   ========================================================= */
 
-function updatePen() {
+async function goPrevious() {
+
+  if (
+    currentPage <= 1
+  ) {
+
+    return;
+
+  }
+
+
+  await saveAnnotation();
+
+
+  currentPage--;
+
+
+  await render();
+
+}
+
+
+async function goNext() {
+
+  if (
+    currentPage >=
+    getPageCount()
+  ) {
+
+    return;
+
+  }
+
+
+  await saveAnnotation();
+
+
+  currentPage++;
+
+
+  await render();
+
+}
+
+
+/* =========================================================
+   ボタン
+   ========================================================= */
+
+document.getElementById(
+  "previous"
+).onclick =
+  goPrevious;
+
+
+document.getElementById(
+  "next"
+).onclick =
+  goNext;
+
+
+/* =========================================================
+   ペン
+   ========================================================= */
+
+function updatePenState() {
 
   penButton.textContent =
     penEnabled
@@ -611,237 +855,157 @@ function updatePen() {
     "pen-enabled",
     penEnabled
   );
+
 }
 
 
-penButton.onclick = () => {
+penButton.onclick =
+  () => {
 
-  penEnabled =
-    !penEnabled;
-
-  tool =
-    penEnabled
-      ? "pen"
-      : null;
-
-  drawing =
-    false;
-
-  updatePen();
-};
+    penEnabled =
+      !penEnabled;
 
 
-/*
- * 蛍光ペン
- */
+    tool =
+      penEnabled
+        ? "pen"
+        : null;
+
+
+    drawing =
+      false;
+
+
+    updatePenState();
+
+  };
+
+
+/* =========================================================
+   蛍光ペン
+   ========================================================= */
 
 document.getElementById(
   "highlighter"
-).onclick = () => {
+).onclick =
+  () => {
 
-  penEnabled = true;
+    penEnabled =
+      true;
 
-  tool = "highlighter";
+    tool =
+      "highlighter";
 
-  updatePen();
-};
+    updatePenState();
+
+  };
 
 
-/*
- * 消しゴム
- */
+/* =========================================================
+   消しゴム
+   ========================================================= */
 
 document.getElementById(
   "eraser"
-).onclick = () => {
+).onclick =
+  () => {
 
-  penEnabled = true;
+    penEnabled =
+      true;
 
-  tool = "eraser";
+    tool =
+      "eraser";
 
-  updatePen();
-};
+    updatePenState();
+
+  };
 
 
-/*
- * 全消去
- */
+/* =========================================================
+   消去
+   ========================================================= */
 
 document.getElementById(
   "clear"
-).onclick = async () => {
-
-  const context =
-    annotationCanvas
-      .getContext("2d");
-
-
-  context.clearRect(
-    0,
-    0,
-    annotationCanvas.width,
-    annotationCanvas.height
-  );
-
-
-  await saveAnnotation();
-};
-
-
-/*
- * 前へ
- */
-
-async function previous() {
-
-  if (
-    currentPage <= 1
-  ) {
-
-    return;
-  }
-
-
-  await saveAnnotation();
-
-
-  currentPage--;
-
-
-  await render();
-}
-
-
-/*
- * 次へ
- */
-
-async function next() {
-
-  if (
-    currentPage >=
-    pageCount()
-  ) {
-
-    return;
-  }
-
-
-  await saveAnnotation();
-
-
-  currentPage++;
-
-
-  await render();
-}
-
-
-document.getElementById(
-  "previous"
 ).onclick =
-  previous;
+  async () => {
+
+    const context =
+      annotationCanvas
+        .getContext(
+          "2d"
+        );
 
 
-document.getElementById(
-  "next"
-).onclick =
-  next;
-
-
-/*
- * PC自由ズーム
- */
-
-stage.addEventListener(
-  "wheel",
-  event => {
-
-    if (
-      !event.ctrlKey
-    ) {
-
-      return;
-    }
-
-
-    event.preventDefault();
-
-
-    zoom +=
-      event.deltaY > 0
-        ? -.1
-        : .1;
-
-
-    zoom =
-      Math.max(
-        .5,
-        Math.min(
-          4,
-          Number(
-            zoom.toFixed(2)
-          )
-        )
-      );
-
-
-    clearTimeout(
-      renderTimer
+    context.clearRect(
+      0,
+      0,
+      annotationCanvas.width,
+      annotationCanvas.height
     );
 
 
-    renderTimer =
-      setTimeout(
-        () => render(),
-        80
-      );
+    await saveAnnotation();
 
-  },
-  {
-    passive: false
-  }
-);
+  };
 
 
-/*
- * タッチ開始
- */
+/* =========================================================
+   タッチ開始
+   ========================================================= */
 
 stage.addEventListener(
   "touchstart",
   event => {
 
+    /*
+     * 2本指
+     * → ピンチズーム
+     */
+
     if (
       event.touches.length === 2
     ) {
 
-      const a =
+      const first =
         event.touches[0];
 
-      const b =
+      const second =
         event.touches[1];
 
 
       pinchDistance =
         Math.hypot(
-          b.clientX - a.clientX,
-          b.clientY - a.clientY
+
+          second.clientX -
+          first.clientX,
+
+          second.clientY -
+          first.clientY
+
         );
 
 
-      pinchZoom =
+      pinchStartZoom =
         zoom;
 
+
       return;
+
     }
 
+
+    /*
+     * ペン中は
+     * ページスワイプしない
+     */
 
     if (
       penEnabled
     ) {
 
       return;
+
     }
 
 
@@ -849,13 +1013,15 @@ stage.addEventListener(
       event.touches[0];
 
 
-    swipeX =
+    touchStartX =
       touch.clientX;
 
-    swipeY =
+
+    touchStartY =
       touch.clientY;
 
-    swipeTime =
+
+    touchStartTime =
       Date.now();
 
   },
@@ -865,64 +1031,291 @@ stage.addEventListener(
 );
 
 
-/*
- * ピンチ
- */
+/* =========================================================
+   タッチ移動
+   ========================================================= */
 
 stage.addEventListener(
   "touchmove",
   event => {
 
+    /*
+     * ピンチズーム
+     */
+
     if (
-      event.touches.length !== 2 ||
-      pinchDistance === null
+      event.touches.length === 2 &&
+      pinchDistance !== null
+    ) {
+
+      event.preventDefault();
+
+
+      const first =
+        event.touches[0];
+
+      const second =
+        event.touches[1];
+
+
+      const distance =
+        Math.hypot(
+
+          second.clientX -
+          first.clientX,
+
+          second.clientY -
+          first.clientY
+
+        );
+
+
+      zoom =
+        Math.max(
+          .5,
+
+          Math.min(
+            4,
+
+            Number(
+              (
+                pinchStartZoom *
+                distance /
+                pinchDistance
+              ).toFixed(2)
+            )
+          )
+        );
+
+
+      clearTimeout(
+        window.__viewerZoomTimer
+      );
+
+
+      window.__viewerZoomTimer =
+        setTimeout(
+          () => {
+
+            render();
+
+          },
+          80
+        );
+
+
+      return;
+
+    }
+
+  },
+  {
+    passive: false
+  }
+);
+
+
+/* =========================================================
+   タッチ終了
+   ========================================================= */
+
+stage.addEventListener(
+  "touchend",
+  async event => {
+
+    /*
+     * ピンチ終了
+     */
+
+    if (
+      pinchDistance !== null
+    ) {
+
+      pinchDistance =
+        null;
+
+      return;
+
+    }
+
+
+    /*
+     * ペン中
+     */
+
+    if (
+      penEnabled
+    ) {
+
+      touchStartX =
+        null;
+
+      touchStartY =
+        null;
+
+      return;
+
+    }
+
+
+    if (
+      touchStartX === null
     ) {
 
       return;
+
+    }
+
+
+    const touch =
+      event.changedTouches[0];
+
+
+    const deltaX =
+      touch.clientX -
+      touchStartX;
+
+
+    const deltaY =
+      touch.clientY -
+      touchStartY;
+
+
+    const elapsed =
+      Date.now() -
+      touchStartTime;
+
+
+    touchStartX =
+      null;
+
+    touchStartY =
+      null;
+
+
+    /*
+     * 縦スクロールを
+     * 横スワイプと誤認しない
+     */
+
+    if (
+      elapsed > 700
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      Math.abs(deltaX) < 70
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      Math.abs(deltaX) <=
+      Math.abs(deltaY)
+    ) {
+
+      return;
+
+    }
+
+
+    /*
+     * 左へスワイプ
+     * → 次画像
+     */
+
+    if (
+      deltaX < 0
+    ) {
+
+      await goNext();
+
+    }
+
+
+    /*
+     * 右へスワイプ
+     * → 前画像
+     */
+
+    else {
+
+      await goPrevious();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   PCホイールズーム
+   ========================================================= */
+
+stage.addEventListener(
+  "wheel",
+  event => {
+
+    /*
+     * Ctrl + ホイール
+     */
+
+    if (
+      !event.ctrlKey
+    ) {
+
+      return;
+
     }
 
 
     event.preventDefault();
 
 
-    const a =
-      event.touches[0];
-
-    const b =
-      event.touches[1];
-
-
-    const distance =
-      Math.hypot(
-        b.clientX - a.clientX,
-        b.clientY - a.clientY
-      );
-
-
     zoom =
       Math.max(
+
         .5,
+
         Math.min(
+
           4,
+
           Number(
             (
-              pinchZoom *
-              distance /
-              pinchDistance
+              zoom +
+              (
+                event.deltaY > 0
+                  ? -.1
+                  : .1
+              )
             ).toFixed(2)
           )
+
         )
+
       );
 
 
     clearTimeout(
-      renderTimer
+      window.__viewerWheelTimer
     );
 
 
-    renderTimer =
+    window.__viewerWheelTimer =
       setTimeout(
-        () => render(),
+        () => {
+
+          render();
+
+        },
         80
       );
 
@@ -933,93 +1326,9 @@ stage.addEventListener(
 );
 
 
-/*
- * 横スワイプ
- */
-
-stage.addEventListener(
-  "touchend",
-  async event => {
-
-    if (
-      event.touches.length > 0
-    ) {
-
-      return;
-    }
-
-
-    if (
-      penEnabled ||
-      swipeX === null
-    ) {
-
-      swipeX =
-        null;
-
-      swipeY =
-        null;
-
-      return;
-    }
-
-
-    const touch =
-      event.changedTouches[0];
-
-
-    const dx =
-      touch.clientX -
-      swipeX;
-
-
-    const dy =
-      touch.clientY -
-      swipeY;
-
-
-    const elapsed =
-      Date.now() -
-      swipeTime;
-
-
-    swipeX =
-      null;
-
-    swipeY =
-      null;
-
-
-    if (
-      elapsed > 700 ||
-      Math.abs(dx) < 70 ||
-      Math.abs(dx) <= Math.abs(dy)
-    ) {
-
-      return;
-    }
-
-
-    if (
-      dx < 0
-    ) {
-
-      await next();
-
-    }
-    else {
-
-      await previous();
-
-    }
-
-  }
-);
-
-
-/*
- * 書き込み開始
- */
+/* =========================================================
+   ペン描画
+   ========================================================= */
 
 annotationCanvas.addEventListener(
   "pointerdown",
@@ -1030,6 +1339,7 @@ annotationCanvas.addEventListener(
     ) {
 
       return;
+
     }
 
 
@@ -1069,10 +1379,6 @@ annotationCanvas.addEventListener(
 );
 
 
-/*
- * 書き込み中
- */
-
 annotationCanvas.addEventListener(
   "pointermove",
   event => {
@@ -1083,6 +1389,7 @@ annotationCanvas.addEventListener(
     ) {
 
       return;
+
     }
 
 
@@ -1111,27 +1418,33 @@ annotationCanvas.addEventListener(
 
     const context =
       annotationCanvas
-        .getContext("2d");
+        .getContext(
+          "2d"
+        );
 
 
     context.beginPath();
+
 
     context.moveTo(
       lastX,
       lastY
     );
 
+
     context.lineTo(
       x,
       y
     );
+
 
     context.lineCap =
       "round";
 
 
     if (
-      tool === "highlighter"
+      tool ===
+      "highlighter"
     ) {
 
       context.lineWidth =
@@ -1145,7 +1458,8 @@ annotationCanvas.addEventListener(
 
     }
     else if (
-      tool === "eraser"
+      tool ===
+      "eraser"
     ) {
 
       context.lineWidth =
@@ -1182,16 +1496,16 @@ annotationCanvas.addEventListener(
 );
 
 
-/*
- * 書き込み終了
- */
-
 annotationCanvas.addEventListener(
   "pointerup",
-  async event => {
+  async () => {
 
-    if (!drawing) {
+    if (
+      !drawing
+    ) {
+
       return;
+
     }
 
 
@@ -1199,25 +1513,15 @@ annotationCanvas.addEventListener(
       false;
 
 
-    try {
-
-      annotationCanvas
-        .releasePointerCapture(
-          event.pointerId
-        );
-
-    }
-    catch {}
-
-
     await saveAnnotation();
+
   }
 );
 
 
-/*
- * 保存
- */
+/* =========================================================
+   Annotation保存
+   ========================================================= */
 
 async function saveAnnotation() {
 
@@ -1226,14 +1530,14 @@ async function saveAnnotation() {
   ) {
 
     return;
+
   }
 
 
   const image =
-    annotationCanvas
-      .toDataURL(
-        "image/png"
-      );
+    annotationCanvas.toDataURL(
+      "image/png"
+    );
 
 
   const {
@@ -1242,7 +1546,9 @@ async function saveAnnotation() {
     await supabase
       .from("annotations")
       .upsert(
+
         {
+
           student_id:
             student.id,
 
@@ -1252,34 +1558,42 @@ async function saveAnnotation() {
           page_number:
             currentPage,
 
-          annotation_data: {
-            image
-          },
+          annotation_data:
+            {
+              image
+            },
 
           updated_at:
             new Date()
               .toISOString()
+
         },
+
         {
+
           onConflict:
             "student_id,book_id,page_number"
+
         }
+
       );
 
 
   if (error) {
 
     console.error(
-      "ANNOTATION ERROR:",
+      "ANNOTATION SAVE ERROR:",
       error
     );
+
   }
+
 }
 
 
-/*
- * 保存済み書き込み
- */
+/* =========================================================
+   Annotation読み込み
+   ========================================================= */
 
 async function loadAnnotation() {
 
@@ -1308,7 +1622,9 @@ async function loadAnnotation() {
 
   const context =
     annotationCanvas
-      .getContext("2d");
+      .getContext(
+        "2d"
+      );
 
 
   context.clearRect(
@@ -1324,6 +1640,7 @@ async function loadAnnotation() {
   ) {
 
     return;
+
   }
 
 
@@ -1335,11 +1652,15 @@ async function loadAnnotation() {
     () => {
 
       context.drawImage(
+
         image,
+
         0,
         0,
+
         annotationCanvas.width,
         annotationCanvas.height
+
       );
 
     };
@@ -1347,41 +1668,47 @@ async function loadAnnotation() {
 
   image.src =
     data.annotation_data.image;
+
 }
 
 
-/*
- * Viewerを閉じる
- *
- * Book一覧から別タブで開かれた場合は
- * このタブを閉じて元のMy Booksへ戻る。
- */
+/* =========================================================
+   戻る
+   ========================================================= */
 
 document.getElementById(
   "close"
-).onclick = async () => {
+).onclick =
+  async () => {
 
-  await saveAnnotation();
-
-
-  if (
-    window.opener &&
-    !window.opener.closed
-  ) {
-
-    window.close();
-
-    return;
-  }
+    await saveAnnotation();
 
 
-  history.back();
-};
+    /*
+     * My Booksから開いた別タブなら
+     * このViewerタブを閉じる
+     */
+
+    if (
+      window.opener &&
+      !window.opener.closed
+    ) {
+
+      window.close();
+
+      return;
+
+    }
 
 
-/*
- * キーボード
- */
+    history.back();
+
+  };
+
+
+/* =========================================================
+   キーボード
+   ========================================================= */
 
 document.addEventListener(
   "keydown",
@@ -1395,6 +1722,7 @@ document.addEventListener(
     ) {
 
       return;
+
     }
 
 
@@ -1403,7 +1731,7 @@ document.addEventListener(
       "ArrowLeft"
     ) {
 
-      previous();
+      goPrevious();
 
     }
 
@@ -1413,7 +1741,7 @@ document.addEventListener(
       "ArrowRight"
     ) {
 
-      next();
+      goNext();
 
     }
 
@@ -1421,43 +1749,92 @@ document.addEventListener(
 );
 
 
-/*
- * 起動
- */
+/* =========================================================
+   起動
+   ========================================================= */
 
 async function start() {
 
-  try {
-
-    updatePen();
-
-    await checkLicense();
-
-    await loadBook();
-
-    await render();
-
-  }
-  catch (error) {
-
-    console.error(
-      "VIEWER ERROR:",
-      error
-    );
+  updatePenState();
 
 
-    alert(
-      error.message ||
-      "Viewerを起動できませんでした。"
-    );
+  await loadBook();
 
 
-    location.replace(
-      "../books/"
-    );
+  await checkLicense();
+
+
+  /*
+   * PDF
+   */
+
+  if (
+    String(
+      book.file_type || ""
+    ).toLowerCase() ===
+    "pdf"
+  ) {
+
+    await loadPdf();
 
   }
+
+
+  /*
+   * 画像Book
+   */
+
+  else {
+
+    await loadImagePages();
+
+  }
+
+
+  await render();
+
 }
 
 
-start();
+start()
+  .catch(
+    error => {
+
+      console.error(
+        "VIEWER ERROR:",
+        error
+      );
+
+
+      document.body.innerHTML = `
+
+        <div class="page-error">
+
+          <h2>
+            Viewerを読み込めませんでした
+          </h2>
+
+          <p>
+            ${String(
+              error.message ||
+              "予期しないエラーが発生しました。"
+            ).replace(
+              /[<>&"]/g,
+              ""
+            )}
+          </p>
+
+          <button
+            type="button"
+            onclick="history.back()">
+
+            戻る
+
+          </button>
+
+        </div>
+
+      `;
+
+    }
+  );
