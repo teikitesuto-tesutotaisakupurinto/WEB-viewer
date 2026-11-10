@@ -15,23 +15,30 @@ import {
 from "../../assets/js/common.js";
 
 
+const booksView =
+  document.getElementById(
+    "booksView"
+  );
+
+const registerView =
+  document.getElementById(
+    "registerView"
+  );
+
 const booksContainer =
   document.getElementById(
     "books"
   );
-
-
-const registerButton =
-  document.getElementById(
-    "register"
-  );
-
 
 const serialInput =
   document.getElementById(
     "serialCode"
   );
 
+const registerButton =
+  document.getElementById(
+    "register"
+  );
 
 const registerMessage =
   document.getElementById(
@@ -56,16 +63,74 @@ document.getElementById(
 
 
 /*
- * ========================================
- * 生徒確認
- * ========================================
+ * 教材登録画面
  */
+
+document.getElementById(
+  "openRegister"
+).onclick =
+  () => {
+
+    booksView.classList.add(
+      "hidden"
+    );
+
+    registerView.classList.remove(
+      "hidden"
+    );
+
+    registerMessage.textContent =
+      "";
+
+    registerMessage.classList.remove(
+      "error"
+    );
+
+    serialInput.value =
+      "";
+
+    serialInput.focus();
+
+  };
+
+
+/*
+ * My Booksへ戻る
+ */
+
+document.getElementById(
+  "cancelRegister"
+).onclick =
+  () => {
+
+    registerView.classList.add(
+      "hidden"
+    );
+
+    booksView.classList.remove(
+      "hidden"
+    );
+
+    serialInput.value =
+      "";
+
+    registerMessage.textContent =
+      "";
+
+  };
+
+
+/*
+ * 生徒
+ */
+
+let student = null;
+
 
 async function start() {
 
-  const student =
+  student =
     await requireStudent();
-
 
   if (!student) {
     return;
@@ -78,17 +143,9 @@ async function start() {
     student.display_name || "";
 
 
-  /*
-   * シリアル登録
-   */
-
   registerButton.onclick =
-    () => registerBook();
+    registerBook;
 
-
-  /*
-   * Enterでも登録
-   */
 
   serialInput.addEventListener(
     "keydown",
@@ -109,19 +166,13 @@ async function start() {
   );
 
 
-  /*
-   * Book一覧
-   */
-
   await loadBooks();
 
 }
 
 
 /*
- * ========================================
  * シリアル登録
- * ========================================
  */
 
 async function registerBook() {
@@ -150,6 +201,8 @@ async function registerBook() {
       "error"
     );
 
+    serialInput.focus();
+
     return;
 
   }
@@ -158,16 +211,11 @@ async function registerBook() {
   registerButton.disabled =
     true;
 
-
   registerMessage.textContent =
     "教材を登録しています。";
 
 
   try {
-
-    /*
-     * DB側のRPCで登録
-     */
 
     const {
       data,
@@ -183,9 +231,7 @@ async function registerBook() {
 
 
     if (error) {
-
       throw error;
-
     }
 
 
@@ -200,6 +246,10 @@ async function registerBook() {
     }
 
 
+    registerMessage.classList.remove(
+      "error"
+    );
+
     registerMessage.textContent =
       `${data.title} を登録しました。`;
 
@@ -208,11 +258,30 @@ async function registerBook() {
       "";
 
 
+    await loadBooks();
+
+
     /*
-     * My Booksを即更新
+     * 同じタブでMy Booksへ戻す
      */
 
-    await loadBooks();
+    setTimeout(
+      () => {
+
+        registerView.classList.add(
+          "hidden"
+        );
+
+        booksView.classList.remove(
+          "hidden"
+        );
+
+        registerMessage.textContent =
+          "";
+
+      },
+      600
+    );
 
   }
   catch (error) {
@@ -226,7 +295,6 @@ async function registerBook() {
     registerMessage.textContent =
       error.message ||
       "シリアル登録に失敗しました。";
-
 
     registerMessage.classList.add(
       "error"
@@ -244,9 +312,7 @@ async function registerBook() {
 
 
 /*
- * ========================================
  * Book一覧
- * ========================================
  */
 
 async function loadBooks() {
@@ -260,6 +326,25 @@ async function loadBooks() {
 
 
   try {
+
+    const {
+      data: userData,
+      error: userError
+    } =
+      await supabase.auth.getUser();
+
+
+    if (
+      userError ||
+      !userData?.user
+    ) {
+
+      throw new Error(
+        "ログイン情報を取得できませんでした。"
+      );
+
+    }
+
 
     const {
       data,
@@ -283,10 +368,7 @@ async function loadBooks() {
         `)
         .eq(
           "student_id",
-          (
-            await supabase.auth
-              .getUser()
-          ).data.user.id
+          userData.user.id
         )
         .eq(
           "status",
@@ -318,9 +400,7 @@ async function loadBooks() {
       );
 
 
-    if (
-      books.length === 0
-    ) {
+    if (!books.length) {
 
       booksContainer.innerHTML =
         `
@@ -333,10 +413,6 @@ async function loadBooks() {
 
     }
 
-
-    /*
-     * 画像Bookの1ページ目
-     */
 
     const bookIds =
       books.map(
@@ -384,13 +460,8 @@ async function loadBooks() {
       "";
 
 
-    /*
-     * 表示
-     */
-
     for (
-      const item
-      of books
+      const item of books
     ) {
 
       const book =
@@ -435,7 +506,7 @@ async function loadBooks() {
 
 
       /*
-       * Viewerを別タブ
+       * Bookだけ別タブ
        */
 
       card.onclick =
@@ -482,12 +553,10 @@ async function loadBooks() {
           );
 
         }
-        catch (
-          error
-        ) {
+        catch (error) {
 
           console.error(
-            "COVER ERROR:",
+            "PDF COVER ERROR:",
             error
           );
 
@@ -509,14 +578,13 @@ async function loadBooks() {
 
 
       if (!firstPage) {
-
         continue;
-
       }
 
 
       const {
-        data: imageData
+        data:
+          imageData
       } =
         await supabase.storage
           .from("web-viewer")
@@ -594,9 +662,7 @@ async function loadBooks() {
 
 
 /*
- * ========================================
  * PDF表紙
- * ========================================
  */
 
 async function renderPdfCover(
@@ -660,14 +726,10 @@ async function renderPdfCover(
     });
 
 
-  const scale =
-    260 /
-    base.width;
-
-
   const viewport =
     page.getViewport({
-      scale
+      scale:
+        260 / base.width
     });
 
 
@@ -682,7 +744,6 @@ async function renderPdfCover(
       viewport.width
     );
 
-
   canvas.height =
     Math.floor(
       viewport.height
@@ -695,6 +756,7 @@ async function renderPdfCover(
 
 
   await page.render({
+
     canvasContext:
       canvas.getContext(
         "2d"
@@ -708,9 +770,7 @@ async function renderPdfCover(
 
 
 /*
- * ========================================
  * 起動
- * ========================================
  */
 
 start()
@@ -718,7 +778,7 @@ start()
     error => {
 
       console.error(
-        "STUDENT BOOK ERROR:",
+        "MY BOOKS ERROR:",
         error
       );
 
