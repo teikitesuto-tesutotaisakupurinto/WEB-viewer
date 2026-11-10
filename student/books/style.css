@@ -21,9 +21,9 @@ body {
 }
 
 
-/* =========================
-   Sidebar
-   ========================= */
+/* =========================================================
+   Student Sidebar
+   ========================================================= */
 
 .student-side {
   position: fixed;
@@ -34,6 +34,8 @@ body {
 
   width: 250px;
 
+  overflow-y: auto;
+
   background: #fff;
   color: #222;
 
@@ -41,6 +43,7 @@ body {
 
   z-index: 1000;
 }
+
 
 .student-brand {
   height: 150px;
@@ -51,13 +54,20 @@ body {
   align-items: center;
   justify-content: center;
 
+  background: #fff;
+
   border-bottom: 1px solid #ddd;
 }
 
+
 .brand-title {
   font-size: 28px;
+
   font-weight: 800;
+
+  letter-spacing: -.5px;
 }
+
 
 .brand-subtitle {
   margin-top: 5px;
@@ -65,11 +75,15 @@ body {
   color: #777;
 
   font-size: 12px;
+
+  font-weight: 400;
 }
+
 
 .student-side nav {
   padding-top: 12px;
 }
+
 
 .student-side nav a,
 .student-side nav button {
@@ -86,28 +100,42 @@ body {
   color: #222;
 
   text-align: left;
+
   text-decoration: none;
 
   font: inherit;
+
+  font-size: 15px;
+
   font-weight: 600;
 
   cursor: pointer;
 }
+
 
 .student-side nav a:hover,
 .student-side nav button:hover {
   background: #f2f2f2;
 }
 
+
 .student-side nav a.active {
   background: #d5ca3d;
+
   color: #fff;
 }
 
 
-/* =========================
+.student-side nav button:disabled {
+  opacity: .6;
+
+  cursor: default;
+}
+
+
+/* =========================================================
    Main
-   ========================= */
+   ========================================================= */
 
 .student-main {
   min-height: 100vh;
@@ -117,10 +145,22 @@ body {
   background: #2d2d2d;
 }
 
+
+/* =========================================================
+   Notice
+   ========================================================= */
+
 .student-notice {
+  position: sticky;
+
+  top: 0;
+
+  z-index: 900;
+
   height: 50px;
 
   display: flex;
+
   align-items: center;
 
   gap: 12px;
@@ -128,10 +168,12 @@ body {
   padding: 0 28px;
 
   background: #fff;
+
   color: #333;
 
   border-bottom: 1px solid #ddd;
 }
+
 
 .notice-title {
   padding: 6px 15px;
@@ -139,20 +181,33 @@ body {
   border-radius: 20px;
 
   background: #d5ca3d;
+
   color: #fff;
 
   font-size: 13px;
+
   font-weight: 700;
+
+  white-space: nowrap;
 }
 
+
+/* =========================================================
+   Content
+   ========================================================= */
+
 .student-content {
+  min-height: calc(100vh - 50px);
+
   padding: 40px;
 }
+
 
 .content-heading {
   display: flex;
 
   align-items: flex-end;
+
   justify-content: space-between;
 
   gap: 20px;
@@ -160,17 +215,26 @@ body {
   margin-bottom: 25px;
 }
 
+
 .content-heading h1 {
   margin: 0;
 
+  color: #fff;
+
   font-size: 34px;
+
+  line-height: 1.25;
 }
+
 
 .content-heading p {
-  margin: 6px 0 0;
+  margin: 7px 0 0;
 
   color: #aaa;
+
+  font-size: 14px;
 }
+
 
 #studentName {
   color: #ddd;
@@ -179,9 +243,9 @@ body {
 }
 
 
-/* =========================
-   Toolbar
-   ========================= */
+/* =========================================================
+   My Books Toolbar
+   ========================================================= */
 
 .books-toolbar {
   display: flex;
@@ -191,7 +255,10 @@ body {
   margin-bottom: 22px;
 }
 
+
 .register-open-button {
+  min-width: 130px;
+
   padding: 11px 20px;
 
   border: 0;
@@ -207,19 +274,84 @@ body {
   cursor: pointer;
 }
 
+
 .register-open-button:hover {
   background: #c9be32;
 }
 
 
-/* =========================
-   登録画面
-   ========================= */
+.register-open-button:active {
+  transform: translateY(1px);
+}
+
+
+/* =========================================================
+   同一タブ内の教材登録画面
+   ========================================================= */
+
+.register-view {
+  min-height: calc(100vh - 50px);
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 45px 25px;
+}
+
+
+/*
+ * 登録画面のタイトル
+ */
+
+.register-view .content-heading {
+  width: min(
+    620px,
+    100%
+  );
+
+  margin-bottom: 22px;
+}
+
+
+.register-view .content-heading > div {
+  width: 100%;
+
+  text-align: center;
+}
+
+
+.register-view .content-heading h1 {
+  color: #fff;
+
+  font-size: 32px;
+}
+
+
+.register-view .content-heading p {
+  margin-top: 10px;
+
+  color: #aaa;
+
+  line-height: 1.6;
+}
+
+
+/*
+ * 登録カード
+ */
 
 .register-card {
-  max-width: 700px;
+  width: min(
+    620px,
+    100%
+  );
 
-  padding: 28px;
+  padding: 40px;
 
   background: #fff;
 
@@ -227,37 +359,129 @@ body {
 
   border: 1px solid #ddd;
 
-  border-radius: 12px;
+  border-radius: 14px;
+
+  box-shadow:
+    0 12px 35px
+    rgba(0, 0, 0, .18);
 }
+
+
+/*
+ * ラベル
+ */
 
 .register-card label {
   display: block;
 
-  font-weight: 600;
+  color: #333;
+
+  text-align: center;
+
+  font-size: 15px;
+
+  font-weight: 700;
 }
 
+
+/*
+ * シリアル入力
+ */
+
 .register-card input {
+  display: block;
+
   width: 100%;
 
-  margin-top: 8px;
+  height: 68px;
 
-  padding: 13px 14px;
+  margin: 15px auto 22px;
 
-  border: 1px solid #bbb;
+  padding: 0 20px;
 
-  border-radius: 8px;
+  border: 2px solid #d0d0d0;
+
+  border-radius: 10px;
+
+  outline: none;
 
   background: #fff;
 
   color: #222;
 
-  font-size: 16px;
+  text-align: center;
 
-  letter-spacing: 1px;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+
+  font-size: 26px;
+
+  font-weight: 700;
+
+  letter-spacing: 4px;
+
+  transition:
+    border-color .15s ease,
+    box-shadow .15s ease;
 }
 
+
+.register-card input:focus {
+  border-color: #d5ca3d;
+
+  box-shadow:
+    0 0 0 4px
+    rgba(213, 202, 61, .18);
+}
+
+
+.register-card input::placeholder {
+  color: #aaa;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+
+  font-size: 20px;
+
+  font-weight: 500;
+
+  letter-spacing: 2px;
+}
+
+
+/*
+ * 登録ボタンエリア
+ */
+
+.register-card .toolbar {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 10px;
+
+  margin-top: 5px;
+}
+
+
 .register-button {
-  padding: 11px 22px;
+  min-width: 130px;
+
+  height: 48px;
+
+  padding: 0 25px;
 
   border: 0;
 
@@ -267,19 +491,39 @@ body {
 
   color: #222;
 
+  font-size: 14px;
+
   font-weight: 700;
 
   cursor: pointer;
 }
 
-.register-button:disabled {
-  opacity: .6;
 
-  cursor: default;
+.register-button:hover {
+  background: #c9be32;
 }
 
+
+.register-button:active {
+  transform: translateY(1px);
+}
+
+
+.register-button:disabled {
+  opacity: .55;
+
+  cursor: default;
+
+  transform: none;
+}
+
+
 .secondary-register-button {
-  padding: 11px 22px;
+  min-width: 100px;
+
+  height: 48px;
+
+  padding: 0 20px;
 
   border: 1px solid #ccc;
 
@@ -289,27 +533,48 @@ body {
 
   color: #222;
 
+  font-size: 14px;
+
+  font-weight: 600;
+
   cursor: pointer;
 }
 
-.register-message {
-  min-height: 22px;
 
-  margin-top: 15px;
+.secondary-register-button:hover {
+  background: #f3f3f3;
+}
+
+
+/*
+ * 登録結果
+ */
+
+.register-message {
+  min-height: 24px;
+
+  margin: 18px 0 0;
 
   color: #555;
 
+  text-align: center;
+
+  font-size: 13px;
+
+  line-height: 1.6;
+
   white-space: pre-wrap;
 }
+
 
 .register-message.error {
   color: #b00020;
 }
 
 
-/* =========================
-   Books
-   ========================= */
+/* =========================================================
+   Book Grid
+   ========================================================= */
 
 .book-grid {
   display: grid;
@@ -322,6 +587,7 @@ body {
 
   gap: 26px;
 }
+
 
 .book-card {
   overflow: hidden;
@@ -337,11 +603,18 @@ body {
     background .15s ease;
 }
 
+
 .book-card:hover {
   transform: translateY(-3px);
 
   background: #484848;
 }
+
+
+.book-card:active {
+  transform: translateY(0);
+}
+
 
 .book-cover {
   aspect-ratio: .72;
@@ -351,20 +624,24 @@ body {
   display: flex;
 
   align-items: center;
+
   justify-content: center;
 
   background: #eee;
 }
+
 
 .book-cover canvas,
 .book-cover img {
   display: block;
 
   width: 100%;
+
   height: 100%;
 
   object-fit: cover;
 }
+
 
 .book-info {
   min-height: 92px;
@@ -372,11 +649,17 @@ body {
   padding: 13px;
 }
 
+
 .book-title {
+  color: #fff;
+
+  font-size: 14px;
+
   font-weight: 700;
 
   line-height: 1.45;
 }
+
 
 .book-description {
   margin-top: 5px;
@@ -386,7 +669,16 @@ body {
   font-size: 11px;
 
   line-height: 1.45;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
 }
+
 
 .book-open {
   display: inline-block;
@@ -402,8 +694,10 @@ body {
   color: #222;
 
   font-size: 12px;
+
   font-weight: 600;
 }
+
 
 .book-empty {
   grid-column: 1 / -1;
@@ -416,9 +710,9 @@ body {
 }
 
 
-/* =========================
-   Error
-   ========================= */
+/* =========================================================
+   エラー
+   ========================================================= */
 
 .page-error {
   grid-column: 1 / -1;
@@ -434,15 +728,22 @@ body {
   border-left: 5px solid #d5ca3d;
 }
 
+
 .page-error h2 {
   margin-top: 0;
+
+  color: #222;
 }
+
 
 .page-error p {
   color: #666;
 
+  line-height: 1.7;
+
   white-space: pre-wrap;
 }
+
 
 .page-error button {
   padding: 10px 17px;
@@ -453,13 +754,35 @@ body {
 
   background: #d5ca3d;
 
+  color: #222;
+
   font-weight: 700;
+
+  cursor: pointer;
 }
 
 
-/* =========================
+/* =========================================================
+   共通
+   ========================================================= */
+
+.hidden {
+  display: none !important;
+}
+
+
+.toolbar {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 10px;
+}
+
+
+/* =========================================================
    Mobile
-   ========================= */
+   ========================================================= */
 
 @media (max-width: 700px) {
 
@@ -467,29 +790,82 @@ body {
     width: 190px;
   }
 
+
   .student-main {
     margin-left: 190px;
   }
+
 
   .student-brand {
     height: 120px;
   }
 
+
   .brand-title {
     font-size: 22px;
   }
+
 
   .student-content {
     padding: 25px 15px;
   }
 
+
+  .content-heading {
+    align-items: flex-start;
+
+    flex-direction: column;
+  }
+
+
   .books-toolbar {
     justify-content: stretch;
   }
 
+
   .register-open-button {
     width: 100%;
   }
+
+
+  .register-view {
+    min-height: calc(100vh - 50px);
+
+    padding: 30px 15px;
+  }
+
+
+  .register-card {
+    padding: 28px 20px;
+  }
+
+
+  .register-card input {
+    height: 60px;
+
+    font-size: 21px;
+
+    letter-spacing: 2px;
+  }
+
+
+  .register-card input::placeholder {
+    font-size: 16px;
+  }
+
+
+  .register-card .toolbar {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+
+  .register-button,
+  .secondary-register-button {
+    width: 100%;
+  }
+
 
   .book-grid {
     grid-template-columns:
@@ -497,6 +873,61 @@ body {
         auto-fill,
         minmax(140px, 1fr)
       );
+  }
+
+}
+
+
+/* =========================================================
+   Very small screen
+   ========================================================= */
+
+@media (max-width: 430px) {
+
+  .student-side {
+    width: 170px;
+  }
+
+
+  .student-main {
+    margin-left: 170px;
+  }
+
+
+  .student-side nav a,
+  .student-side nav button {
+    padding: 14px 15px;
+
+    font-size: 13px;
+  }
+
+
+  .student-content {
+    padding: 20px 12px;
+  }
+
+
+  .register-view {
+    padding: 25px 10px;
+  }
+
+
+  .register-card {
+    padding: 24px 15px;
+  }
+
+
+  .register-card input {
+    height: 56px;
+
+    font-size: 18px;
+
+    letter-spacing: 1px;
+  }
+
+
+  .register-card input::placeholder {
+    font-size: 14px;
   }
 
 }
