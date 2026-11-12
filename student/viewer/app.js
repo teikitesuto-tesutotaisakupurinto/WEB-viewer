@@ -160,15 +160,29 @@ let pages = [];
 
 let currentPage = 1;
 
+
+/*
+ * move
+ * pen
+ * eraser
+ */
+
 let viewerMode =
   "move";
+
+
+/*
+ * idle
+ * drag
+ * pinch
+ */
 
 let gestureMode =
   "idle";
 
 
 /*
- * 1～8倍
+ * Zoom
  */
 
 let zoom =
@@ -190,7 +204,7 @@ let pdfBaseScale =
 
 
 /*
- * 現在ページサイズ
+ * 現在ページ論理サイズ
  */
 
 let pageWidth =
@@ -201,7 +215,7 @@ let pageHeight =
 
 
 /*
- * 現在ページのパン
+ * 自由移動位置
  */
 
 let panX =
@@ -212,7 +226,7 @@ let panY =
 
 
 /*
- * ページ切替
+ * ページ変更中
  */
 
 let pageChanging =
@@ -243,6 +257,14 @@ let dragX =
 let dragY =
   0;
 
+
+/*
+ * ページ方向
+ *
+ * -1 = 前
+ *  1 = 次
+ */
+
 let dragDirection =
   0;
 
@@ -259,7 +281,7 @@ let adjacentPromise =
 
 
 /*
- * Pinch
+ * ピンチ
  */
 
 let pinchStartDistance =
@@ -270,7 +292,7 @@ let pinchStartZoom =
 
 
 /*
- * PDF render generation
+ * PDF描画世代
  */
 
 let renderToken =
@@ -278,7 +300,7 @@ let renderToken =
 
 
 /*
- * Image cache
+ * 画像キャッシュ
  */
 
 const imageCache =
@@ -304,20 +326,12 @@ let lastMidX =
 let lastMidY =
   0;
 
-
-/*
- * ペン保存用
- */
-
-let annotationSaveTimer =
-  null;
-
 let annotationDirty =
   false;
 
 
 /*
- * Desktop
+ * Desktop mouse
  */
 
 let mouseDown =
@@ -343,14 +357,18 @@ let mouseBaseY =
 const PAN_ZOOM_LIMIT =
   1.03;
 
+
+/*
+ * これ以上横へ動いたら
+ * 隣ページを確定。
+ */
+
 const PAGE_COMMIT_RATIO =
   0.28;
 
 
 /*
- * PDFは最大DPR 3。
- *
- * 巨大Canvas化を防ぐ。
+ * PDF高画質上限。
  */
 
 const MAX_PDF_DPR =
@@ -358,7 +376,7 @@ const MAX_PDF_DPR =
 
 
 /*
- * ペンは最大DPR 4。
+ * ペン高画質上限。
  */
 
 const MAX_PEN_DPR =
@@ -366,7 +384,7 @@ const MAX_PEN_DPR =
 
 
 /*
- * ペン基本幅
+ * ペン幅。
  */
 
 const PEN_WIDTH =
@@ -374,11 +392,11 @@ const PEN_WIDTH =
 
 
 /*
- * 消しゴム幅
+ * 消しゴム幅。
  */
 
 const ERASER_WIDTH =
-  26;
+  28;
 
 
 /* =========================================================
@@ -387,11 +405,17 @@ const ERASER_WIDTH =
 
 function showLoading() {
 
-  loadingOverlay?.classList.remove(
+  if (!loadingOverlay) {
+    return;
+  }
+
+
+  loadingOverlay.classList.remove(
     "hidden"
   );
 
-  loadingOverlay?.setAttribute(
+
+  loadingOverlay.setAttribute(
     "aria-hidden",
     "false"
   );
@@ -401,11 +425,17 @@ function showLoading() {
 
 function hideLoading() {
 
-  loadingOverlay?.classList.add(
+  if (!loadingOverlay) {
+    return;
+  }
+
+
+  loadingOverlay.classList.add(
     "hidden"
   );
 
-  loadingOverlay?.setAttribute(
+
+  loadingOverlay.setAttribute(
     "aria-hidden",
     "true"
   );
@@ -644,10 +674,26 @@ async function loadPdfJs() {
   }
 
 
-  pdfjs =
-    await import(
-      "../../assets/pdfjs/pdf.mjs"
+  try {
+
+    pdfjs =
+      await import(
+        "../../assets/pdfjs/pdf.mjs"
+      );
+
+  }
+  catch (error) {
+
+    console.error(
+      "PDF.JS LOAD ERROR:",
+      error
     );
+
+    throw new Error(
+      "PDF表示機能を読み込めませんでした。"
+    );
+
+  }
 
 
   if (
@@ -694,9 +740,12 @@ async function loadPdf() {
     pdf =
       await library
         .getDocument({
+
           url,
+
           withCredentials:
             false
+
         })
         .promise;
 
@@ -759,6 +808,11 @@ async function loadImagePages() {
 
     if (error) {
 
+      console.error(
+        "BOOK PAGES ERROR:",
+        error
+      );
+
       throw new Error(
         "教材ページを取得できませんでした。"
       );
@@ -770,7 +824,8 @@ async function loadImagePages() {
       (data || [])
         .filter(
           row =>
-            row?.file_path
+            row &&
+            row.file_path
         )
         .sort(
           (
@@ -1025,7 +1080,7 @@ async function getInitialPdfScale() {
 
 
 /* =========================================================
-   High quality PDF rendering
+   PDF high quality
    ========================================================= */
 
 async function renderPdfCanvas(
@@ -1101,10 +1156,13 @@ async function renderPdfCanvas(
 
 
   context.fillRect(
+
     0,
     0,
+
     canvas.width,
     canvas.height
+
   );
 
 
@@ -1419,7 +1477,7 @@ async function renderCurrent() {
 
 
 /* =========================================================
-   Adjacent
+   Adjacent page
    ========================================================= */
 
 async function prepareAdjacent(
@@ -1835,12 +1893,17 @@ function pointerCenter() {
 
 
 /* =========================================================
-   FREE VIEWER POINTER DOWN
+   Free viewer - pointer down
    ========================================================= */
 
 stage.addEventListener(
   "pointerdown",
   event => {
+
+    /*
+     * ペン・消しゴムは
+     * annotationCanvasで処理。
+     */
 
     if (
       viewerMode === "pen" ||
@@ -1932,8 +1995,10 @@ stage.addEventListener(
     dragX =
       0;
 
+
     dragY =
       0;
+
 
     dragDirection =
       0;
@@ -1942,6 +2007,11 @@ stage.addEventListener(
     adjacentReady =
       false;
 
+
+    /*
+     * 通常倍率でも拡大中でも
+     * まず「掴んで動かす」。
+     */
 
     gestureMode =
       "drag";
@@ -1955,7 +2025,7 @@ stage.addEventListener(
 
 
 /* =========================================================
-   FREE VIEWER POINTER MOVE
+   Free viewer - pointer move
    ========================================================= */
 
 stage.addEventListener(
@@ -2073,6 +2143,8 @@ stage.addEventListener(
 
     /*
      * 現在ページ。
+     *
+     * 上下左右自由。
      */
 
     currentSlide.style.transform =
@@ -2093,8 +2165,8 @@ stage.addEventListener(
 
 
     /*
-     * 横方向に動いたら
-     * 隣ページ。
+     * 横へ動いた場合のみ
+     * 隣ページを出す。
      */
 
     if (
@@ -2174,7 +2246,7 @@ stage.addEventListener(
 
 
 /* =========================================================
-   FREE VIEWER POINTER UP
+   Free viewer - pointer up
    ========================================================= */
 
 stage.addEventListener(
@@ -2223,7 +2295,8 @@ stage.addEventListener(
 
 
       /*
-       * ここでだけPDFを高画質化。
+       * PDFは操作後だけ
+       * 高画質再描画。
        */
 
       if (pdf) {
@@ -2261,9 +2334,12 @@ stage.addEventListener(
     }
 
 
+    /*
+     * 隣ページが出ている。
+     */
+
     if (
-      dragDirection !==
-        0 &&
+      dragDirection !== 0 &&
       adjacentReady
     ) {
 
@@ -2271,6 +2347,10 @@ stage.addEventListener(
         stage.clientWidth *
         PAGE_COMMIT_RATIO;
 
+
+      /*
+       * ページ確定。
+       */
 
       if (
         Math.abs(dragX) >=
@@ -2280,6 +2360,12 @@ stage.addEventListener(
         await commitFreePage();
 
       }
+
+      /*
+       * 隣ページを出したが
+       * 移動量不足。
+       */
+
       else {
 
         await cancelFreePage();
@@ -2287,10 +2373,30 @@ stage.addEventListener(
       }
 
     }
+
+    /*
+     * 隣ページが出ていない。
+     *
+     * ここでは絶対に中央へ戻さない。
+     */
+
     else {
 
       /*
-       * 拡大中なら自由パンを確定。
+       * 指で動かした位置を
+       * そのまま確定。
+       */
+
+      panX +=
+        dragX;
+
+
+      panY +=
+        dragY;
+
+
+      /*
+       * 拡大時だけ画面外制限。
        */
 
       if (
@@ -2298,37 +2404,16 @@ stage.addEventListener(
         PAN_ZOOM_LIMIT
       ) {
 
-        panX +=
-          dragX;
-
-
-        panY +=
-          dragY;
-
-
         clampPan();
 
-
-        applyViewTransform();
-
       }
-      else {
-
-        currentSlide.style.transition =
-          "transform .18s ease-out";
 
 
-        currentSlide.style.transform =
-          `
-            translate3d(
-              -50%,
-              -50%,
-              0
-            )
-            scale(${zoom})
-          `;
+      currentSlide.style.transition =
+        "none";
 
-      }
+
+      applyViewTransform();
 
     }
 
@@ -2393,7 +2478,7 @@ stage.addEventListener(
 
 
 /* =========================================================
-   Commit page
+   Commit free page
    ========================================================= */
 
 async function commitFreePage() {
@@ -2461,7 +2546,10 @@ async function commitFreePage() {
                 : width
             }px
           ),
-          -50%,
+          calc(
+            -50% +
+            ${dragY}px
+          ),
           0
         )
         scale(${zoom})
@@ -2495,7 +2583,7 @@ async function commitFreePage() {
 
 
 /* =========================================================
-   Cancel page
+   Cancel free page
    ========================================================= */
 
 async function cancelFreePage() {
@@ -2507,6 +2595,10 @@ async function cancelFreePage() {
   incomingSlide.style.transition =
     "transform .20s cubic-bezier(.22,.61,.36,1)";
 
+
+  /*
+   * 元の位置へ。
+   */
 
   currentSlide.style.transform =
     `
@@ -2594,9 +2686,12 @@ async function commitIncoming() {
 
 
     context.drawImage(
+
       incomingPdfCanvas,
+
       0,
       0
+
     );
 
 
@@ -2683,6 +2778,7 @@ async function rerenderCurrentPdf() {
 
   if (!pdf) {
     return;
+
   }
 
 
@@ -2704,6 +2800,10 @@ async function rerenderCurrentPdf() {
 
     });
 
+
+  /*
+   * 操作後だけ高DPIレンダリング。
+   */
 
   const renderViewport =
     page.getViewport({
@@ -2816,7 +2916,7 @@ async function rerenderCurrentPdf() {
 
 
 /* =========================================================
-   Page buttons
+   Button navigation
    ========================================================= */
 
 async function goToPage(
@@ -2841,6 +2941,10 @@ async function goToPage(
 
   try {
 
+    /*
+     * 現在ページのペンを保存。
+     */
+
     await saveAnnotation();
 
 
@@ -2852,7 +2956,7 @@ async function goToPage(
 
 
     const loaded =
-      await loadIncomingPage(
+      await prepareAdjacentForTarget(
 
         target,
 
@@ -2924,9 +3028,122 @@ async function goToPage(
 }
 
 
-/* =========================================================
-   Buttons
-   ========================================================= */
+/*
+ * ボタン移動専用。
+ */
+
+async function prepareAdjacentForTarget(
+  target,
+  direction
+) {
+
+  adjacentReady =
+    false;
+
+
+  incomingPdfCanvas.style.display =
+    "none";
+
+
+  incomingImage.style.display =
+    "none";
+
+
+  if (pdf) {
+
+    const size =
+      await renderPdfCanvas(
+
+        incomingPdfCanvas,
+
+        target,
+
+        pdfBaseScale
+
+      );
+
+
+    setSlideSize(
+
+      incomingSlide,
+
+      size.width,
+      size.height
+
+    );
+
+
+    incomingPdfCanvas.style.display =
+      "block";
+
+  }
+  else {
+
+    const image =
+      await getImage(
+        target
+      );
+
+
+    const ratio =
+      pageWidth /
+      Math.max(
+        1,
+        currentImage.naturalWidth
+      );
+
+
+    setSlideSize(
+
+      incomingSlide,
+
+      image.naturalWidth *
+        ratio,
+
+      image.naturalHeight *
+        ratio
+
+    );
+
+
+    incomingImage.src =
+      image.src;
+
+
+    incomingImage.style.display =
+      "block";
+
+  }
+
+
+  incomingSlide.style.display =
+    "flex";
+
+
+  incomingSlide.style.transition =
+    "none";
+
+
+  const startX =
+    direction > 0
+      ? stage.clientWidth
+      : -stage.clientWidth;
+
+
+  applyIncomingTransform(
+    startX,
+    0
+  );
+
+
+  adjacentReady =
+    true;
+
+
+  return true;
+
+}
+
 
 firstButton?.addEventListener(
   "click",
@@ -3013,6 +3230,7 @@ zoomOutButton?.addEventListener(
 
       resetPan();
 
+
       applyViewTransform();
 
     }
@@ -3081,6 +3299,7 @@ fitWidthButton?.addEventListener(
 
     resetPan();
 
+
     applyViewTransform();
 
 
@@ -3143,6 +3362,7 @@ fitHeightButton?.addEventListener(
 
     resetPan();
 
+
     applyViewTransform();
 
 
@@ -3157,7 +3377,7 @@ fitHeightButton?.addEventListener(
 
 
 /* =========================================================
-   PRINT
+   Print
    ========================================================= */
 
 printButton?.addEventListener(
@@ -3165,10 +3385,8 @@ printButton?.addEventListener(
   async () => {
 
     /*
-     * 重要:
-     *
-     * awaitする前にwindow.openする。
-     * これでポップアップブロックを回避。
+     * 先にウィンドウを作る。
+     * これをawaitより前に行う。
      */
 
     const printWindow =
@@ -3189,45 +3407,43 @@ printButton?.addEventListener(
     }
 
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html lang="ja">
-      <head>
-        <meta charset="UTF-8">
-        <title>印刷準備中</title>
-        <style>
-          html,
-          body {
-            margin: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-          }
-
-          body {
-            font-family:
-              system-ui,
-              sans-serif;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-        </style>
-      </head>
-      <body>
-        印刷を準備しています。
-      </body>
-      </html>
-    `);
-
-
-    printWindow.document.close();
-
-
     try {
 
       if (pdf) {
+
+        printWindow.document.write(`
+          <!doctype html>
+          <html lang="ja">
+          <head>
+            <meta charset="utf-8">
+            <title>印刷</title>
+            <style>
+              html,
+              body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+              }
+
+              iframe {
+                display: block;
+                width: 100%;
+                height: 100%;
+                border: 0;
+              }
+            </style>
+          </head>
+          <body>
+            <div>PDFを準備しています。</div>
+          </body>
+          </html>
+        `);
+
+
+        printWindow.document.close();
+
 
         const url =
           await getSignedUrl(
@@ -3240,9 +3456,85 @@ printButton?.addEventListener(
 
 
         /*
-         * PDF本体の読み込み完了後、
-         * 印刷ダイアログを開く。
+         * PDF表示に時間を与えてから印刷。
          */
+
+        setTimeout(
+          () => {
+
+            try {
+
+              printWindow.focus();
+
+              printWindow.print();
+
+            }
+            catch (error) {
+
+              console.warn(
+                "PRINT DIALOG ERROR:",
+                error
+              );
+
+            }
+
+          },
+          1800
+        );
+
+      }
+      else {
+
+        /*
+         * 画像Bookは現在ページを印刷。
+         */
+
+        const image =
+          await getImage(
+            currentPage
+          );
+
+
+        printWindow.document.write(`
+          <!doctype html>
+          <html lang="ja">
+          <head>
+            <meta charset="utf-8">
+            <title>印刷</title>
+            <style>
+              @page {
+                margin: 0;
+              }
+
+              html,
+              body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                background: white;
+              }
+
+              img {
+                display: block;
+                width: 100%;
+                height: auto;
+                margin: 0 auto;
+              }
+            </style>
+          </head>
+          <body>
+            <img
+              id="printImage"
+              src="${escapeAttribute(
+                image.src
+              )}">
+          </body>
+          </html>
+        `);
+
+
+        printWindow.document.close();
+
 
         setTimeout(
           () => {
@@ -3257,59 +3549,7 @@ printButton?.addEventListener(
             catch {}
 
           },
-          1500
-        );
-
-      }
-      else {
-
-        /*
-         * 画像Book。
-         *
-         * 現在ページを印刷。
-         */
-
-        const image =
-          await getImage(
-            currentPage
-          );
-
-
-        printWindow.document.body.innerHTML =
-          `
-            <img
-              src="${escapeAttribute(
-                image.src
-              )}"
-              style="
-                max-width:100%;
-                height:auto;
-                display:block;
-                margin:auto;
-              ">
-          `;
-
-
-        printWindow.document.title =
-          book?.title ||
-          "印刷";
-
-
-        printWindow.focus();
-
-
-        setTimeout(
-          () => {
-
-            try {
-
-              printWindow.print();
-
-            }
-            catch {}
-
-          },
-          300
+          400
         );
 
       }
@@ -3435,15 +3675,15 @@ function updateMode() {
   );
 
 
-  const penLabel =
+  const label =
     penButton?.querySelector(
       "span"
     );
 
 
-  if (penLabel) {
+  if (label) {
 
-    penLabel.textContent =
+    label.textContent =
       viewerMode === "pen"
         ? "ペン ON"
         : "ペン";
@@ -3713,7 +3953,7 @@ mobileMenu
 
 
 /* =========================================================
-   High DPI Pen
+   High DPI annotation
    ========================================================= */
 
 function resizeAnnotationCanvas(
@@ -3726,7 +3966,7 @@ function resizeAnnotationCanvas(
 
 
   /*
-   * 新しいCanvasを作る。
+   * 既存の描画を一時保存。
    */
 
   const old =
@@ -3763,6 +4003,10 @@ function resizeAnnotationCanvas(
   }
 
 
+  /*
+   * 内部解像度だけ上げる。
+   */
+
   annotationCanvas.width =
     Math.max(
       1,
@@ -3783,6 +4027,10 @@ function resizeAnnotationCanvas(
     );
 
 
+  /*
+   * 見た目サイズ。
+   */
+
   annotationCanvas.style.width =
     `${width}px`;
 
@@ -3790,6 +4038,10 @@ function resizeAnnotationCanvas(
   annotationCanvas.style.height =
     `${height}px`;
 
+
+  /*
+   * 既存描画を復元。
+   */
 
   if (
     old.width &&
@@ -3822,6 +4074,10 @@ function resizeAnnotationCanvas(
 
 }
 
+
+/* =========================================================
+   Annotation coordinates
+   ========================================================= */
 
 function getAnnotationPoint(
   event
@@ -3859,11 +4115,11 @@ function getAnnotationPoint(
 }
 
 
-/*
- * 高DPI・滑らか線。
- */
+/* =========================================================
+   Smooth pen
+   ========================================================= */
 
-function drawPenSegment(
+function drawSmoothPen(
   context,
   x,
   y
@@ -3921,11 +4177,15 @@ function drawPenSegment(
   lastY =
     y;
 
+
+  annotationDirty =
+    true;
+
 }
 
 
 /* =========================================================
-   Pen DOWN
+   Pen down
    ========================================================= */
 
 annotationCanvas.addEventListener(
@@ -3942,10 +4202,9 @@ annotationCanvas.addEventListener(
     }
 
 
-    event.stopPropagation();
-
-
     event.preventDefault();
+
+    event.stopPropagation();
 
 
     drawing =
@@ -3984,14 +4243,15 @@ annotationCanvas.addEventListener(
       point.y;
 
 
-    const context =
-      annotationCanvas.getContext(
-        "2d"
-      );
-
-
     const dpr =
       getPenDpr();
+
+
+    const context =
+      annotationCanvas
+        .getContext(
+          "2d"
+        );
 
 
     context.lineCap =
@@ -4005,6 +4265,10 @@ annotationCanvas.addEventListener(
     context.miterLimit =
       2;
 
+
+    /*
+     * 消しゴム。
+     */
 
     if (
       viewerMode ===
@@ -4020,6 +4284,11 @@ annotationCanvas.addEventListener(
         dpr;
 
     }
+
+    /*
+     * ペン。
+     */
+
     else {
 
       context.globalCompositeOperation =
@@ -4038,7 +4307,7 @@ annotationCanvas.addEventListener(
 
 
     /*
-     * 点だけでも描けるようにする。
+     * タップだけでも点を書く。
      */
 
     context.beginPath();
@@ -4058,72 +4327,10 @@ annotationCanvas.addEventListener(
 
 
     context.fillStyle =
-      viewerMode === "eraser"
-        ? "rgba(0,0,0,1)"
-        : "#111";
+      "#111";
 
 
-    if (
-      viewerMode === "eraser"
-    ) {
-
-      context.fill();
-
-    }
-    else {
-
-      context.fill();
-
-    }
-
-  },
-  {
-    passive:
-      false
-  }
-);
-
-
-/* =========================================================
-   Pen MOVE
-   ========================================================= */
-
-annotationCanvas.addEventListener(
-  "pointermove",
-  event => {
-
-    if (!drawing) {
-      return;
-    }
-
-
-    event.stopPropagation();
-
-
-    event.preventDefault();
-
-
-    const point =
-      getAnnotationPoint(
-        event
-      );
-
-
-    const context =
-      annotationCanvas.getContext(
-        "2d"
-      );
-
-
-    drawPenSegment(
-
-      context,
-
-      point.x,
-
-      point.y
-
-    );
+    context.fill();
 
 
     annotationDirty =
@@ -4138,7 +4345,56 @@ annotationCanvas.addEventListener(
 
 
 /* =========================================================
-   Pen UP
+   Pen move
+   ========================================================= */
+
+annotationCanvas.addEventListener(
+  "pointermove",
+  event => {
+
+    if (!drawing) {
+      return;
+    }
+
+
+    event.preventDefault();
+
+    event.stopPropagation();
+
+
+    const point =
+      getAnnotationPoint(
+        event
+      );
+
+
+    const context =
+      annotationCanvas
+        .getContext(
+          "2d"
+        );
+
+
+    drawSmoothPen(
+
+      context,
+
+      point.x,
+
+      point.y
+
+    );
+
+  },
+  {
+    passive:
+      false
+  }
+);
+
+
+/* =========================================================
+   Pen up
    ========================================================= */
 
 annotationCanvas.addEventListener(
@@ -4147,14 +4403,12 @@ annotationCanvas.addEventListener(
 
     if (!drawing) {
       return;
-
     }
 
 
-    event.stopPropagation();
-
-
     event.preventDefault();
+
+    event.stopPropagation();
 
 
     drawing =
@@ -4192,7 +4446,7 @@ annotationCanvas.addEventListener(
 
 
 /* =========================================================
-   Pen CANCEL
+   Pen cancel
    ========================================================= */
 
 annotationCanvas.addEventListener(
@@ -4210,7 +4464,7 @@ annotationCanvas.addEventListener(
 
 
 /* =========================================================
-   Annotation save
+   Save annotation
    ========================================================= */
 
 async function saveAnnotation() {
@@ -4284,7 +4538,7 @@ async function saveAnnotation() {
 
 
 /* =========================================================
-   Annotation load
+   Load annotation
    ========================================================= */
 
 async function loadAnnotation() {
@@ -4329,9 +4583,10 @@ async function loadAnnotation() {
 
 
   const context =
-    annotationCanvas.getContext(
-      "2d"
-    );
+    annotationCanvas
+      .getContext(
+        "2d"
+      );
 
 
   context.clearRect(
