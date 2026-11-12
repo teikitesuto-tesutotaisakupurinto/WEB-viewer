@@ -1,8 +1,6 @@
-
 import {
   supabase
-}
-from "../assets/js/supabase.js";
+} from "../assets/js/supabase.js";
 
 
 const form =
@@ -21,15 +19,125 @@ const button =
   );
 
 
+/* =========================================================
+   メンテナンス状態
+   ========================================================= */
+
+async function getMaintenance() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from(
+        "maintenance_settings"
+      )
+      .select(
+        "enabled,message"
+      )
+      .eq(
+        "id",
+        1
+      )
+      .maybeSingle();
+
+
+  if (error) {
+
+    throw new Error(
+      "システム状態を確認できませんでした。"
+    );
+
+  }
+
+
+  return {
+    enabled:
+      Boolean(
+        data?.enabled
+      ),
+
+    message:
+      data?.message || ""
+  };
+
+}
+
+
+/* =========================================================
+   プロフィール
+   ========================================================= */
+
+async function getProfile(
+  userId
+) {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("users")
+      .select(
+        "id,display_name,role"
+      )
+      .eq(
+        "id",
+        userId
+      )
+      .maybeSingle();
+
+
+  if (error) {
+
+    throw new Error(
+      "ユーザー情報を取得できませんでした。"
+    );
+
+  }
+
+
+  if (!data) {
+
+    throw new Error(
+      "このアカウントは利用登録されていません。"
+    );
+
+  }
+
+
+  return data;
+
+}
+
+
+/* =========================================================
+   ログイン
+   ========================================================= */
+
 form.addEventListener(
   "submit",
   async event => {
 
     event.preventDefault();
 
-    button.disabled = true;
 
-    message.textContent = "";
+    if (
+      button.disabled
+    ) {
+
+      return;
+
+    }
+
+
+    button.disabled =
+      true;
+
+
+    message.textContent =
+      "";
 
 
     try {
@@ -65,85 +173,125 @@ form.addEventListener(
 
 
       /*
-       * Authログイン
+       * Auth
        */
 
       const {
-        data,
-        error
+        data:
+          authData,
+        error:
+          authError
       } =
         await supabase.auth
           .signInWithPassword({
+
             email,
+
             password
+
           });
 
 
-      if (error) {
+      if (authError) {
+
         throw new Error(
           "メールアドレスまたはパスワードが正しくありません。"
         );
+
       }
 
 
-      if (!data?.user) {
+      const user =
+        authData?.user;
+
+
+      if (!user) {
 
         throw new Error(
-          "ログインユーザーを取得できませんでした。"
+          "ログイン情報を取得できませんでした。"
         );
 
       }
 
 
       /*
-       * usersを直接取得
+       * Profile
        */
 
-      const {
-        data: profile,
-        error: profileError
-      } =
-        await supabase
-          .from("users")
-          .select(
-            "id,display_name,role"
-          )
-          .eq(
-            "id",
-            data.user.id
-          )
-          .maybeSingle();
-
-
-      if (profileError) {
-
-        throw new Error(
-          "ユーザー情報取得エラー: " +
-          profileError.message
+      const profile =
+        await getProfile(
+          user.id
         );
-
-      }
-
-
-      if (!profile) {
-
-        throw new Error(
-          "このログインアカウントはusersに登録されていません。"
-        );
-
-      }
 
 
       /*
-       * Admin
+       * メンテナンス確認
        *
-       * メンテナンス中でも入れる
+       * ログイン後にだけ行う
+       */
+
+      const maintenance =
+        await getMaintenance();
+
+
+      /*
+       * 緊急復旧モードは
+       * 現在の通常メンテナンス設定とは
+       * 分離して扱う
+       */
+
+      const recovery =
+        false;
+
+
+      /*
+       * ======================================
+       * Admin
+       * ======================================
        */
 
       if (
         profile.role ===
         "admin"
       ) {
+
+        /*
+         * 通常メンテナンス
+         *
+         * Adminは通常Admin画面へ。
+         * 画面上にメンテナンス状態を表示する。
+         */
+
+        if (
+          maintenance.enabled &&
+          !recovery
+        ) {
+
+          window.location.replace(
+            "../admin/?maintenance=1"
+          );
+
+          return;
+
+        }
+
+
+        /*
+         * 緊急復旧
+         */
+
+        if (
+          recovery
+        ) {
+
+          window.location.replace(
+            "../admin/maintenance/"
+          );
+
+          return;
+
+        }
+
 
         window.location.replace(
           "../admin/"
@@ -155,7 +303,9 @@ form.addEventListener(
 
 
       /*
+       * ======================================
        * Student
+       * ======================================
        */
 
       if (
@@ -163,8 +313,26 @@ form.addEventListener(
         "student"
       ) {
 
+        /*
+         * メンテナンス中は
+         * My Booksへ入れない
+         */
+
+        if (
+          maintenance.enabled
+        ) {
+
+          window.location.replace(
+            "../student/?maintenance=1"
+          );
+
+          return;
+
+        }
+
+
         window.location.replace(
-          "../student/"
+          "../student/books/"
         );
 
         return;
@@ -172,8 +340,18 @@ form.addEventListener(
       }
 
 
+      /*
+       * 権限不明
+       */
+
+      await supabase.auth.signOut({
+        scope:
+          "local"
+      });
+
+
       throw new Error(
-        "ユーザー権限が設定されていません。"
+        "このアカウントには利用権限が設定されていません。"
       );
 
     }
