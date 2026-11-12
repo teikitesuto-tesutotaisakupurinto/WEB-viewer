@@ -60,13 +60,16 @@ function setMessage(
     return;
   }
 
+
   messageElement.textContent =
     text;
+
 
   messageElement.dataset.error =
     isError
       ? "true"
       : "false";
+
 }
 
 
@@ -77,7 +80,9 @@ function clearMessage() {
 }
 
 
-function escapeHtml(value) {
+function escapeHtml(
+  value
+) {
 
   return String(
     value ?? ""
@@ -112,17 +117,37 @@ function escapeHtml(value) {
 
 function clearForm() {
 
-  titleInput.value =
-    "";
+  if (titleInput) {
 
-  descriptionInput.value =
-    "";
+    titleInput.value =
+      "";
 
-  fileInput.value =
-    "";
+  }
 
-  filePreview.innerHTML =
-    "";
+
+  if (descriptionInput) {
+
+    descriptionInput.value =
+      "";
+
+  }
+
+
+  if (fileInput) {
+
+    fileInput.value =
+      "";
+
+  }
+
+
+  if (filePreview) {
+
+    filePreview.innerHTML =
+      "";
+
+  }
+
 
   clearMessage();
 
@@ -135,9 +160,14 @@ if (showFormButton) {
     "click",
     () => {
 
-      formCard.classList.remove(
-        "hidden"
-      );
+      if (formCard) {
+
+        formCard.classList.remove(
+          "hidden"
+        );
+
+      }
+
 
       clearMessage();
 
@@ -155,9 +185,14 @@ if (cancelButton) {
 
       clearForm();
 
-      formCard.classList.add(
-        "hidden"
-      );
+
+      if (formCard) {
+
+        formCard.classList.add(
+          "hidden"
+        );
+
+      }
 
     }
   );
@@ -185,7 +220,9 @@ if (logoutButton) {
    File type
    ========================================================= */
 
-function isPdf(file) {
+function isPdf(
+  file
+) {
 
   return (
     file.type ===
@@ -198,7 +235,9 @@ function isPdf(file) {
 }
 
 
-function isImage(file) {
+function isImage(
+  file
+) {
 
   return (
     /^image\/(jpeg|png)$/i.test(
@@ -212,13 +251,16 @@ function isImage(file) {
 }
 
 
-function getExtension(file) {
+function getExtension(
+  file
+) {
 
   const parts =
     String(
       file.name || ""
     )
       .split(".");
+
 
   if (
     parts.length < 2
@@ -228,6 +270,7 @@ function getExtension(file) {
 
   }
 
+
   return parts
     .pop()
     .toLowerCase();
@@ -236,12 +279,16 @@ function getExtension(file) {
 
 
 /* =========================================================
-   Validate files
+   Validate
    ========================================================= */
 
-function validateFiles(files) {
+function validateFiles(
+  files
+) {
 
-  if (!files.length) {
+  if (
+    !files.length
+  ) {
 
     throw new Error(
       "教材ファイルを選択してください。"
@@ -272,7 +319,9 @@ function validateFiles(files) {
     );
 
 
-  if (unsupported.length) {
+  if (
+    unsupported.length
+  ) {
 
     throw new Error(
       "PDF、JPG、JPEG、PNGのみ登録できます。"
@@ -282,12 +331,12 @@ function validateFiles(files) {
 
 
   /*
-   * PDFと画像の混在は禁止。
+   * PDFと画像を混在させない。
    */
 
   if (
-    pdfFiles.length > 0 &&
-    imageFiles.length > 0
+    pdfFiles.length &&
+    imageFiles.length
   ) {
 
     throw new Error(
@@ -330,11 +379,11 @@ function validateFiles(files) {
 
 
   /*
-   * 画像Book。
+   * 画像Bookは複数登録可能。
    */
 
   if (
-    imageFiles.length > 0
+    imageFiles.length
   ) {
 
     return {
@@ -363,13 +412,18 @@ function validateFiles(files) {
 
 function renderFilePreview() {
 
+  if (!filePreview) {
+    return;
+  }
+
+
   filePreview.innerHTML =
     "";
 
 
   const files =
     Array.from(
-      fileInput.files || []
+      fileInput?.files || []
     );
 
 
@@ -384,6 +438,7 @@ function renderFilePreview() {
           "div"
         );
 
+
       item.className =
         "file-preview-item";
 
@@ -393,8 +448,10 @@ function renderFilePreview() {
           "div"
         );
 
+
       number.className =
         "file-preview-number";
+
 
       number.textContent =
         String(
@@ -417,14 +474,14 @@ function renderFilePreview() {
           );
 
 
-        const url =
+        const objectUrl =
           URL.createObjectURL(
             file
           );
 
 
         image.src =
-          url;
+          objectUrl;
 
 
         image.alt =
@@ -435,7 +492,7 @@ function renderFilePreview() {
           () => {
 
             URL.revokeObjectURL(
-              url
+              objectUrl
             );
 
           };
@@ -479,14 +536,18 @@ function renderFilePreview() {
 }
 
 
-fileInput.addEventListener(
-  "change",
-  renderFilePreview
-);
+if (fileInput) {
+
+  fileInput.addEventListener(
+    "change",
+    renderFilePreview
+  );
+
+}
 
 
 /* =========================================================
-   Storage
+   Storage path
    ========================================================= */
 
 function createStoragePath(
@@ -510,6 +571,10 @@ function createStoragePath(
 }
 
 
+/* =========================================================
+   Upload
+   ========================================================= */
+
 async function uploadFile(
   file
 ) {
@@ -521,7 +586,8 @@ async function uploadFile(
 
 
   let contentType =
-    file.type;
+    file.type ||
+    "";
 
 
   if (!contentType) {
@@ -580,6 +646,7 @@ async function uploadFile(
       error
     );
 
+
     throw new Error(
       "ファイルのアップロードに失敗しました。\n" +
       error.message
@@ -601,8 +668,14 @@ async function cleanupStorage(
   paths
 ) {
 
+  const validPaths =
+    paths.filter(
+      Boolean
+    );
+
+
   if (
-    !paths.length
+    !validPaths.length
   ) {
 
     return;
@@ -618,7 +691,7 @@ async function cleanupStorage(
       await supabase.storage
         .from("web-viewer")
         .remove(
-          paths
+          validPaths
         );
 
 
@@ -647,12 +720,61 @@ async function cleanupStorage(
 
 
 /* =========================================================
-   Create books row
+   Book INSERT
    ========================================================= */
+
+/*
+ * ここが重要。
+ *
+ * description が
+ *
+ * undefined
+ * null
+ * 空文字
+ *
+ * のどれでも、DBへは必ず ""
+ * を送る。
+ */
 
 async function insertBook(
   values
 ) {
+
+  const safeValues = {
+
+    ...values,
+
+    description:
+      values.description == null
+        ? ""
+        : String(
+            values.description
+          )
+
+  };
+
+
+  /*
+   * 念のため、undefinedも
+   * 空文字へ統一。
+   */
+
+  if (
+    typeof safeValues.description ===
+    "undefined"
+  ) {
+
+    safeValues.description =
+      "";
+
+  }
+
+
+  console.log(
+    "BOOK INSERT VALUES:",
+    safeValues
+  );
+
 
   const {
     data,
@@ -661,7 +783,7 @@ async function insertBook(
     await supabase
       .from("books")
       .insert(
-        values
+        safeValues
       )
       .select(
         "id"
@@ -676,9 +798,21 @@ async function insertBook(
       error
     );
 
+
     throw new Error(
       "Book登録に失敗しました。\n" +
       error.message
+    );
+
+  }
+
+
+  if (
+    !data?.id
+  ) {
+
+    throw new Error(
+      "Book IDを取得できませんでした。"
     );
 
   }
@@ -690,7 +824,109 @@ async function insertBook(
 
 
 /* =========================================================
-   Create PDF Book
+   Book DELETE rollback
+   ========================================================= */
+
+async function deleteBook(
+  bookId
+) {
+
+  if (!bookId) {
+    return;
+  }
+
+
+  try {
+
+    const {
+      error
+    } =
+      await supabase
+        .from("books")
+        .delete()
+        .eq(
+          "id",
+          bookId
+        );
+
+
+    if (error) {
+
+      console.warn(
+        "BOOK ROLLBACK ERROR:",
+        error
+      );
+
+    }
+
+  }
+  catch (
+    error
+  ) {
+
+    console.warn(
+      "BOOK ROLLBACK ERROR:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   Page DELETE rollback
+   ========================================================= */
+
+async function deleteBookPages(
+  bookId
+) {
+
+  if (!bookId) {
+    return;
+  }
+
+
+  try {
+
+    const {
+      error
+    } =
+      await supabase
+        .from("book_pages")
+        .delete()
+        .eq(
+          "book_id",
+          bookId
+        );
+
+
+    if (error) {
+
+      console.warn(
+        "BOOK PAGES ROLLBACK ERROR:",
+        error
+      );
+
+    }
+
+  }
+  catch (
+    error
+  ) {
+
+    console.warn(
+      "BOOK PAGES ROLLBACK ERROR:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   PDF Book
    ========================================================= */
 
 async function createPdfBook(
@@ -724,19 +960,18 @@ async function createPdfBook(
     );
 
 
-    /*
-     * descriptionはNOT NULLなので、
-     * 空欄でも必ず空文字列を入れる。
-     */
-
     bookId =
       await insertBook({
 
         title:
           title,
 
+        /*
+         * null禁止。
+         */
+
         description:
-          description,
+          description || "",
 
         file_path:
           storagePath,
@@ -757,33 +992,16 @@ async function createPdfBook(
     error
   ) {
 
-    if (bookId) {
-
-      try {
-
-        await supabase
-          .from("books")
-          .delete()
-          .eq(
-            "id",
-            bookId
-          );
-
-      }
-      catch {}
-
-    }
+    await deleteBook(
+      bookId
+    );
 
 
-    if (storagePath) {
-
-      await cleanupStorage(
-        [
-          storagePath
-        ]
-      );
-
-    }
+    await cleanupStorage(
+      [
+        storagePath
+      ]
+    );
 
 
     throw error;
@@ -794,7 +1012,7 @@ async function createPdfBook(
 
 
 /* =========================================================
-   Create Image Book
+   Image Book
    ========================================================= */
 
 async function createImageBook(
@@ -809,7 +1027,6 @@ async function createImageBook(
   const uploadedPaths =
     [];
 
-
   try {
 
     setMessage(
@@ -818,9 +1035,8 @@ async function createImageBook(
 
 
     /*
-     * file_pathは画像BookではNULL。
-     * descriptionだけはNOT NULLなので
-     * 空文字列を必ず入れる。
+     * 画像Bookもdescriptionは
+     * 必ず文字列。
      */
 
     bookId =
@@ -830,7 +1046,12 @@ async function createImageBook(
           title,
 
         description:
-          description,
+          description || "",
+
+        /*
+         * 画像Bookはページ側に
+         * ファイルを持つ。
+         */
 
         file_path:
           null,
@@ -915,6 +1136,7 @@ async function createImageBook(
         error
       );
 
+
       throw new Error(
         "ページ登録に失敗しました。\n" +
         error.message
@@ -931,51 +1153,25 @@ async function createImageBook(
   ) {
 
     /*
-     * ページ削除
+     * ページを削除。
      */
 
-    if (bookId) {
-
-      try {
-
-        await supabase
-          .from("book_pages")
-          .delete()
-          .eq(
-            "book_id",
-            bookId
-          );
-
-      }
-      catch {}
-
-    }
+    await deleteBookPages(
+      bookId
+    );
 
 
     /*
-     * Book削除
+     * Bookを削除。
      */
 
-    if (bookId) {
-
-      try {
-
-        await supabase
-          .from("books")
-          .delete()
-          .eq(
-            "id",
-            bookId
-          );
-
-      }
-      catch {}
-
-    }
+    await deleteBook(
+      bookId
+    );
 
 
     /*
-     * Storage削除
+     * Storageを削除。
      */
 
     await cleanupStorage(
@@ -991,7 +1187,7 @@ async function createImageBook(
 
 
 /* =========================================================
-   Create Book
+   Create
    ========================================================= */
 
 async function createBook() {
@@ -1001,31 +1197,32 @@ async function createBook() {
 
 
   if (!admin) {
-
     return;
-
   }
 
 
   const title =
-    titleInput.value.trim();
+    String(
+      titleInput?.value || ""
+    )
+      .trim();
 
 
   /*
-   * ここが重要。
-   *
-   * 空欄ならnullではなく
-   * ""をDBへ送る。
+   * DBがNOT NULLなので、
+   * nullには絶対にしない。
    */
 
   const description =
-    descriptionInput.value.trim() ||
-    "";
+    String(
+      descriptionInput?.value || ""
+    )
+      .trim();
 
 
   const files =
     Array.from(
-      fileInput.files || []
+      fileInput?.files || []
     );
 
 
@@ -1036,7 +1233,9 @@ async function createBook() {
       true
     );
 
-    titleInput.focus();
+
+    titleInput?.focus();
+
 
     return;
 
@@ -1063,13 +1262,23 @@ async function createBook() {
       true
     );
 
+
     return;
 
   }
 
 
-  createButton.disabled =
-    true;
+  if (
+    createButton
+  ) {
+
+    createButton.disabled =
+      true;
+
+  }
+
+
+  clearMessage();
 
 
   try {
@@ -1108,9 +1317,13 @@ async function createBook() {
     clearForm();
 
 
-    formCard.classList.add(
-      "hidden"
-    );
+    if (formCard) {
+
+      formCard.classList.add(
+        "hidden"
+      );
+
+    }
 
 
     setMessage(
@@ -1140,18 +1353,28 @@ async function createBook() {
   }
   finally {
 
-    createButton.disabled =
-      false;
+    if (
+      createButton
+    ) {
+
+      createButton.disabled =
+        false;
+
+    }
 
   }
 
 }
 
 
-createButton.addEventListener(
-  "click",
-  createBook
-);
+if (createButton) {
+
+  createButton.addEventListener(
+    "click",
+    createBook
+  );
+
+}
 
 
 /* =========================================================
@@ -1159,6 +1382,11 @@ createButton.addEventListener(
    ========================================================= */
 
 async function loadBooks() {
+
+  if (!booksContainer) {
+    return;
+  }
+
 
   booksContainer.innerHTML =
     `
@@ -1179,6 +1407,7 @@ async function loadBooks() {
         title,
         description,
         file_type,
+        file_path,
         enabled,
         created_at
       `)
@@ -1220,7 +1449,7 @@ async function loadBooks() {
       .map(
         book => {
 
-          const type =
+          const fileType =
             String(
               book.file_type || ""
             )
@@ -1228,9 +1457,13 @@ async function loadBooks() {
 
 
           const typeLabel =
-            type === "pdf"
+            fileType === "pdf"
               ? "PDF"
-              : "画像";
+              : (
+                  fileType === "images"
+                    ? "画像"
+                    : fileType.toUpperCase()
+                );
 
 
           const status =
@@ -1268,7 +1501,9 @@ async function loadBooks() {
                 <div
                   class="book-admin-type">
 
-                  ${typeLabel}
+                  ${escapeHtml(
+                    typeLabel
+                  )}
 
                 </div>
 
@@ -1277,7 +1512,9 @@ async function loadBooks() {
               <div
                 class="book-admin-status">
 
-                ${status}
+                ${escapeHtml(
+                  status
+                )}
 
               </div>
 
@@ -1303,9 +1540,7 @@ async function start() {
 
 
   if (!admin) {
-
     return;
-
   }
 
 
@@ -1331,7 +1566,9 @@ start()
         booksContainer.innerHTML =
           `
             <div class="book-empty">
+
               Bookを読み込めませんでした。
+
             </div>
           `;
 
