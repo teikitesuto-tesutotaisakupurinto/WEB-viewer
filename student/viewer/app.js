@@ -1,3 +1,4 @@
+
 import {
   requireBookAccess
 } from "../../assets/js/auth.js";
@@ -122,6 +123,24 @@ const closeButton =
   document.getElementById("close");
 
 
+if (
+  !stage ||
+  !currentSlide ||
+  !incomingSlide ||
+  !currentPdfCanvas ||
+  !incomingPdfCanvas ||
+  !currentImage ||
+  !incomingImage ||
+  !annotationCanvas
+) {
+
+  throw new Error(
+    "VIEWER_DOM_INCOMPLETE"
+  );
+
+}
+
+
 /* =========================================================
    State
    ========================================================= */
@@ -149,7 +168,7 @@ let viewerMode =
 
 /*
  * idle
- * swipe
+ * page
  * pan
  * pinch
  */
@@ -165,9 +184,15 @@ let gestureMode =
 let zoom =
   1;
 
+const MIN_ZOOM =
+  1;
+
+const MAX_ZOOM =
+  4;
+
 
 /*
- * PDFの基準CSS倍率。
+ * PDF基準倍率
  */
 
 let pdfBaseScale =
@@ -175,7 +200,7 @@ let pdfBaseScale =
 
 
 /*
- * ページの論理サイズ。
+ * ページの論理サイズ
  */
 
 let pageWidth =
@@ -186,7 +211,7 @@ let pageHeight =
 
 
 /*
- * パン位置。
+ * パン
  */
 
 let panX =
@@ -194,11 +219,6 @@ let panX =
 
 let panY =
   0;
-
-
-/*
- * パン開始位置。
- */
 
 let panStartX =
   0;
@@ -214,7 +234,7 @@ let panBaseY =
 
 
 /*
- * ページ移動。
+ * ページ切り替え
  */
 
 let pageChanging =
@@ -222,7 +242,15 @@ let pageChanging =
 
 
 /*
- * スワイプ。
+ * Pointer管理
+ */
+
+const activePointers =
+  new Map();
+
+
+/*
+ * ページスワイプ
  */
 
 let swipeStartX =
@@ -231,24 +259,24 @@ let swipeStartX =
 let swipeStartY =
   0;
 
-let swipeCurrentX =
+let swipeLastX =
   0;
 
-let swipeCurrentY =
+let swipeLastY =
   0;
 
 let swipeDirection =
   0;
 
-let incomingReady =
+let swipePrepared =
   false;
 
-let incomingPromise =
-  null;
+let swipePreparing =
+  false;
 
 
 /*
- * ピンチ。
+ * ピンチ
  */
 
 let pinchStartDistance =
@@ -259,7 +287,23 @@ let pinchStartZoom =
 
 
 /*
- * ペン。
+ * PDF描画世代
+ */
+
+let renderToken =
+  0;
+
+
+/*
+ * 画像キャッシュ
+ */
+
+const imageCache =
+  new Map();
+
+
+/*
+ * ペン
  */
 
 let drawing =
@@ -273,23 +317,7 @@ let lastY =
 
 
 /*
- * PDF描画世代。
- */
-
-let renderToken =
-  0;
-
-
-/*
- * 画像キャッシュ。
- */
-
-const imageCache =
-  new Map();
-
-
-/*
- * Desktop mouse.
+ * Desktop mouse
  */
 
 let mouseDown =
@@ -308,45 +336,26 @@ let mouseBaseY =
   0;
 
 
+/*
+ * incomingページ準備
+ */
+
+let incomingPromise =
+  null;
+
+
 /* =========================================================
    Constants
    ========================================================= */
 
-const MIN_ZOOM =
-  1;
-
-const MAX_ZOOM =
-  4;
-
-
-/*
- * これを超えたら1本指は
- * ページ送りではなくパン。
- */
-
 const PAN_ZOOM_LIMIT =
   1.03;
 
-
-/*
- * ページ送り確定距離。
- */
-
 const SWIPE_MIN_DISTANCE =
-  70;
-
-
-/*
- * 縦より横が明確に大きい場合。
- */
+  60;
 
 const SWIPE_AXIS_RATIO =
-  1.25;
-
-
-/*
- * PDF高DPI上限。
- */
+  1.2;
 
 const MAX_DPR =
   2.5;
@@ -597,7 +606,7 @@ async function loadBook() {
 
 
 /* =========================================================
-   PDF
+   PDF判定
    ========================================================= */
 
 function isPdfBook() {
@@ -619,6 +628,10 @@ function isPdfBook() {
 
 }
 
+
+/* =========================================================
+   PDF.js
+   ========================================================= */
 
 async function loadPdfJs() {
 
@@ -672,6 +685,10 @@ async function loadPdfJs() {
 
 }
 
+
+/* =========================================================
+   PDF load
+   ========================================================= */
 
 async function loadPdf() {
 
@@ -815,7 +832,7 @@ async function loadImagePages() {
 
 
 /* =========================================================
-   Page count
+   Page
    ========================================================= */
 
 function getPageCount() {
@@ -1079,7 +1096,8 @@ async function renderPdfCanvas(
     canvas.getContext(
       "2d",
       {
-        alpha: false
+        alpha:
+          false
       }
     );
 
@@ -1288,6 +1306,7 @@ function resetPan() {
   panX =
     0;
 
+
   panY =
     0;
 
@@ -1300,8 +1319,8 @@ function resetPan() {
 
 function applyZoom(
   value,
-  centerX,
-  centerY
+  clientX,
+  clientY
 ) {
 
   const oldZoom =
@@ -1310,11 +1329,14 @@ function applyZoom(
 
   const nextZoom =
     Math.max(
+
       MIN_ZOOM,
+
       Math.min(
         MAX_ZOOM,
         value
       )
+
     );
 
 
@@ -1333,13 +1355,13 @@ function applyZoom(
 
 
   const localX =
-    centerX -
+    clientX -
     rect.left -
     rect.width / 2;
 
 
   const localY =
-    centerY -
+    clientY -
     rect.top -
     rect.height / 2;
 
@@ -1481,12 +1503,14 @@ async function prepareCurrentPage() {
       Math.min(
 
         (
-          stage.clientWidth - 48
+          stage.clientWidth -
+          48
         ) /
         pageWidth,
 
         (
-          stage.clientHeight - 48
+          stage.clientHeight -
+          48
         ) /
         pageHeight
 
@@ -1533,6 +1557,7 @@ async function prepareCurrentPage() {
   resizeAnnotationCanvas(
 
     pageWidth,
+
     pageHeight
 
   );
@@ -1694,7 +1719,7 @@ async function loadIncomingPage(
 
 
 /* =========================================================
-   Start preparing incoming
+   Prepare incoming
    ========================================================= */
 
 function prepareIncoming(
@@ -1727,6 +1752,10 @@ function prepareIncoming(
   }
 
 
+  swipePreparing =
+    true;
+
+
   incomingPromise =
     loadIncomingPage(
       target,
@@ -1754,6 +1783,9 @@ function prepareIncoming(
           incomingPromise =
             null;
 
+          swipePreparing =
+            false;
+
         }
       );
 
@@ -1764,16 +1796,17 @@ function prepareIncoming(
 
 
 /* =========================================================
-   Touch helpers
+   Pointer helpers
    ========================================================= */
 
-function getTouchDistance(
-  touches
-) {
+function getPointerDistance() {
+
+  const values =
+    [...activePointers.values()];
+
 
   if (
-    touches.length <
-    2
+    values.length < 2
   ) {
 
     return 0;
@@ -1782,41 +1815,67 @@ function getTouchDistance(
 
 
   const a =
-    touches[0];
+    values[0];
 
   const b =
-    touches[1];
+    values[1];
 
 
   return Math.hypot(
 
-    b.clientX -
-    a.clientX,
+    b.x -
+    a.x,
 
-    b.clientY -
-    a.clientY
+    b.y -
+    a.y
 
   );
 
 }
 
 
-function getTouchCenter(
-  touches
-) {
+function getPointerCenter() {
+
+  const values =
+    [...activePointers.values()];
+
+
+  if (
+    values.length < 2
+  ) {
+
+    return {
+
+      x:
+        stage.clientWidth / 2,
+
+      y:
+        stage.clientHeight / 2
+
+    };
+
+  }
+
+
+  const a =
+    values[0];
+
+  const b =
+    values[1];
+
 
   return {
 
     x:
       (
-        touches[0].clientX +
-        touches[1].clientX
+        a.x +
+        b.x
       ) / 2,
 
     y:
       (
-        touches[0].clientY +
-        touches[1].clientY
+        a.y +
+        b.y
       ) / 2
 
   };
@@ -1825,19 +1884,63 @@ function getTouchCenter(
 
 
 /* =========================================================
-   Touch START
+   POINTER DOWN
    ========================================================= */
 
 stage.addEventListener(
-  "touchstart",
+  "pointerdown",
   event => {
 
     /*
-     * 2本指
+     * ペン・消しゴムは
+     * annotationCanvas側。
      */
 
     if (
-      event.touches.length >= 2
+      viewerMode === "pen" ||
+      viewerMode === "eraser"
+    ) {
+
+      return;
+
+    }
+
+
+    try {
+
+      stage.setPointerCapture(
+        event.pointerId
+      );
+
+    }
+    catch {}
+
+
+    activePointers.set(
+
+      event.pointerId,
+
+      {
+
+        x:
+          event.clientX,
+
+        y:
+          event.clientY
+
+      }
+
+    );
+
+
+    /*
+     * =====================================================
+     * PINCH
+     * =====================================================
+     */
+
+    if (
+      activePointers.size >= 2
     ) {
 
       gestureMode =
@@ -1852,35 +1955,35 @@ stage.addEventListener(
         0;
 
 
+      swipePrepared =
+        false;
+
+
+      hideIncoming();
+
+
       pinchStartDistance =
-        getTouchDistance(
-          event.touches
-        );
+        getPointerDistance();
 
 
       pinchStartZoom =
         zoom;
 
 
-      hideIncoming();
-
-
       return;
 
     }
 
 
-    if (
-      event.touches.length !==
-      1
-    ) {
-
-      return;
-
-    }
-
+    /*
+     * =====================================================
+     * 1本指
+     * =====================================================
+     */
 
     if (
+      activePointers.size !==
+      1 ||
       pageChanging
     ) {
 
@@ -1889,31 +1992,27 @@ stage.addEventListener(
     }
 
 
-    const touch =
-      event.touches[0];
-
-
     swipeStartX =
-      touch.clientX;
+      event.clientX;
 
 
     swipeStartY =
-      touch.clientY;
+      event.clientY;
 
 
-    swipeCurrentX =
-      touch.clientX;
+    swipeLastX =
+      event.clientX;
 
 
-    swipeCurrentY =
-      touch.clientY;
+    swipeLastY =
+      event.clientY;
 
 
     swipeDirection =
       0;
 
 
-    incomingReady =
+    swipePrepared =
       false;
 
 
@@ -1937,11 +2036,11 @@ stage.addEventListener(
 
 
       panStartX =
-        touch.clientX;
+        event.clientX;
 
 
       panStartY =
-        touch.clientY;
+        event.clientY;
 
 
       panBaseX =
@@ -1960,26 +2059,52 @@ stage.addEventListener(
     /*
      * 通常倍率
      *
-     * ページ送り候補。
+     * ページ送り。
      */
 
     gestureMode =
-      "swipe";
+      "page";
 
   },
   {
-    passive: true
+    passive:
+      false
   }
 );
 
 
 /* =========================================================
-   Touch MOVE
+   POINTER MOVE
    ========================================================= */
 
 stage.addEventListener(
-  "touchmove",
+  "pointermove",
   event => {
+
+    if (
+      activePointers.has(
+        event.pointerId
+      )
+    ) {
+
+      activePointers.set(
+
+        event.pointerId,
+
+        {
+
+          x:
+            event.clientX,
+
+          y:
+            event.clientY
+
+        }
+
+      );
+
+    }
+
 
     /*
      * =====================================================
@@ -1988,46 +2113,29 @@ stage.addEventListener(
      */
 
     if (
-      event.touches.length >= 2
+      gestureMode ===
+        "pinch" &&
+      activePointers.size >= 2
     ) {
 
       event.preventDefault();
 
 
-      if (
-        gestureMode !==
-        "pinch"
-      ) {
-
-        gestureMode =
-          "pinch";
-
-
-        swipeActive =
-          false;
-
-
-        pinchStartDistance =
-          getTouchDistance(
-            event.touches
-          );
-
-
-        pinchStartZoom =
-          zoom;
-
-      }
-
-
       const distance =
-        getTouchDistance(
-          event.touches
-        );
+        getPointerDistance();
 
 
       if (
         pinchStartDistance <= 0
       ) {
+
+        pinchStartDistance =
+          distance;
+
+
+        pinchStartZoom =
+          zoom;
+
 
         return;
 
@@ -2035,9 +2143,11 @@ stage.addEventListener(
 
 
       const center =
-        getTouchCenter(
-          event.touches
-        );
+        getPointerCenter();
+
+
+      const rect =
+        stage.getBoundingClientRect();
 
 
       applyZoom(
@@ -2048,9 +2158,11 @@ stage.addEventListener(
           pinchStartDistance
         ),
 
-        center.x,
+        rect.left +
+          center.x,
 
-        center.y
+        rect.top +
+          center.y
 
       );
 
@@ -2061,32 +2173,6 @@ stage.addEventListener(
 
 
     /*
-     * 1本指以外。
-     */
-
-    if (
-      event.touches.length !==
-      1
-    ) {
-
-      return;
-
-    }
-
-
-    const touch =
-      event.touches[0];
-
-
-    swipeCurrentX =
-      touch.clientX;
-
-
-    swipeCurrentY =
-      touch.clientY;
-
-
-    /*
      * =====================================================
      * PAN
      * =====================================================
@@ -2094,7 +2180,8 @@ stage.addEventListener(
 
     if (
       gestureMode ===
-      "pan"
+        "pan" &&
+      activePointers.size === 1
     ) {
 
       event.preventDefault();
@@ -2103,7 +2190,7 @@ stage.addEventListener(
       panX =
         panBaseX +
         (
-          touch.clientX -
+          event.clientX -
           panStartX
         );
 
@@ -2111,7 +2198,7 @@ stage.addEventListener(
       panY =
         panBaseY +
         (
-          touch.clientY -
+          event.clientY -
           panStartY
         );
 
@@ -2129,13 +2216,15 @@ stage.addEventListener(
 
     /*
      * =====================================================
-     * SWIPE
+     * PAGE
      * =====================================================
      */
 
     if (
       gestureMode !==
-      "swipe" ||
+        "page" ||
+      activePointers.size !==
+        1 ||
       !swipeActive
     ) {
 
@@ -2145,18 +2234,26 @@ stage.addEventListener(
 
 
     const dx =
-      touch.clientX -
+      event.clientX -
       swipeStartX;
 
 
     const dy =
-      touch.clientY -
+      event.clientY -
       swipeStartY;
+
+
+    swipeLastX =
+      event.clientX;
+
+
+    swipeLastY =
+      event.clientY;
 
 
     /*
      * 縦方向が明確なら
-     * ページ送りを開始しない。
+     * ページ送りしない。
      */
 
     if (
@@ -2172,8 +2269,7 @@ stage.addEventListener(
 
 
     /*
-     * 横方向に少し動いたら
-     * 方向だけ先に確定。
+     * 横方向へ動いたら方向確定。
      */
 
     if (
@@ -2193,8 +2289,7 @@ stage.addEventListener(
 
 
       /*
-       * ページがない場合は
-       * ページ送りしない。
+       * 存在しないページ方向。
        */
 
       if (
@@ -2212,15 +2307,67 @@ stage.addEventListener(
 
 
       /*
-       * 非同期で先読み。
+       * 先読み。
        *
        * awaitしない。
-       * 指の動きを止めない。
        */
 
       prepareIncoming(
         direction
-      );
+      )
+        .then(
+          success => {
+
+            if (
+              !success
+            ) {
+
+              return;
+
+            }
+
+
+            if (
+              gestureMode !==
+                "page" ||
+              swipeDirection !==
+                direction
+            ) {
+
+              return;
+
+            }
+
+
+            swipePrepared =
+              true;
+
+
+            /*
+             * 読み込み完了時点の
+             * 指位置に合わせる。
+             */
+
+            const currentDx =
+              swipeLastX -
+              swipeStartX;
+
+
+            const incomingStart =
+              direction > 0
+                ? stage.clientWidth
+                : -stage.clientWidth;
+
+
+            applyIncomingTransform(
+
+              incomingStart +
+              currentDx
+
+            );
+
+          }
+        );
 
     }
 
@@ -2235,62 +2382,9 @@ stage.addEventListener(
 
 
     /*
-     * 逆方向に戻った場合は
-     * その方向へページを変えない。
+     * 逆方向へ指を戻しても
+     * ページ方向は変更しない。
      */
-
-    const currentDirection =
-      dx < 0
-        ? 1
-        : -1;
-
-
-    if (
-      currentDirection !==
-      swipeDirection
-    ) {
-
-      /*
-       * まだ元のページ側へ
-       * 戻していく。
-       */
-
-      if (
-        incomingReady
-      ) {
-
-        const incomingStart =
-          swipeDirection > 0
-            ? stage.clientWidth
-            : -stage.clientWidth;
-
-
-        applyIncomingTransform(
-          incomingStart +
-          dx
-        );
-
-      }
-
-
-      currentSlide.style.transform =
-        `
-          translate3d(
-            calc(
-              -50% +
-              ${dx}px
-            ),
-            -50%,
-            0
-          )
-          scale(${zoom})
-        `;
-
-
-      return;
-
-    }
-
 
     event.preventDefault();
 
@@ -2314,11 +2408,12 @@ stage.addEventListener(
 
 
     /*
-     * 次／前ページ。
+     * incomingも指に追従。
      */
 
     if (
-      incomingReady
+      incomingSlide.style.display !==
+      "none"
     ) {
 
       const incomingStart =
@@ -2328,26 +2423,44 @@ stage.addEventListener(
 
 
       applyIncomingTransform(
+
         incomingStart +
         dx
+
       );
 
     }
 
   },
   {
-    passive: false
+    passive:
+      false
   }
 );
 
 
 /* =========================================================
-   Touch END
+   POINTER UP
    ========================================================= */
 
 stage.addEventListener(
-  "touchend",
+  "pointerup",
   async event => {
+
+    activePointers.delete(
+      event.pointerId
+    );
+
+
+    try {
+
+      stage.releasePointerCapture(
+        event.pointerId
+      );
+
+    }
+    catch {}
+
 
     /*
      * =====================================================
@@ -2357,20 +2470,38 @@ stage.addEventListener(
 
     if (
       gestureMode ===
-      "pinch"
+        "pinch"
     ) {
 
-      pinchStartDistance =
-        0;
+      if (
+        activePointers.size > 0
+      ) {
+
+        /*
+         * もう片方の指が残っている。
+         */
+
+        return;
+
+      }
 
 
       gestureMode =
         "idle";
 
 
+      pinchStartDistance =
+        0;
+
+
       swipeActive =
         false;
 
+
+      /*
+       * PDFは指を離したときだけ
+       * 高画質再描画。
+       */
 
       if (pdf) {
 
@@ -2392,20 +2523,27 @@ stage.addEventListener(
 
     if (
       gestureMode ===
-      "pan"
+        "pan"
     ) {
 
+      if (
+        activePointers.size ===
+        0
+      ) {
+
+        gestureMode =
+          "idle";
+
+
+        swipeActive =
+          false;
+
+      }
+
+
       /*
-       * パン位置を維持。
+       * panX / panY はそのまま。
        */
-
-      gestureMode =
-        "idle";
-
-
-      swipeActive =
-        false;
-
 
       return;
 
@@ -2414,13 +2552,13 @@ stage.addEventListener(
 
     /*
      * =====================================================
-     * SWIPE
+     * PAGE
      * =====================================================
      */
 
     if (
       gestureMode !==
-      "swipe"
+        "page"
     ) {
 
       return;
@@ -2432,23 +2570,24 @@ stage.addEventListener(
       false;
 
 
-    const touch =
-      event.changedTouches[0];
+    if (
+      activePointers.size > 0
+    ) {
+
+      return;
+
+    }
 
 
     const dx =
-      touch.clientX -
+      event.clientX -
       swipeStartX;
 
 
     const dy =
-      touch.clientY -
+      event.clientY -
       swipeStartY;
 
-
-    /*
-     * 横方向か。
-     */
 
     const horizontal =
       Math.abs(dx) >
@@ -2456,17 +2595,13 @@ stage.addEventListener(
       SWIPE_AXIS_RATIO;
 
 
-    /*
-     * 最低距離。
-     */
-
     const enough =
       Math.abs(dx) >=
       SWIPE_MIN_DISTANCE;
 
 
     /*
-     * 明確なスワイプでない。
+     * ページ送り条件を満たさない。
      */
 
     if (
@@ -2475,7 +2610,7 @@ stage.addEventListener(
       !swipeDirection
     ) {
 
-      cancelSwipe();
+      cancelPointerSwipe();
 
       return;
 
@@ -2483,12 +2618,11 @@ stage.addEventListener(
 
 
     /*
-     * 次ページの準備が終わっていなければ
-     * 最大1.5秒待つ。
+     * incomingがまだ準備中なら待つ。
      */
 
     if (
-      !incomingReady
+      !swipePrepared
     ) {
 
       const started =
@@ -2496,7 +2630,7 @@ stage.addEventListener(
 
 
       while (
-        !incomingReady &&
+        !swipePrepared &&
         performance.now() -
           started <
           1500
@@ -2510,69 +2644,87 @@ stage.addEventListener(
 
 
     if (
-      !incomingReady
+      !swipePrepared
     ) {
 
-      cancelSwipe();
+      cancelPointerSwipe();
 
       return;
 
     }
 
 
-    /*
-     * ページ確定。
-     */
-
-    await finishSwipe();
-
-  },
-  {
-    passive: true
-  }
-);
+    swipeDirection =
+      swipeDirection;
 
 
-/* =========================================================
-   Touch CANCEL
-   ========================================================= */
-
-stage.addEventListener(
-  "touchcancel",
-  () => {
-
-    swipeActive =
-      false;
-
-
-    pinchStartDistance =
-      0;
+    swipePrepared =
+      true;
 
 
     gestureMode =
       "idle";
 
 
-    swipeDirection =
-      0;
-
-
-    swipeCurrentX =
-      0;
-
-
-    swipeCurrentY =
-      0;
-
-
-    hideIncoming();
-
-
-    applyViewTransform();
+    await finishSwipe();
 
   },
   {
-    passive: true
+    passive:
+      false
+  }
+);
+
+
+/* =========================================================
+   POINTER CANCEL
+   ========================================================= */
+
+stage.addEventListener(
+  "pointercancel",
+  event => {
+
+    activePointers.delete(
+      event.pointerId
+    );
+
+
+    if (
+      activePointers.size ===
+      0
+    ) {
+
+      swipeActive =
+        false;
+
+
+      swipeDirection =
+        0;
+
+
+      swipePrepared =
+        false;
+
+
+      gestureMode =
+        "idle";
+
+
+      pinchStartDistance =
+        0;
+
+
+      hideIncoming();
+
+
+      applyViewTransform();
+
+    }
+
+  },
+  {
+    passive:
+      false
   }
 );
 
@@ -2581,29 +2733,41 @@ stage.addEventListener(
    Cancel swipe
    ========================================================= */
 
-function cancelSwipe() {
-
-  /*
-   * ページ送りをキャンセルしても
-   * zoom / panは変更しない。
-   */
+function cancelPointerSwipe() {
 
   hideIncoming();
 
 
+  /*
+   * 現在ページの位置・倍率は
+   * 勝手に変更しない。
+   */
+
   applyViewTransform();
-
-
-  swipeDirection =
-    0;
 
 
   swipeActive =
     false;
 
 
+  swipeDirection =
+    0;
+
+
+  swipePrepared =
+    false;
+
+
   gestureMode =
     "idle";
+
+
+  swipeLastX =
+    0;
+
+
+  swipeLastY =
+    0;
 
 }
 
@@ -2637,7 +2801,7 @@ async function finishSwipe() {
     target > getPageCount()
   ) {
 
-    cancelSwipe();
+    cancelPointerSwipe();
 
     return;
 
@@ -2658,15 +2822,15 @@ async function finishSwipe() {
 
 
     currentSlide.style.transition =
-      "transform .22s cubic-bezier(.22,.61,.36,1)";
+      "transform .24s cubic-bezier(.22,.61,.36,1)";
 
 
     incomingSlide.style.transition =
-      "transform .22s cubic-bezier(.22,.61,.36,1)";
+      "transform .24s cubic-bezier(.22,.61,.36,1)";
 
 
     /*
-     * 現在ページを画面外へ。
+     * 現在ページを完全に画面外へ。
      */
 
     currentSlide.style.transform =
@@ -2696,7 +2860,7 @@ async function finishSwipe() {
     );
 
 
-    await wait(230);
+    await wait(250);
 
 
     currentPage =
@@ -2714,6 +2878,10 @@ async function finishSwipe() {
 
     swipeDirection =
       0;
+
+
+    swipePrepared =
+      false;
 
 
     swipeActive =
@@ -2806,7 +2974,7 @@ async function commitIncoming() {
 
 
   /*
-   * incomingの論理サイズ。
+   * 新ページのサイズ。
    */
 
   pageWidth =
@@ -2829,17 +2997,12 @@ async function commitIncoming() {
 
 
   /*
-   * 新しいページに入ったので
-   * パンだけリセット。
+   * 新ページに移動したときだけ
+   * 中央へ戻す。
    */
 
   resetPan();
 
-
-  /*
-   * ページ送り後は
-   * zoomは1に戻す。
-   */
 
   zoom =
     1;
@@ -2858,6 +3021,7 @@ async function commitIncoming() {
   resizeAnnotationCanvas(
 
     pageWidth,
+
     pageHeight
 
   );
@@ -2872,7 +3036,7 @@ async function commitIncoming() {
 
 
 /* =========================================================
-   PDF high quality redraw
+   PDF high quality
    ========================================================= */
 
 async function rerenderCurrentPdf() {
@@ -2892,10 +3056,6 @@ async function rerenderCurrentPdf() {
     getDpr();
 
 
-  /*
-   * 基準サイズ。
-   */
-
   const cssViewport =
     page.getViewport({
 
@@ -2904,10 +3064,6 @@ async function rerenderCurrentPdf() {
 
     });
 
-
-  /*
-   * 実Canvas。
-   */
 
   const renderViewport =
     page.getViewport({
@@ -2944,7 +3100,8 @@ async function rerenderCurrentPdf() {
     currentPdfCanvas.getContext(
       "2d",
       {
-        alpha: false
+        alpha:
+          false
       }
     );
 
@@ -2991,6 +3148,7 @@ async function rerenderCurrentPdf() {
     currentSlide,
 
     pageWidth,
+
     pageHeight
 
   );
@@ -3005,6 +3163,7 @@ async function rerenderCurrentPdf() {
   resizeAnnotationCanvas(
 
     pageWidth,
+
     pageHeight
 
   );
@@ -3016,7 +3175,7 @@ async function rerenderCurrentPdf() {
 
 
 /* =========================================================
-   Button page navigation
+   Page buttons
    ========================================================= */
 
 async function goToPage(
@@ -3081,11 +3240,11 @@ async function goToPage(
 
 
     currentSlide.style.transition =
-      "transform .22s cubic-bezier(.22,.61,.36,1)";
+      "transform .24s cubic-bezier(.22,.61,.36,1)";
 
 
     incomingSlide.style.transition =
-      "transform .22s cubic-bezier(.22,.61,.36,1)";
+      "transform .24s cubic-bezier(.22,.61,.36,1)";
 
 
     currentSlide.style.transform =
@@ -3111,7 +3270,7 @@ async function goToPage(
     );
 
 
-    await wait(230);
+    await wait(250);
 
 
     currentPage =
@@ -3130,10 +3289,6 @@ async function goToPage(
 
 }
 
-
-/* =========================================================
-   Page buttons
-   ========================================================= */
 
 if (firstButton) {
 
@@ -3230,6 +3385,7 @@ if (zoomOutButton) {
       ) {
 
         resetPan();
+
 
         applyViewTransform();
 
@@ -3472,11 +3628,11 @@ function updateMode() {
 
 
 function setMode(
-  value
+  mode
 ) {
 
   viewerMode =
-    value;
+    mode;
 
 
   drawing =
@@ -3503,8 +3659,7 @@ if (penButton) {
     () =>
       setMode(
 
-        viewerMode ===
-        "pen"
+        viewerMode === "pen"
           ? "move"
           : "pen"
 
@@ -3889,10 +4044,8 @@ annotationCanvas.addEventListener(
   event => {
 
     if (
-      viewerMode !==
-        "pen" &&
-      viewerMode !==
-        "eraser"
+      viewerMode !== "pen" &&
+      viewerMode !== "eraser"
     ) {
 
       return;
@@ -4066,7 +4219,7 @@ annotationCanvas.addEventListener(
 
 
 /* =========================================================
-   Annotation DB
+   Annotation
    ========================================================= */
 
 async function saveAnnotation() {
