@@ -51,49 +51,55 @@ const createButton =
    Logout
    ========================================================= */
 
-document.getElementById(
-  "logout"
-).onclick =
-  event => {
+document
+  .getElementById("logout")
+  .addEventListener(
+    "click",
+    event => {
 
-    event.preventDefault();
+      event.preventDefault();
 
-    logout();
+      logout();
 
-  };
+    }
+  );
 
 
 /* =========================================================
    Form
    ========================================================= */
 
-document.getElementById(
-  "showForm"
-).onclick =
-  () => {
+document
+  .getElementById("showForm")
+  .addEventListener(
+    "click",
+    () => {
 
-    formCard.classList.remove(
-      "hidden"
-    );
+      formCard.classList.remove(
+        "hidden"
+      );
 
-    message.textContent =
-      "";
+      message.textContent =
+        "";
 
-  };
+    }
+  );
 
 
-document.getElementById(
-  "cancel"
-).onclick =
-  () => {
+document
+  .getElementById("cancel")
+  .addEventListener(
+    "click",
+    () => {
 
-    formCard.classList.add(
-      "hidden"
-    );
+      clearForm();
 
-    clearForm();
+      formCard.classList.add(
+        "hidden"
+      );
 
-  };
+    }
+  );
 
 
 fileInput.addEventListener(
@@ -129,7 +135,6 @@ function previewFiles() {
           "div"
         );
 
-
       item.className =
         "file-preview-item";
 
@@ -139,15 +144,11 @@ function previewFiles() {
           "div"
         );
 
-
       number.className =
         "file-preview-number";
 
-
       number.textContent =
-        String(
-          index + 1
-        );
+        index + 1;
 
 
       item.appendChild(
@@ -156,16 +157,14 @@ function previewFiles() {
 
 
       if (
-        file.type.startsWith(
-          "image/"
-        )
+        /\.(jpg|jpeg|png)$/i
+          .test(file.name)
       ) {
 
         const image =
           document.createElement(
             "img"
           );
-
 
         const url =
           URL.createObjectURL(
@@ -178,10 +177,13 @@ function previewFiles() {
 
 
         image.onload =
-          () =>
+          () => {
+
             URL.revokeObjectURL(
               url
             );
+
+          };
 
 
         item.appendChild(
@@ -196,10 +198,8 @@ function previewFiles() {
             "div"
           );
 
-
         pdf.className =
           "file-preview-pdf";
-
 
         pdf.textContent =
           "PDF";
@@ -285,13 +285,11 @@ function classifyFiles(
     );
 
 
-  const supported =
-    files.length ===
+  if (
     pdfFiles.length +
-    imageFiles.length;
-
-
-  if (!supported) {
+    imageFiles.length !==
+    files.length
+  ) {
 
     throw new Error(
       "PDF、JPG、JPEG、PNGのみ登録できます。"
@@ -324,18 +322,15 @@ function classifyFiles(
 
 
   return {
-
     pdfFiles,
-
     imageFiles
-
   };
 
 }
 
 
 /* =========================================================
-   Upload
+   Storage Upload
    ========================================================= */
 
 async function uploadFile(
@@ -353,33 +348,37 @@ async function uploadFile(
     `books/${crypto.randomUUID()}.${extension}`;
 
 
+  const contentType =
+    file.type ||
+    (
+      extension === "pdf"
+        ? "application/pdf"
+        : extension === "jpg" ||
+          extension === "jpeg"
+          ? "image/jpeg"
+          : "image/png"
+    );
+
+
   const {
     error
   } =
-  await supabase.storage
-    .from("web-viewer")
-    .upload(
-      path,
-      file,
-      {
-        upsert:
-          false,
-
-        contentType:
-          file.type ||
-          (
-            extension === "pdf"
-              ? "application/pdf"
-              : `image/${extension === "jpg" ? "jpeg" : extension}`
-          )
-      }
-    );
+    await supabase.storage
+      .from("web-viewer")
+      .upload(
+        path,
+        file,
+        {
+          upsert: false,
+          contentType
+        }
+      );
 
 
   if (error) {
 
     throw new Error(
-      "教材ファイルのアップロードに失敗しました: " +
+      "ファイルのアップロードに失敗しました: " +
       error.message
     );
 
@@ -407,15 +406,17 @@ async function createBook() {
 
 
   const title =
-    document.getElementById(
-      "title"
-    ).value.trim();
+    document
+      .getElementById("title")
+      .value
+      .trim();
 
 
   const description =
-    document.getElementById(
-      "description"
-    ).value.trim();
+    document
+      .getElementById("description")
+      .value
+      .trim();
 
 
   const files =
@@ -462,7 +463,6 @@ async function createBook() {
   const uploadedPaths =
     [];
 
-
   let createdBookId =
     null;
 
@@ -470,9 +470,14 @@ async function createBook() {
   try {
 
     /*
-     * ---------------------------------------
+     * =====================================================
      * PDF
-     * ---------------------------------------
+     * =====================================================
+     *
+     * PDFはPDFそのものを保存する。
+     * book_pagesは不要。
+     *
+     * Viewer側でPDF.jsを使用する。
      */
 
     if (
@@ -501,11 +506,6 @@ async function createBook() {
       message.textContent =
         "Bookを登録しています。";
 
-
-      /*
-       * DBに存在する基本列だけを使用。
-       * created_byなどを勝手に送らない。
-       */
 
       const {
         data,
@@ -549,9 +549,9 @@ async function createBook() {
 
 
     /*
-     * ---------------------------------------
-     * 画像Book
-     * ---------------------------------------
+     * =====================================================
+     * 複数画像
+     * =====================================================
      */
 
     else {
@@ -604,18 +604,20 @@ async function createBook() {
 
 
       for (
-        let i = 0;
-        i <
+        let index = 0;
+        index <
         classified.imageFiles.length;
-        i++
+        index++
       ) {
 
         const file =
-          classified.imageFiles[i];
+          classified.imageFiles[
+            index
+          ];
 
 
         message.textContent =
-          `画像 ${i + 1} / ${classified.imageFiles.length} をアップロードしています。`;
+          `画像 ${index + 1} / ${classified.imageFiles.length} をアップロードしています。`;
 
 
         const path =
@@ -642,7 +644,7 @@ async function createBook() {
             createdBookId,
 
           page_number:
-            i + 1,
+            index + 1,
 
           file_path:
             path,
@@ -673,7 +675,7 @@ async function createBook() {
       if (pageError) {
 
         throw new Error(
-          "Bookページの登録に失敗しました: " +
+          "ページ登録に失敗しました: " +
           pageError.message
         );
 
@@ -682,20 +684,16 @@ async function createBook() {
     }
 
 
-    /*
-     * 完了
-     */
-
-    message.textContent =
-      "Bookを登録しました。";
-
-
     clearForm();
 
 
     formCard.classList.add(
       "hidden"
     );
+
+
+    message.textContent =
+      "Bookを登録しました。";
 
 
     await loadBooks();
@@ -710,7 +708,7 @@ async function createBook() {
 
 
     /*
-     * Storageの途中ファイルを削除
+     * Storage cleanup
      */
 
     if (
@@ -731,7 +729,6 @@ async function createBook() {
       ) {
 
         console.warn(
-          "STORAGE CLEANUP ERROR:",
           cleanupError
         );
 
@@ -741,7 +738,7 @@ async function createBook() {
 
 
     /*
-     * DB側にBookだけ残った場合
+     * Book cleanup
      */
 
     if (
@@ -764,7 +761,6 @@ async function createBook() {
       ) {
 
         console.warn(
-          "BOOK CLEANUP ERROR:",
           cleanupError
         );
 
@@ -772,10 +768,6 @@ async function createBook() {
 
     }
 
-
-    /*
-     * 今回は原因を隠さない。
-     */
 
     message.textContent =
       error.message ||
@@ -793,7 +785,7 @@ async function createBook() {
 
 
 /* =========================================================
-   一覧
+   Book一覧
    ========================================================= */
 
 async function loadBooks() {
@@ -823,16 +815,13 @@ async function loadBooks() {
     .order(
       "created_at",
       {
-        ascending:
-          false
+        ascending: false
       }
     );
 
 
   if (error) {
-
     throw error;
-
   }
 
 
@@ -852,65 +841,76 @@ async function loadBooks() {
 
   booksContainer.innerHTML =
     data.map(
-      book => `
+      book => {
 
-      <article
-        class="book-admin-item">
-
-        <div
-          class="book-admin-main">
-
-          <div
-            class="book-admin-title">
-
-            ${escapeHtml(
-              book.title
-            )}
-
-          </div>
+        const type =
+          String(
+            book.file_type || ""
+          ).toLowerCase();
 
 
-          <div
-            class="book-admin-description">
-
-            ${escapeHtml(
-              book.description || ""
-            )}
-
-          </div>
+        const typeLabel =
+          type === "pdf"
+            ? "PDF"
+            : "画像";
 
 
-          <div
-            class="book-admin-type">
-
-            ${
-              String(
-                book.file_type || ""
-              ).toLowerCase() ===
-              "images"
-                ? "画像Book"
-                : "PDF Book"
-            }
-
-          </div>
-
-        </div>
+        const status =
+          book.enabled === false
+            ? "停止"
+            : "公開";
 
 
-        <div
-          class="book-admin-status">
+        return `
 
-          ${
-            book.enabled === false
-              ? "停止"
-              : "公開"
-          }
+          <article
+            class="book-admin-item">
 
-        </div>
+            <div
+              class="book-admin-main">
 
-      </article>
+              <div
+                class="book-admin-title">
 
-      `
+                ${escapeHtml(
+                  book.title
+                )}
+
+              </div>
+
+
+              <div
+                class="book-admin-description">
+
+                ${escapeHtml(
+                  book.description || ""
+                )}
+
+              </div>
+
+
+              <div
+                class="book-admin-type">
+
+                ${typeLabel}
+
+              </div>
+
+            </div>
+
+
+            <div
+              class="book-admin-status">
+
+              ${status}
+
+            </div>
+
+          </article>
+
+        `;
+
+      }
     ).join("");
 
 }
