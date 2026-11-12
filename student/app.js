@@ -12,12 +12,18 @@ from "../assets/js/supabase.js";
 
 
 const app =
-  document.getElementById("app");
+  document.getElementById(
+    "app"
+  );
 
 
-function escapeHtml(value) {
+function escapeHtml(
+  value
+) {
 
-  return String(value || "")
+  return String(
+    value || ""
+  )
     .replace(
       /&/g,
       "&amp;"
@@ -42,33 +48,7 @@ function escapeHtml(value) {
 }
 
 
-async function start() {
-
-  const student =
-    await requireStudent();
-
-
-  if (!student) {
-    return;
-  }
-
-
-  const params =
-    new URLSearchParams(
-      location.search
-    );
-
-
-  const maintenance =
-    params.get(
-      "maintenance"
-    );
-
-
-  /*
-   * URLにmaintenance=1が付いている場合
-   * DBも再確認する
-   */
+async function getMaintenance() {
 
   const {
     data,
@@ -93,26 +73,15 @@ async function start() {
   }
 
 
-  if (
-    maintenance === "1" ||
-    data?.enabled
-  ) {
+  return data || {
 
-    showMaintenance(
-      data?.message || ""
-    );
+    enabled:
+      false,
 
-    return;
-  }
+    message:
+      ""
 
-
-  /*
-   * 通常時はMy Booksへ
-   */
-
-  location.replace(
-    "./books/"
-  );
+  };
 
 }
 
@@ -127,35 +96,28 @@ function showMaintenance(
 
       <section class="maintenance-card">
 
-        <div class="maintenance-icon">
-
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true">
-
-            <path
-              d="M14.7 6.3a5 5 0 0 0-6.36 6.36L3.5 17.5a1.75 1.75 0 1 0 2.47 2.47l4.84-4.84A5 5 0 0 0 17.7 8.77l-3.18 3.18a2.5 2.5 0 1 1-3.54-3.54l3.18-3.18a5 5 0 0 0-1.46-.93Z">
-            </path>
-
-          </svg>
-
-        </div>
-
+        <img
+          class="maintenance-icon"
+          src="../assets/images/maintenance.png"
+          alt="">
 
         <div class="maintenance-logo">
           WEB-viewer
         </div>
 
-
         <h1>
           メンテナンス中です
         </h1>
 
-
-        <p>
-          ${escapeHtml(message)}
-        </p>
-
+        ${
+          message
+            ? `
+              <p class="maintenance-message">
+                ${escapeHtml(message)}
+              </p>
+            `
+            : ""
+        }
 
         <button
           id="logout"
@@ -187,48 +149,104 @@ function showMaintenance(
 }
 
 
-start()
-  .catch(
-    error => {
+async function start() {
 
-      console.error(
-        "STUDENT ERROR:",
-        error
-      );
+  /*
+   * ログイン・Student権限確認
+   */
+
+  const student =
+    await requireStudent();
 
 
-      app.innerHTML = `
+  if (!student) {
+    return;
+  }
 
-        <main class="maintenance-page">
 
-          <section class="maintenance-card">
+  /*
+   * メンテナンス状態確認
+   */
 
-            <div class="maintenance-logo">
-              WEB-viewer
-            </div>
+  const maintenance =
+    await getMaintenance();
 
-            <h1>
-              読み込みに失敗しました
-            </h1>
 
-            <p>
-              システムを確認してから
-              もう一度お試しください。
-            </p>
+  /*
+   * ONなら専用画面
+   */
 
-            <button
-              type="button"
-              onclick="location.reload()">
+  if (
+    maintenance.enabled
+  ) {
 
-              再読み込み
+    showMaintenance(
+      maintenance.message
+    );
 
-            </button>
+    return;
 
-          </section>
+  }
 
-        </main>
 
-      `;
+  /*
+   * OFFならMy Books
+   */
 
-    }
+  window.location.replace(
+    "./books/"
   );
+
+}
+
+
+start()
+.catch(
+  error => {
+
+    console.error(
+      "STUDENT START ERROR:",
+      error
+    );
+
+
+    app.innerHTML = `
+
+      <main class="maintenance-page">
+
+        <section class="maintenance-card">
+
+          <img
+            class="maintenance-icon"
+            src="../assets/images/maintenance.png"
+            alt="">
+
+          <div class="maintenance-logo">
+            WEB-viewer
+          </div>
+
+          <h1>
+            読み込みに失敗しました
+          </h1>
+
+          <p class="maintenance-message">
+            システムを確認してから、もう一度お試しください。
+          </p>
+
+          <button
+            type="button"
+            class="maintenance-retry"
+            onclick="location.reload()">
+
+            再読み込み
+
+          </button>
+
+        </section>
+
+      </main>
+
+    `;
+
+  }
+);
