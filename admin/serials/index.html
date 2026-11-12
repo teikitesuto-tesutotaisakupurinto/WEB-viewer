@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -7,7 +8,7 @@
 
 <meta
   name="viewport"
-  content="width=device-width, initial-scale=1">
+  content="width=device-width,initial-scale=1">
 
 <title>シリアル管理</title>
 
@@ -19,10 +20,6 @@
   rel="stylesheet"
   href="../style.css">
 
-<link
-  rel="stylesheet"
-  href="style.css">
-
 </head>
 
 <body>
@@ -31,15 +28,12 @@
 
 <div class="admin-brand">
 
-<div>
-WEB-viewer
-</div>
+<div>WEB-viewer</div>
 
-<small>
-管理システム
-</small>
+<small>管理システム</small>
 
 </div>
+
 
 <nav>
 
@@ -58,7 +52,7 @@ Book管理
 </a>
 
 <a href="../students/">
-Student管理
+生徒管理
 </a>
 
 <a href="../materials/">
@@ -88,13 +82,9 @@ B4資料
 
 <header class="admin-notice">
 
-<div>
-お知らせ
-</div>
+<div>お知らせ</div>
 
-<span>
-シリアル管理
-</span>
+<span>シリアル管理</span>
 
 </header>
 
@@ -110,7 +100,7 @@ B4資料
 </h1>
 
 <p>
-Studentごとに固有シリアルを一括発行
+生徒ごとの教材シリアルを一括発行
 </p>
 
 </div>
@@ -121,7 +111,7 @@ Studentごとに固有シリアルを一括発行
 <section class="admin-card">
 
 <h2>
-一括発行
+シリアル発行
 </h2>
 
 
@@ -130,21 +120,26 @@ Studentごとに固有シリアルを一括発行
 Book
 
 <select id="book">
+
 <option value="">
 Bookを選択してください
 </option>
+
 </select>
 
 </label>
 
 
-<label class="check-label">
+<label
+  class="student-row">
 
 <input
   id="selectAll"
   type="checkbox">
 
-全Studentを選択
+<span>
+全生徒を選択
+</span>
 
 </label>
 
@@ -152,6 +147,10 @@ Bookを選択してください
 <div
   id="students"
   class="student-list">
+
+<div class="list-row">
+読み込んでいます。
+</div>
 
 </div>
 
@@ -190,7 +189,7 @@ Bookを選択してください
   class="serial-list">
 
 <div class="list-row">
-読み込み中です。
+読み込んでいます。
 </div>
 
 </div>
@@ -204,7 +203,7 @@ Bookを選択してください
 
 <script
   type="module"
-  src="app.js">
+  src="app.js?v=admin-serials-final">
 </script>
 
 </body>
