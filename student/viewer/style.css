@@ -84,12 +84,14 @@ body {
 .viewer-page-controls {
   display: flex;
   align-items: center;
+
   gap: 4px;
 }
 
 .viewer-tools {
   display: flex;
   align-items: center;
+
   gap: 4px;
 }
 
@@ -200,11 +202,12 @@ body {
   background: #fff;
 
   border: 1px solid #ccc;
+
   border-radius: 10px;
 
   box-shadow:
     0 10px 30px
-    rgba(0, 0, 0, .22);
+    rgba(0,0,0,.22);
 }
 
 .mobile-menu button {
@@ -245,9 +248,13 @@ body {
 
   background: #555;
 
+  /*
+   * ブラウザにジェスチャーを奪わせない。
+   */
   touch-action: none;
 
-  overscroll-behavior: contain;
+  overscroll-behavior:
+    contain;
 
   user-select: none;
 
@@ -256,7 +263,7 @@ body {
 
 
 /* =========================================================
-   Slide viewport
+   Slide
    ========================================================= */
 
 .slide-viewport {
@@ -273,11 +280,6 @@ body {
   justify-content: center;
 }
 
-
-/* =========================================================
-   Page
-   ========================================================= */
-
 .page-slide {
   position: absolute;
 
@@ -293,24 +295,33 @@ body {
 
   box-shadow:
     0 7px 28px
-    rgba(0, 0, 0, .28);
+    rgba(0,0,0,.28);
 
-  transform-origin: center center;
+  transform-origin:
+    center center;
 
-  will-change: transform;
+  will-change:
+    transform;
 
-  backface-visibility: hidden;
+  backface-visibility:
+    hidden;
 
-  -webkit-backface-visibility: hidden;
+  -webkit-backface-visibility:
+    hidden;
 
-  contain: layout paint;
+  contain:
+    layout paint;
 }
 
 .current-slide {
   z-index: 10;
 
   transform:
-    translate3d(-50%, -50%, 0)
+    translate3d(
+      -50%,
+      -50%,
+      0
+    )
     scale(1);
 }
 
@@ -320,7 +331,11 @@ body {
   display: none;
 
   transform:
-    translate3d(-50%, -50%, 0)
+    translate3d(
+      -50%,
+      -50%,
+      0
+    )
     scale(1);
 }
 
@@ -358,8 +373,6 @@ body {
   background: #fff;
 
   vertical-align: top;
-
-  object-fit: fill;
 
   pointer-events: none;
 
@@ -399,8 +412,7 @@ body.pen-enabled
 
 
 /* =========================================================
-   Loading overlay
-   PDF.js本家風の中央ローダー
+   Loading
    ========================================================= */
 
 .loading-overlay {
@@ -416,7 +428,7 @@ body.pen-enabled
   justify-content: center;
 
   background:
-    rgba(35, 35, 35, .72);
+    rgba(35,35,35,.72);
 
   pointer-events: all;
 }
@@ -424,11 +436,6 @@ body.pen-enabled
 .loading-overlay.hidden {
   display: none !important;
 }
-
-
-/*
- * 中央の円形ポワポワ。
- */
 
 .loading-orbit {
   position: relative;
@@ -458,22 +465,15 @@ body.pen-enabled
 
   opacity: .18;
 
-  transform-origin:
-    4px 4px;
-
   animation:
     loading-pulse 1.1s ease-in-out infinite;
 }
-
-
-/*
- * 8個を円周上に配置。
- */
 
 .loading-orbit span:nth-child(1) {
   transform:
     rotate(0deg)
     translateY(-25px);
+
   animation-delay:
     0s;
 }
@@ -482,6 +482,7 @@ body.pen-enabled
   transform:
     rotate(45deg)
     translateY(-25px);
+
   animation-delay:
     .1375s;
 }
@@ -490,6 +491,7 @@ body.pen-enabled
   transform:
     rotate(90deg)
     translateY(-25px);
+
   animation-delay:
     .275s;
 }
@@ -498,6 +500,7 @@ body.pen-enabled
   transform:
     rotate(135deg)
     translateY(-25px);
+
   animation-delay:
     .4125s;
 }
@@ -506,6 +509,7 @@ body.pen-enabled
   transform:
     rotate(180deg)
     translateY(-25px);
+
   animation-delay:
     .55s;
 }
@@ -514,6 +518,7 @@ body.pen-enabled
   transform:
     rotate(225deg)
     translateY(-25px);
+
   animation-delay:
     .6875s;
 }
@@ -522,6 +527,7 @@ body.pen-enabled
   transform:
     rotate(270deg)
     translateY(-25px);
+
   animation-delay:
     .825s;
 }
@@ -530,10 +536,10 @@ body.pen-enabled
   transform:
     rotate(315deg)
     translateY(-25px);
+
   animation-delay:
     .9625s;
 }
-
 
 @keyframes loading-spin {
 
@@ -549,7 +555,6 @@ body.pen-enabled
 
 }
 
-
 @keyframes loading-pulse {
 
   0%,
@@ -557,8 +562,6 @@ body.pen-enabled
     opacity: .15;
 
     transform:
-      rotate(0deg)
-      translateY(-25px)
       scale(.72);
   }
 
@@ -566,8 +569,6 @@ body.pen-enabled
     opacity: 1;
 
     transform:
-      rotate(0deg)
-      translateY(-25px)
       scale(1);
   }
 
@@ -575,7 +576,7 @@ body.pen-enabled
 
 
 /* =========================================================
-   Error / Message
+   Message
    ========================================================= */
 
 .viewer-message {
@@ -602,7 +603,7 @@ body.pen-enabled
 
   box-shadow:
     0 5px 20px
-    rgba(0, 0, 0, .2);
+    rgba(0,0,0,.2);
 
   font-size: 13px;
 
@@ -615,7 +616,7 @@ body.pen-enabled
 
 
 /* =========================================================
-   Desktop drag
+   Desktop
    ========================================================= */
 
 .viewer-stage.dragging {
@@ -667,26 +668,8 @@ body.pen-enabled
 
   #page {
     min-width: 52px;
+
     font-size: 11px;
-  }
-
-}
-
-
-/* =========================================================
-   Reduced motion
-   ========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-  .loading-orbit {
-    animation-duration:
-      2.5s;
-  }
-
-  .loading-orbit span {
-    animation-duration:
-      2s;
   }
 
 }
