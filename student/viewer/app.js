@@ -14,7 +14,7 @@ import {
 
 const params =
   new URLSearchParams(
-    window.location.search
+    location.search
   );
 
 const bookId =
@@ -23,7 +23,7 @@ const bookId =
 
 if (!bookId) {
 
-  window.location.replace(
+  location.replace(
     "/errors/?type=404"
   );
 
@@ -39,32 +39,53 @@ if (!bookId) {
    ========================================================= */
 
 const titleElement =
-  document.getElementById("title");
+  document.getElementById(
+    "title"
+  );
 
 const pageElement =
-  document.getElementById("page");
+  document.getElementById(
+    "page"
+  );
 
 const stage =
-  document.getElementById("stage");
-
-const pageContainer =
   document.getElementById(
-    "pageContainer"
+    "stage"
   );
 
-const pdfCanvas =
+const currentSlide =
   document.getElementById(
-    "pdfCanvas"
+    "currentSlide"
   );
 
-const imagePage =
+const incomingSlide =
   document.getElementById(
-    "imagePage"
+    "incomingSlide"
+  );
+
+const currentPdfCanvas =
+  document.getElementById(
+    "currentPdfCanvas"
+  );
+
+const incomingPdfCanvas =
+  document.getElementById(
+    "incomingPdfCanvas"
+  );
+
+const currentImage =
+  document.getElementById(
+    "currentImage"
+  );
+
+const incomingImage =
+  document.getElementById(
+    "incomingImage"
   );
 
 const annotationCanvas =
   document.getElementById(
-    "annotationCanvas"
+    "currentAnnotation"
   );
 
 const viewerMessage =
@@ -82,14 +103,14 @@ const mobileMenu =
     "mobileMenu"
   );
 
-const penButton =
-  document.getElementById(
-    "pen"
-  );
-
 const moveButton =
   document.getElementById(
     "move"
+  );
+
+const penButton =
+  document.getElementById(
+    "pen"
   );
 
 
@@ -113,25 +134,39 @@ let zoom = 1;
 
 let mode = "move";
 
+let pageWidth = 0;
+
+let pageHeight = 0;
+
+let pageChanging = false;
+
+let swipeActive = false;
+
+let swipeDirection = 0;
+
+let swipeStartX = 0;
+
+let swipeStartY = 0;
+
+let swipeDeltaX = 0;
+
+let swipeStartTime = 0;
+
+let pinchDistance = null;
+
+let pinchStartZoom = 1;
+
 let drawing = false;
 
 let lastX = 0;
 
 let lastY = 0;
 
-let touchStartX = null;
-
-let touchStartY = null;
-
-let touchStartTime = 0;
-
-let pinchDistance = null;
-
-let pinchStartZoom = 1;
+let animationFrame = 0;
 
 let renderToken = 0;
 
-let pageChanging = false;
+let pdfRenderScale = 1;
 
 const imageCache =
   new Map();
@@ -145,14 +180,8 @@ function showMessage(
   text
 ) {
 
-  if (!viewerMessage) {
-    return;
-  }
-
-
   viewerMessage.textContent =
     text;
-
 
   viewerMessage.classList.remove(
     "hidden"
@@ -163,14 +192,8 @@ function showMessage(
 
 function hideMessage() {
 
-  if (!viewerMessage) {
-    return;
-  }
-
-
   viewerMessage.textContent =
     "";
-
 
   viewerMessage.classList.add(
     "hidden"
@@ -211,7 +234,6 @@ async function getSignedUrl(
   if (error) {
 
     console.error(
-      "STORAGE URL ERROR:",
       error
     );
 
@@ -222,9 +244,7 @@ async function getSignedUrl(
   }
 
 
-  if (
-    !data?.signedUrl
-  ) {
+  if (!data?.signedUrl) {
 
     throw new Error(
       "教材ファイルのURLを取得できませんでした。"
@@ -267,11 +287,6 @@ async function loadBook() {
 
   if (error) {
 
-    console.error(
-      "BOOK LOAD ERROR:",
-      error
-    );
-
     throw new Error(
       "Bookを取得できませんでした。"
     );
@@ -281,7 +296,7 @@ async function loadBook() {
 
   if (!data) {
 
-    window.location.replace(
+    location.replace(
       "/errors/?type=404"
     );
 
@@ -294,7 +309,7 @@ async function loadBook() {
     data.enabled === false
   ) {
 
-    window.location.replace(
+    location.replace(
       "/errors/?type=book-forbidden"
     );
 
@@ -307,12 +322,8 @@ async function loadBook() {
     data;
 
 
-  if (titleElement) {
-
-    titleElement.textContent =
-      book.title || "";
-
-  }
+  titleElement.textContent =
+    book.title || "";
 
 
   return true;
@@ -345,7 +356,7 @@ function isPdfBook() {
 
 
 /* =========================================================
-   PDF.js ローカル読み込み
+   PDF.js
    ========================================================= */
 
 async function loadPdfJs() {
@@ -354,15 +365,6 @@ async function loadPdfJs() {
     return pdfjs;
   }
 
-
-  /*
-   * 外部CDNは使用しない。
-   *
-   * プロジェクト内:
-   *
-   * assets/pdfjs/pdf.mjs
-   * assets/pdfjs/pdf.worker.mjs
-   */
 
   try {
 
@@ -398,10 +400,6 @@ async function loadPdfJs() {
   }
 
 
-  /*
-   * Workerもプロジェクト内。
-   */
-
   pdfjs.GlobalWorkerOptions.workerSrc =
     new URL(
       "../../assets/pdfjs/pdf.worker.mjs",
@@ -415,19 +413,10 @@ async function loadPdfJs() {
 
 
 /* =========================================================
-   PDF読み込み
+   PDF
    ========================================================= */
 
 async function loadPdf() {
-
-  if (!book?.file_path) {
-
-    throw new Error(
-      "PDFファイルが登録されていません。"
-    );
-
-  }
-
 
   showMessage(
     "PDFを読み込んでいます。"
@@ -444,38 +433,14 @@ async function loadPdf() {
     );
 
 
-  let loadingTask;
-
-
-  try {
-
-    loadingTask =
-      library.getDocument({
-
+  pdf =
+    await library
+      .getDocument({
         url,
-
         withCredentials:
           false
-
-      });
-
-
-    pdf =
-      await loadingTask.promise;
-
-  }
-  catch (error) {
-
-    console.error(
-      "PDF DOCUMENT ERROR:",
-      error
-    );
-
-    throw new Error(
-      "PDFを読み込めませんでした。"
-    );
-
-  }
+      })
+      .promise;
 
 
   if (
@@ -496,7 +461,7 @@ async function loadPdf() {
 
 
 /* =========================================================
-   画像Book
+   Image Book
    ========================================================= */
 
 async function loadImagePages() {
@@ -519,17 +484,13 @@ async function loadImagePages() {
       .order(
         "page_number",
         {
-          ascending: true
+          ascending:
+            true
         }
       );
 
 
   if (error) {
-
-    console.error(
-      "BOOK PAGES ERROR:",
-      error
-    );
 
     throw new Error(
       "教材ページを取得できませんでした。"
@@ -542,14 +503,10 @@ async function loadImagePages() {
     (data || [])
       .filter(
         row =>
-          row &&
-          row.file_path
+          row?.file_path
       )
       .sort(
-        (
-          a,
-          b
-        ) =>
+        (a, b) =>
           Number(
             a.page_number
           ) -
@@ -571,29 +528,19 @@ async function loadImagePages() {
 
 
 /* =========================================================
-   ページ数
+   Page count
    ========================================================= */
 
 function getPageCount() {
 
-  if (pdf) {
-
-    return pdf.numPages;
-
-  }
-
-
-  return pages.length;
+  return pdf
+    ? pdf.numPages
+    : pages.length;
 
 }
 
 
 function updatePageLabel() {
-
-  if (!pageElement) {
-    return;
-  }
-
 
   pageElement.textContent =
     `${currentPage} / ${getPageCount()}`;
@@ -602,128 +549,41 @@ function updatePageLabel() {
 
 
 /* =========================================================
-   Annotation Canvas
+   PDF Page → Canvas
    ========================================================= */
 
-function resizeAnnotationCanvas(
-  width,
-  height
+async function renderPdfToCanvas(
+  canvas,
+  pageNumber
 ) {
-
-  annotationCanvas.width =
-    Math.max(
-      1,
-      Math.floor(width)
-    );
-
-
-  annotationCanvas.height =
-    Math.max(
-      1,
-      Math.floor(height)
-    );
-
-
-  annotationCanvas.style.width =
-    `${width}px`;
-
-
-  annotationCanvas.style.height =
-    `${height}px`;
-
-}
-
-
-/* =========================================================
-   PDFページ描画
-   ========================================================= */
-
-async function renderPdfPage() {
-
-  const token =
-    ++renderToken;
-
 
   const page =
     await pdf.getPage(
-      currentPage
+      pageNumber
     );
-
-
-  if (
-    token !== renderToken
-  ) {
-
-    return;
-
-  }
 
 
   const viewport =
     page.getViewport({
       scale:
-        zoom
+        pdfRenderScale
     });
 
 
-  const width =
-    Math.max(
-      1,
-      Math.floor(
-        viewport.width
-      )
+  canvas.width =
+    Math.ceil(
+      viewport.width
     );
 
 
-  const height =
-    Math.max(
-      1,
-      Math.floor(
-        viewport.height
-      )
+  canvas.height =
+    Math.ceil(
+      viewport.height
     );
-
-
-  pdfCanvas.width =
-    width;
-
-
-  pdfCanvas.height =
-    height;
-
-
-  pdfCanvas.style.width =
-    `${width}px`;
-
-
-  pdfCanvas.style.height =
-    `${height}px`;
-
-
-  pdfCanvas.style.display =
-    "block";
-
-
-  imagePage.style.display =
-    "none";
-
-
-  pageContainer.style.width =
-    `${width}px`;
-
-
-  pageContainer.style.height =
-    `${height}px`;
-
-
-  resizeAnnotationCanvas(
-    width,
-    height
-  );
 
 
   const context =
-    pdfCanvas.getContext(
+    canvas.getContext(
       "2d",
       {
         alpha: false
@@ -732,14 +592,14 @@ async function renderPdfPage() {
 
 
   context.fillStyle =
-    "#ffffff";
+    "#fff";
 
 
   context.fillRect(
     0,
     0,
-    width,
-    height
+    canvas.width,
+    canvas.height
   );
 
 
@@ -756,25 +616,21 @@ async function renderPdfPage() {
   }).promise;
 
 
-  if (
-    token !== renderToken
-  ) {
+  return {
 
-    return;
+    width:
+      viewport.width,
 
-  }
+    height:
+      viewport.height
 
-
-  updatePageLabel();
-
-
-  await loadAnnotation();
+  };
 
 }
 
 
 /* =========================================================
-   画像取得
+   Image取得
    ========================================================= */
 
 async function getImage(
@@ -794,13 +650,13 @@ async function getImage(
   }
 
 
-  const page =
+  const row =
     pages[
       pageNumber - 1
     ];
 
 
-  if (!page) {
+  if (!row) {
 
     throw new Error(
       "ページが見つかりません。"
@@ -811,7 +667,7 @@ async function getImage(
 
   const url =
     await getSignedUrl(
-      page.file_path
+      row.file_path
     );
 
 
@@ -835,7 +691,7 @@ async function getImage(
 
       if (
         image.complete &&
-        image.naturalWidth > 0
+        image.naturalWidth
       ) {
 
         resolve();
@@ -846,8 +702,7 @@ async function getImage(
 
 
       image.onload =
-        () =>
-          resolve();
+        resolve;
 
 
       image.onerror =
@@ -874,82 +729,93 @@ async function getImage(
 
 
 /* =========================================================
-   画像ページ描画
+   Slide contents
    ========================================================= */
 
-async function renderImagePage() {
+async function prepareCurrentPage() {
 
   const token =
     ++renderToken;
 
 
-  const image =
-    await getImage(
-      currentPage
-    );
+  currentPdfCanvas.style.display =
+    "none";
+
+  currentImage.style.display =
+    "none";
 
 
-  if (
-    token !== renderToken
-  ) {
+  if (pdf) {
 
-    return;
+    const size =
+      await renderPdfToCanvas(
+        currentPdfCanvas,
+        currentPage
+      );
+
+
+    if (
+      token !== renderToken
+    ) {
+
+      return;
+
+    }
+
+
+    pageWidth =
+      size.width;
+
+    pageHeight =
+      size.height;
+
+
+    currentPdfCanvas.style.display =
+      "block";
+
+  }
+  else {
+
+    const image =
+      await getImage(
+        currentPage
+      );
+
+
+    if (
+      token !== renderToken
+    ) {
+
+      return;
+
+    }
+
+
+    pageWidth =
+      image.naturalWidth;
+
+    pageHeight =
+      image.naturalHeight;
+
+
+    currentImage.src =
+      image.src;
+
+
+    currentImage.style.display =
+      "block";
 
   }
 
 
-  const width =
-    Math.max(
-      1,
-      Math.round(
-        image.naturalWidth *
-        zoom
-      )
-    );
-
-
-  const height =
-    Math.max(
-      1,
-      Math.round(
-        image.naturalHeight *
-        zoom
-      )
-    );
-
-
-  imagePage.src =
-    image.src;
-
-
-  imagePage.style.display =
-    "block";
-
-
-  imagePage.style.width =
-    `${width}px`;
-
-
-  imagePage.style.height =
-    `${height}px`;
-
-
-  pdfCanvas.style.display =
-    "none";
-
-
-  pageContainer.style.width =
-    `${width}px`;
-
-
-  pageContainer.style.height =
-    `${height}px`;
-
-
-  resizeAnnotationCanvas(
-    width,
-    height
+  applyPageSize(
+    currentSlide,
+    pageWidth,
+    pageHeight
   );
+
+
+  applyScale();
 
 
   updatePageLabel();
@@ -957,63 +823,218 @@ async function renderImagePage() {
 
   await loadAnnotation();
 
+}
 
-  if (
-    token !== renderToken
-  ) {
 
-    return;
+/* =========================================================
+   Incoming Page
+   ========================================================= */
+
+async function prepareIncomingPage(
+  pageNumber
+) {
+
+  incomingPdfCanvas.style.display =
+    "none";
+
+  incomingImage.style.display =
+    "none";
+
+
+  if (pdf) {
+
+    const size =
+      await renderPdfToCanvas(
+        incomingPdfCanvas,
+        pageNumber
+      );
+
+
+    incomingPdfCanvas.style.display =
+      "block";
+
+
+    applyPageSize(
+      incomingSlide,
+      size.width,
+      size.height
+    );
+
+  }
+  else {
+
+    const image =
+      await getImage(
+        pageNumber
+      );
+
+
+    incomingImage.src =
+      image.src;
+
+
+    incomingImage.style.display =
+      "block";
+
+
+    applyPageSize(
+      incomingSlide,
+      image.naturalWidth,
+      image.naturalHeight
+    );
 
   }
 
 
-  /*
-   * 次ページ・前ページを先読み。
-   */
-
-  void preloadImage(
-    currentPage + 1
-  );
-
-
-  void preloadImage(
-    currentPage - 1
+  applyScaleToSlide(
+    incomingSlide
   );
 
 }
 
 
-async function preloadImage(
-  pageNumber
+/* =========================================================
+   Page size
+   ========================================================= */
+
+function applyPageSize(
+  slide,
+  width,
+  height
 ) {
 
-  if (
-    pageNumber < 1 ||
-    pageNumber > pages.length
-  ) {
+  slide.style.width =
+    `${width}px`;
 
-    return;
+  slide.style.height =
+    `${height}px`;
 
-  }
+}
 
 
-  try {
+/* =========================================================
+   Scale
+   ========================================================= */
 
-    await getImage(
-      pageNumber
-    );
+function applyScaleToSlide(
+  slide
+) {
 
-  }
-  catch (
-    error
-  ) {
+  const scale =
+    zoom;
 
-    console.warn(
-      "IMAGE PRELOAD ERROR:",
-      error
-    );
 
-  }
+  slide.style.setProperty(
+    "--page-scale",
+    scale
+  );
+
+}
+
+
+function applyScale() {
+
+  currentSlide.style.transform =
+    `
+      translate3d(
+        -50%,
+        -50%,
+        0
+      )
+      scale(${zoom})
+    `;
+
+}
+
+
+/* =========================================================
+   Incoming position
+   ========================================================= */
+
+function positionIncoming(
+  offset
+) {
+
+  incomingSlide.style.transform =
+    `
+      translate3d(
+        calc(-50% + ${offset}px),
+        -50%,
+        0
+      )
+      scale(${zoom})
+    `;
+
+}
+
+
+/* =========================================================
+   Current position
+   ========================================================= */
+
+function positionCurrent(
+  offset
+) {
+
+  currentSlide.style.transform =
+    `
+      translate3d(
+        calc(-50% + ${offset}px),
+        -50%,
+        0
+      )
+      scale(${zoom})
+    `;
+
+}
+
+
+/* =========================================================
+   Reset
+   ========================================================= */
+
+function resetCurrentPosition() {
+
+  currentSlide.style.transition =
+    "none";
+
+  currentSlide.style.transform =
+    `
+      translate3d(
+        -50%,
+        -50%,
+        0
+      )
+      scale(${zoom})
+    `;
+
+}
+
+
+function hideIncoming() {
+
+  incomingSlide.style.display =
+    "none";
+
+  incomingSlide.style.transition =
+    "none";
+
+  incomingSlide.style.transform =
+    `
+      translate3d(
+        -50%,
+        -50%,
+        0
+      )
+      scale(${zoom})
+    `;
+
+
+  incomingPdfCanvas.style.display =
+    "none";
+
+  incomingImage.style.display =
+    "none";
 
 }
 
@@ -1022,27 +1043,1227 @@ async function preloadImage(
    Render
    ========================================================= */
 
-async function renderPage() {
+async function renderCurrent() {
 
-  if (pdf) {
+  resetCurrentPosition();
 
-    await renderPdfPage();
+  hideIncoming();
+
+  await prepareCurrentPage();
+
+  applyScale();
+
+}
+
+
+/* =========================================================
+   Adjacent preparation
+   ========================================================= */
+
+async function prepareAdjacent(
+  direction
+) {
+
+  const target =
+    currentPage + direction;
+
+
+  if (
+    target < 1 ||
+    target > getPageCount()
+  ) {
+
+    return false;
+
+  }
+
+
+  await prepareIncomingPage(
+    target
+  );
+
+
+  incomingSlide.style.display =
+    "flex";
+
+
+  /*
+   * 次ページは右側、
+   * 前ページは左側。
+   */
+
+  const startOffset =
+    direction > 0
+      ? stage.clientWidth
+      : -stage.clientWidth;
+
+
+  incomingSlide.style.transition =
+    "none";
+
+
+  positionIncoming(
+    startOffset
+  );
+
+
+  return true;
+
+}
+
+
+/* =========================================================
+   Swipe RAF
+   ========================================================= */
+
+function updateSwipeFrame() {
+
+  animationFrame =
+    0;
+
+
+  if (
+    !swipeActive
+  ) {
 
     return;
 
   }
 
 
-  await renderImagePage();
+  /*
+   * 現在ページは指と同じ距離だけ動く。
+   */
+
+  positionCurrent(
+    swipeDeltaX
+  );
+
+
+  /*
+   * incomingも同じ距離だけ動かす。
+   */
+
+  const screenWidth =
+    stage.clientWidth;
+
+
+  const incomingStart =
+    swipeDirection > 0
+      ? screenWidth
+      : -screenWidth;
+
+
+  positionIncoming(
+    incomingStart +
+    swipeDeltaX
+  );
+
+}
+
+
+function requestSwipeFrame() {
+
+  if (
+    animationFrame
+  ) {
+
+    return;
+
+  }
+
+
+  animationFrame =
+    requestAnimationFrame(
+      updateSwipeFrame
+    );
 
 }
 
 
 /* =========================================================
-   ページ移動
+   Swipe Start
    ========================================================= */
 
-async function changePage(
+async function startSwipe(
+  x,
+  y
+) {
+
+  if (
+    mode !== "move" ||
+    pageChanging ||
+    swipeActive
+  ) {
+
+    return;
+
+  }
+
+
+  const targetDirection =
+    x < stage.clientWidth / 2
+      ? 1
+      : -1;
+
+
+  /*
+   * これは「指を動かした方向」で決定するため、
+   * 実際のdeltaはmove時に確定する。
+   */
+
+  swipeStartX =
+    x;
+
+  swipeStartY =
+    y;
+
+  swipeDeltaX =
+    0;
+
+  swipeDirection =
+    0;
+
+  swipeStartTime =
+    Date.now();
+
+  swipeActive =
+    true;
+
+
+  /*
+   * 初期状態ではまだincomingを出さない。
+   * 指が一定距離動いた時点で生成する。
+   */
+
+}
+
+
+/* =========================================================
+   Swipe Move
+   ========================================================= */
+
+async function moveSwipe(
+  x,
+  y
+) {
+
+  if (
+    !swipeActive ||
+    pageChanging
+  ) {
+
+    return;
+
+  }
+
+
+  const rawX =
+    x -
+    swipeStartX;
+
+
+  const rawY =
+    y -
+    swipeStartY;
+
+
+  /*
+   * 縦移動が明らかに大きければ
+   * ページめくりではない。
+   */
+
+  if (
+    !swipeDirection &&
+    Math.abs(rawY) >
+    Math.abs(rawX)
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    Math.abs(rawX) < 12
+  ) {
+
+    return;
+
+  }
+
+
+  /*
+   * 左へ動く → 次ページ
+   * 右へ動く → 前ページ
+   */
+
+  const direction =
+    rawX < 0
+      ? 1
+      : -1;
+
+
+  if (
+    swipeDirection === 0
+  ) {
+
+    swipeDirection =
+      direction;
+
+
+    const target =
+      currentPage +
+      direction;
+
+
+    if (
+      target < 1 ||
+      target > getPageCount()
+    ) {
+
+      /*
+       * ページが存在しない方向では
+       * 少しだけ抵抗感を出す。
+       */
+
+      swipeDeltaX =
+        rawX * 0.18;
+
+      requestSwipeFrame();
+
+      return;
+
+    }
+
+
+    await prepareAdjacent(
+      direction
+    );
+
+  }
+
+
+  /*
+   * 方向が途中で逆になった場合は
+   * その方向へは追従させず、抵抗をかける。
+   */
+
+  if (
+    direction !== swipeDirection
+  ) {
+
+    swipeDeltaX =
+      rawX * 0.12;
+
+  }
+  else {
+
+    swipeDeltaX =
+      rawX;
+
+  }
+
+
+  requestSwipeFrame();
+
+}
+
+
+/* =========================================================
+   Swipe End
+   ========================================================= */
+
+async function endSwipe(
+  x,
+  y
+) {
+
+  if (
+    !swipeActive
+  ) {
+
+    return;
+
+  }
+
+
+  swipeActive =
+    false;
+
+
+  if (
+    animationFrame
+  ) {
+
+    cancelAnimationFrame(
+      animationFrame
+    );
+
+    animationFrame =
+      0;
+
+  }
+
+
+  const deltaX =
+    x -
+    swipeStartX;
+
+
+  const elapsed =
+    Date.now() -
+    swipeStartTime;
+
+
+  /*
+   * ページが存在しない方向
+   */
+
+  if (
+    !swipeDirection ||
+    (
+      currentPage +
+      swipeDirection <
+      1
+    ) ||
+    (
+      currentPage +
+      swipeDirection >
+      getPageCount()
+    )
+  ) {
+
+    animateBack();
+
+    return;
+
+  }
+
+
+  /*
+   * 移動距離による確定判定
+   */
+
+  const threshold =
+    Math.min(
+      180,
+      stage.clientWidth *
+      0.28
+    );
+
+
+  const velocity =
+    Math.abs(deltaX) /
+    Math.max(
+      1,
+      elapsed
+    );
+
+
+  const shouldComplete =
+    Math.abs(deltaX) >= threshold ||
+    velocity >= 0.8;
+
+
+  if (
+    shouldComplete
+  ) {
+
+    await completeSwipe();
+
+  }
+  else {
+
+    animateBack();
+
+  }
+
+}
+
+
+/* =========================================================
+   Cancel
+   ========================================================= */
+
+function animateBack() {
+
+  currentSlide.style.transition =
+    "transform .24s cubic-bezier(.22,.61,.36,1)";
+
+
+  positionCurrent(
+    0
+  );
+
+
+  if (
+    incomingSlide.style.display !==
+    "none"
+  ) {
+
+    const start =
+      swipeDirection > 0
+        ? stage.clientWidth
+        : -stage.clientWidth;
+
+
+    incomingSlide.style.transition =
+      "transform .24s cubic-bezier(.22,.61,.36,1)";
+
+
+    positionIncoming(
+      start
+    );
+
+
+    setTimeout(
+      () => {
+
+        currentSlide.style.transition =
+          "none";
+
+        hideIncoming();
+
+      },
+      250
+    );
+
+  }
+  else {
+
+    setTimeout(
+      () => {
+
+        currentSlide.style.transition =
+          "none";
+
+      },
+      250
+    );
+
+  }
+
+
+  swipeDirection =
+    0;
+
+  swipeDeltaX =
+    0;
+
+}
+
+
+/* =========================================================
+   Complete
+   ========================================================= */
+
+async function completeSwipe() {
+
+  pageChanging =
+    true;
+
+
+  try {
+
+    const direction =
+      swipeDirection;
+
+
+    const target =
+      currentPage +
+      direction;
+
+
+    if (
+      target < 1 ||
+      target > getPageCount()
+    ) {
+
+      animateBack();
+
+      return;
+
+    }
+
+
+    const width =
+      stage.clientWidth;
+
+
+    /*
+     * 現在ページを画面外へ。
+     */
+
+    currentSlide.style.transition =
+      "transform .22s cubic-bezier(.22,.61,.36,1)";
+
+
+    /*
+     * 次/前ページを中央へ。
+     */
+
+    incomingSlide.style.transition =
+      "transform .22s cubic-bezier(.22,.61,.36,1)";
+
+
+    positionCurrent(
+      direction > 0
+        ? -width
+        : width
+    );
+
+
+    positionIncoming(
+      0
+    );
+
+
+    await wait(
+      230
+    );
+
+
+    /*
+     * ページ番号を確定。
+     */
+
+    currentPage =
+      target;
+
+
+    /*
+     * incomingをcurrentへ移す。
+     *
+     * DOMを入れ替える代わりに
+     * 内容をコピーして通常状態へ戻す。
+     */
+
+    await commitIncoming();
+
+
+  }
+  finally {
+
+    pageChanging =
+      false;
+
+  }
+
+}
+
+
+/* =========================================================
+   Commit
+   ========================================================= */
+
+async function commitIncoming() {
+
+  /*
+   * incomingの内容をcurrentへコピー。
+   */
+
+  if (pdf) {
+
+    const source =
+      incomingPdfCanvas;
+
+    const target =
+      currentPdfCanvas;
+
+
+    target.width =
+      source.width;
+
+    target.height =
+      source.height;
+
+
+    const context =
+      target.getContext(
+        "2d"
+      );
+
+
+    context.clearRect(
+      0,
+      0,
+      target.width,
+      target.height
+    );
+
+
+    context.drawImage(
+      source,
+      0,
+      0
+    );
+
+
+    currentPdfCanvas.style.display =
+      "block";
+
+
+    currentImage.style.display =
+      "none";
+
+  }
+  else {
+
+    currentImage.src =
+      incomingImage.src;
+
+
+    currentImage.style.display =
+      "block";
+
+
+    currentPdfCanvas.style.display =
+      "none";
+
+  }
+
+
+  /*
+   * 現在ページのサイズを取得。
+   */
+
+  pageWidth =
+    incomingSlide.offsetWidth /
+    zoom;
+
+
+  pageHeight =
+    incomingSlide.offsetHeight /
+    zoom;
+
+
+  applyPageSize(
+    currentSlide,
+    pageWidth * zoom,
+    pageHeight * zoom
+  );
+
+
+  /*
+   * 通常位置へ。
+   */
+
+  currentSlide.style.transition =
+    "none";
+
+
+  currentSlide.style.transform =
+    `
+      translate3d(
+        -50%,
+        -50%,
+        0
+      )
+      scale(${zoom})
+    `;
+
+
+  hideIncoming();
+
+
+  /*
+   * 注釈は新ページ。
+   */
+
+  resizeAnnotationCanvas(
+    pageWidth * zoom,
+    pageHeight * zoom
+  );
+
+
+  updatePageLabel();
+
+
+  await loadAnnotation();
+
+}
+
+
+/* =========================================================
+   Wait
+   ========================================================= */
+
+function wait(
+  ms
+) {
+
+  return new Promise(
+    resolve =>
+      setTimeout(
+        resolve,
+        ms
+      )
+  );
+
+}
+
+
+/* =========================================================
+   Touch
+   ========================================================= */
+
+stage.addEventListener(
+  "touchstart",
+  async event => {
+
+    /*
+     * Pinch
+     */
+
+    if (
+      event.touches.length === 2
+    ) {
+
+      swipeActive =
+        false;
+
+
+      const a =
+        event.touches[0];
+
+      const b =
+        event.touches[1];
+
+
+      pinchDistance =
+        Math.hypot(
+          b.clientX -
+          a.clientX,
+          b.clientY -
+          a.clientY
+        );
+
+
+      pinchStartZoom =
+        zoom;
+
+
+      return;
+
+    }
+
+
+    if (
+      event.touches.length !== 1
+    ) {
+
+      return;
+
+    }
+
+
+    const touch =
+      event.touches[0];
+
+
+    await startSwipe(
+      touch.clientX,
+      touch.clientY
+    );
+
+  },
+  {
+    passive: true
+  }
+);
+
+
+stage.addEventListener(
+  "touchmove",
+  async event => {
+
+    /*
+     * Pinch zoom
+     */
+
+    if (
+      event.touches.length === 2 &&
+      pinchDistance !== null
+    ) {
+
+      event.preventDefault();
+
+
+      const a =
+        event.touches[0];
+
+      const b =
+        event.touches[1];
+
+
+      const distance =
+        Math.hypot(
+          b.clientX -
+          a.clientX,
+          b.clientY -
+          a.clientY
+        );
+
+
+      const nextZoom =
+        pinchStartZoom *
+        distance /
+        pinchDistance;
+
+
+      zoom =
+        Math.max(
+          0.25,
+          Math.min(
+            5,
+            nextZoom
+          )
+        );
+
+
+      /*
+       * PDFを再描画しない。
+       * CSS transformだけ更新。
+       */
+
+      applyScale();
+
+
+      if (
+        incomingSlide.style.display !==
+        "none"
+      ) {
+
+        applyScaleToSlide(
+          incomingSlide
+        );
+
+
+        positionIncoming(
+          (
+            swipeDirection > 0
+              ? stage.clientWidth
+              : -stage.clientWidth
+          ) +
+          swipeDeltaX
+        );
+
+      }
+
+
+      return;
+
+    }
+
+
+    if (
+      event.touches.length !== 1
+    ) {
+
+      return;
+
+    }
+
+
+    const touch =
+      event.touches[0];
+
+
+    await moveSwipe(
+      touch.clientX,
+      touch.clientY
+    );
+
+  },
+  {
+    passive: false
+  }
+);
+
+
+stage.addEventListener(
+  "touchend",
+  async event => {
+
+    if (
+      pinchDistance !== null
+    ) {
+
+      pinchDistance =
+        null;
+
+
+      /*
+       * 指を離した時だけ
+       * 必要ならPDFを再描画。
+       */
+
+      if (pdf) {
+
+        await rerenderCurrentPdf();
+
+      }
+
+
+      return;
+
+    }
+
+
+    const touch =
+      event.changedTouches[0];
+
+
+    await endSwipe(
+      touch.clientX,
+      touch.clientY
+    );
+
+  },
+  {
+    passive: true
+  }
+);
+
+
+stage.addEventListener(
+  "touchcancel",
+  () => {
+
+    pinchDistance =
+      null;
+
+    swipeActive =
+      false;
+
+    animateBack();
+
+  },
+  {
+    passive: true
+  }
+);
+
+
+/* =========================================================
+   PDF zoom after gesture
+   ========================================================= */
+
+async function rerenderCurrentPdf() {
+
+  if (!pdf) {
+    return;
+  }
+
+
+  /*
+   * 表示中Canvasを新しい倍率で再生成。
+   * ピンチ中は実行しない。
+   */
+
+  const oldZoom =
+    zoom;
+
+
+  const baseWidth =
+    pageWidth;
+
+
+  const baseHeight =
+    pageHeight;
+
+
+  if (
+    !baseWidth ||
+    !baseHeight
+  ) {
+
+    return;
+
+  }
+
+
+  /*
+   * 現在のページを高品質で再描画。
+   */
+
+  const page =
+    await pdf.getPage(
+      currentPage
+    );
+
+
+  const viewport =
+    page.getViewport({
+      scale:
+        oldZoom
+    });
+
+
+  currentPdfCanvas.width =
+    Math.ceil(
+      viewport.width
+    );
+
+
+  currentPdfCanvas.height =
+    Math.ceil(
+      viewport.height
+    );
+
+
+  const context =
+    currentPdfCanvas.getContext(
+      "2d",
+      {
+        alpha: false
+      }
+    );
+
+
+  context.fillStyle =
+    "#fff";
+
+
+  context.fillRect(
+    0,
+    0,
+    currentPdfCanvas.width,
+    currentPdfCanvas.height
+  );
+
+
+  await page.render({
+
+    canvasContext:
+      context,
+
+    viewport,
+
+    intent:
+      "display"
+
+  }).promise;
+
+
+  pageWidth =
+    viewport.width;
+
+
+  pageHeight =
+    viewport.height;
+
+
+  applyPageSize(
+    currentSlide,
+    pageWidth,
+    pageHeight
+  );
+
+
+  applyScale();
+
+
+  resizeAnnotationCanvas(
+    pageWidth,
+    pageHeight
+  );
+
+
+  await loadAnnotation();
+
+}
+
+
+/* =========================================================
+   Mouse wheel zoom
+   ========================================================= */
+
+stage.addEventListener(
+  "wheel",
+  event => {
+
+    if (
+      !event.ctrlKey
+    ) {
+
+      return;
+
+    }
+
+
+    event.preventDefault();
+
+
+    const factor =
+      event.deltaY > 0
+        ? 0.92
+        : 1.08;
+
+
+    zoom =
+      Math.max(
+        0.25,
+        Math.min(
+          5,
+          zoom * factor
+        )
+      );
+
+
+    applyScale();
+
+  },
+  {
+    passive: false
+  }
+);
+
+
+/* =========================================================
+   Buttons
+   ========================================================= */
+
+document.getElementById(
+  "first"
+).onclick =
+  () =>
+    goToPage(1);
+
+
+document.getElementById(
+  "previous"
+).onclick =
+  () =>
+    goToPage(
+      currentPage - 1
+    );
+
+
+document.getElementById(
+  "next"
+).onclick =
+  () =>
+    goToPage(
+      currentPage + 1
+    );
+
+
+document.getElementById(
+  "last"
+).onclick =
+  () =>
+    goToPage(
+      getPageCount()
+    );
+
+
+/* =========================================================
+   Button page change
+   ========================================================= */
+
+async function goToPage(
   target
 ) {
 
@@ -1055,21 +2276,9 @@ async function changePage(
   }
 
 
-  const total =
-    getPageCount();
-
-
   if (
     target < 1 ||
-    target > total
-  ) {
-
-    return;
-
-  }
-
-
-  if (
+    target > getPageCount() ||
     target === currentPage
   ) {
 
@@ -1087,11 +2296,57 @@ async function changePage(
     await saveAnnotation();
 
 
+    const direction =
+      target >
+      currentPage
+        ? 1
+        : -1;
+
+
+    await prepareAdjacent(
+      direction
+    );
+
+
+    /*
+     * ボタン操作でも
+     * スライド式にする。
+     */
+
+    currentSlide.style.transition =
+      "transform .22s cubic-bezier(.22,.61,.36,1)";
+
+
+    incomingSlide.style.transition =
+      "transform .22s cubic-bezier(.22,.61,.36,1)";
+
+
+    const width =
+      stage.clientWidth;
+
+
+    positionCurrent(
+      direction > 0
+        ? -width
+        : width
+    );
+
+
+    positionIncoming(
+      0
+    );
+
+
+    await wait(
+      230
+    );
+
+
     currentPage =
       target;
 
 
-    await renderPage();
+    await commitIncoming();
 
   }
   finally {
@@ -1102,282 +2357,6 @@ async function changePage(
   }
 
 }
-
-
-async function nextPage() {
-
-  await changePage(
-    currentPage + 1
-  );
-
-}
-
-
-async function previousPage() {
-
-  await changePage(
-    currentPage - 1
-  );
-
-}
-
-
-async function firstPage() {
-
-  await changePage(
-    1
-  );
-
-}
-
-
-async function lastPage() {
-
-  await changePage(
-    getPageCount()
-  );
-
-}
-
-
-/* =========================================================
-   Page Buttons
-   ========================================================= */
-
-document.getElementById(
-  "first"
-).onclick =
-  firstPage;
-
-
-document.getElementById(
-  "previous"
-).onclick =
-  previousPage;
-
-
-document.getElementById(
-  "next"
-).onclick =
-  nextPage;
-
-
-document.getElementById(
-  "last"
-).onclick =
-  lastPage;
-
-
-/* =========================================================
-   Zoom
-   ========================================================= */
-
-async function setZoom(
-  value
-) {
-
-  const nextZoom =
-    Number(
-      value
-    );
-
-
-  if (
-    !Number.isFinite(
-      nextZoom
-    )
-  ) {
-
-    return;
-
-  }
-
-
-  zoom =
-    Math.max(
-      0.25,
-      Math.min(
-        5,
-        nextZoom
-      )
-    );
-
-
-  await renderPage();
-
-}
-
-
-document.getElementById(
-  "zoomIn"
-).onclick =
-  () =>
-    setZoom(
-      zoom + 0.1
-    );
-
-
-document.getElementById(
-  "zoomOut"
-).onclick =
-  () =>
-    setZoom(
-      zoom - 0.1
-    );
-
-
-/* =========================================================
-   Fit Width
-   ========================================================= */
-
-document.getElementById(
-  "fitWidth"
-).onclick =
-  async () => {
-
-    let naturalWidth;
-
-
-    if (pdf) {
-
-      const page =
-        await pdf.getPage(
-          currentPage
-        );
-
-
-      naturalWidth =
-        page
-          .getViewport({
-            scale: 1
-          })
-          .width;
-
-    }
-    else {
-
-      const image =
-        await getImage(
-          currentPage
-        );
-
-
-      naturalWidth =
-        image.naturalWidth;
-
-    }
-
-
-    const availableWidth =
-      Math.max(
-        100,
-        stage.clientWidth - 56
-      );
-
-
-    await setZoom(
-      availableWidth /
-      naturalWidth
-    );
-
-  };
-
-
-/* =========================================================
-   Fit Height
-   ========================================================= */
-
-document.getElementById(
-  "fitHeight"
-).onclick =
-  async () => {
-
-    let naturalHeight;
-
-
-    if (pdf) {
-
-      const page =
-        await pdf.getPage(
-          currentPage
-        );
-
-
-      naturalHeight =
-        page
-          .getViewport({
-            scale: 1
-          })
-          .height;
-
-    }
-    else {
-
-      const image =
-        await getImage(
-          currentPage
-        );
-
-
-      naturalHeight =
-        image.naturalHeight;
-
-    }
-
-
-    const availableHeight =
-      Math.max(
-        100,
-        stage.clientHeight - 56
-      );
-
-
-    await setZoom(
-      availableHeight /
-      naturalHeight
-    );
-
-  };
-
-
-/* =========================================================
-   Fullscreen
-   ========================================================= */
-
-document.getElementById(
-  "fullscreen"
-).onclick =
-  async () => {
-
-    try {
-
-      if (
-        document.fullscreenElement
-      ) {
-
-        await document.exitFullscreen();
-
-      }
-      else {
-
-        await document.documentElement
-          .requestFullscreen();
-
-      }
-
-    }
-    catch (
-      error
-    ) {
-
-      console.warn(
-        "FULLSCREEN ERROR:",
-        error
-      );
-
-    }
-
-  };
 
 
 /* =========================================================
@@ -1413,16 +2392,14 @@ function updateMode() {
 
 
 function setMode(
-  nextMode
+  value
 ) {
 
   mode =
-    nextMode;
-
+    value;
 
   drawing =
     false;
-
 
   updateMode();
 
@@ -1455,6 +2432,227 @@ document.getElementById(
 
 
 /* =========================================================
+   Zoom Buttons
+   ========================================================= */
+
+document.getElementById(
+  "zoomIn"
+).onclick =
+  async () => {
+
+    zoom =
+      Math.min(
+        5,
+        zoom * 1.1
+      );
+
+
+    applyScale();
+
+
+    if (pdf) {
+
+      await rerenderCurrentPdf();
+
+    }
+
+  };
+
+
+document.getElementById(
+  "zoomOut"
+).onclick =
+  async () => {
+
+    zoom =
+      Math.max(
+        0.25,
+        zoom / 1.1
+      );
+
+
+    applyScale();
+
+
+    if (pdf) {
+
+      await rerenderCurrentPdf();
+
+    }
+
+  };
+
+
+/* =========================================================
+   Fit Width
+   ========================================================= */
+
+document.getElementById(
+  "fitWidth"
+).onclick =
+  async () => {
+
+    let width;
+
+
+    if (pdf) {
+
+      const page =
+        await pdf.getPage(
+          currentPage
+        );
+
+
+      width =
+        page
+          .getViewport({
+            scale: 1
+          })
+          .width;
+
+    }
+    else {
+
+      const image =
+        await getImage(
+          currentPage
+        );
+
+
+      width =
+        image.naturalWidth;
+
+    }
+
+
+    zoom =
+      Math.max(
+        0.25,
+        (
+          stage.clientWidth -
+          30
+        ) /
+        width
+      );
+
+
+    applyScale();
+
+
+    if (pdf) {
+
+      await rerenderCurrentPdf();
+
+    }
+
+  };
+
+
+/* =========================================================
+   Fit Height
+   ========================================================= */
+
+document.getElementById(
+  "fitHeight"
+).onclick =
+  async () => {
+
+    let height;
+
+
+    if (pdf) {
+
+      const page =
+        await pdf.getPage(
+          currentPage
+        );
+
+
+      height =
+        page
+          .getViewport({
+            scale: 1
+          })
+          .height;
+
+    }
+    else {
+
+      const image =
+        await getImage(
+          currentPage
+        );
+
+
+      height =
+        image.naturalHeight;
+
+    }
+
+
+    zoom =
+      Math.max(
+        0.25,
+        (
+          stage.clientHeight -
+          30
+        ) /
+        height
+      );
+
+
+    applyScale();
+
+
+    if (pdf) {
+
+      await rerenderCurrentPdf();
+
+    }
+
+  };
+
+
+/* =========================================================
+   Fullscreen
+   ========================================================= */
+
+document.getElementById(
+  "fullscreen"
+).onclick =
+  async () => {
+
+    try {
+
+      if (
+        document.fullscreenElement
+      ) {
+
+        await document.exitFullscreen();
+
+      }
+      else {
+
+        await document.documentElement
+          .requestFullscreen();
+
+      }
+
+    }
+    catch (
+      error
+    ) {
+
+      console.warn(
+        error
+      );
+
+    }
+
+  };
+
+
+/* =========================================================
    Favorite
    ========================================================= */
 
@@ -1471,7 +2669,7 @@ document.getElementById(
 
 
 /* =========================================================
-   Mobile Menu
+   Mobile menu
    ========================================================= */
 
 function closeMenu() {
@@ -1480,12 +2678,10 @@ function closeMenu() {
     "open"
   );
 
-
   mobileMenu.setAttribute(
     "aria-hidden",
     "true"
   );
-
 
   menuButton.setAttribute(
     "aria-expanded",
@@ -1512,17 +2708,13 @@ menuButton.onclick =
 
     mobileMenu.setAttribute(
       "aria-hidden",
-      String(
-        !open
-      )
+      String(!open)
     );
 
 
     menuButton.setAttribute(
       "aria-expanded",
-      String(
-        open
-      )
+      String(open)
     );
 
   };
@@ -1546,55 +2738,55 @@ mobileMenu
             action === "first"
           ) {
 
-            await firstPage();
+            await goToPage(1);
 
           }
           else if (
             action === "previous"
           ) {
 
-            await previousPage();
+            await goToPage(
+              currentPage - 1
+            );
 
           }
           else if (
             action === "next"
           ) {
 
-            await nextPage();
+            await goToPage(
+              currentPage + 1
+            );
 
           }
           else if (
             action === "last"
           ) {
 
-            await lastPage();
+            await goToPage(
+              getPageCount()
+            );
 
           }
           else if (
             action === "move"
           ) {
 
-            setMode(
-              "move"
-            );
+            setMode("move");
 
           }
           else if (
             action === "pen"
           ) {
 
-            setMode(
-              "pen"
-            );
+            setMode("pen");
 
           }
           else if (
             action === "eraser"
           ) {
 
-            setMode(
-              "eraser"
-            );
+            setMode("eraser");
 
           }
           else if (
@@ -1612,25 +2804,29 @@ mobileMenu
             action === "zoomIn"
           ) {
 
-            await setZoom(
-              zoom + 0.1
-            );
+            document
+              .getElementById(
+                "zoomIn"
+              )
+              .click();
 
           }
           else if (
             action === "zoomOut"
           ) {
 
-            await setZoom(
-              zoom - 0.1
-            );
+            document
+              .getElementById(
+                "zoomOut"
+              )
+              .click();
 
           }
           else if (
             action === "fitWidth"
           ) {
 
-            await document
+            document
               .getElementById(
                 "fitWidth"
               )
@@ -1641,7 +2837,7 @@ mobileMenu
             action === "fitHeight"
           ) {
 
-            await document
+            document
               .getElementById(
                 "fitHeight"
               )
@@ -1652,7 +2848,7 @@ mobileMenu
             action === "fullscreen"
           ) {
 
-            await document
+            document
               .getElementById(
                 "fullscreen"
               )
@@ -1670,279 +2866,37 @@ mobileMenu
 
 
 /* =========================================================
-   Swipe / Pinch
+   Annotation
    ========================================================= */
 
-stage.addEventListener(
-  "touchstart",
-  event => {
+function resizeAnnotationCanvas(
+  width,
+  height
+) {
 
-    if (
-      event.touches.length === 2
-    ) {
-
-      const first =
-        event.touches[0];
-
-      const second =
-        event.touches[1];
-
-
-      pinchDistance =
-        Math.hypot(
-
-          second.clientX -
-          first.clientX,
-
-          second.clientY -
-          first.clientY
-
-        );
-
-
-      pinchStartZoom =
-        zoom;
-
-
-      return;
-
-    }
-
-
-    if (
-      mode !== "move"
-    ) {
-
-      return;
-
-    }
-
-
-    const touch =
-      event.touches[0];
-
-
-    touchStartX =
-      touch.clientX;
-
-
-    touchStartY =
-      touch.clientY;
-
-
-    touchStartTime =
-      Date.now();
-
-  },
-  {
-    passive: true
-  }
-);
-
-
-stage.addEventListener(
-  "touchmove",
-  event => {
-
-    if (
-      event.touches.length !== 2 ||
-      pinchDistance === null
-    ) {
-
-      return;
-
-    }
-
-
-    event.preventDefault();
-
-
-    const first =
-      event.touches[0];
-
-    const second =
-      event.touches[1];
-
-
-    const distance =
-      Math.hypot(
-
-        second.clientX -
-        first.clientX,
-
-        second.clientY -
-        first.clientY
-
-      );
-
-
-    zoom =
-      Math.max(
-        0.25,
-        Math.min(
-          5,
-          pinchStartZoom *
-          distance /
-          pinchDistance
-        )
-      );
-
-
-    clearTimeout(
-      window.__viewerPinchTimer
+  annotationCanvas.width =
+    Math.max(
+      1,
+      Math.floor(width)
     );
 
 
-    window.__viewerPinchTimer =
-      setTimeout(
-        () =>
-          renderPage(),
-        80
-      );
-
-  },
-  {
-    passive: false
-  }
-);
-
-
-stage.addEventListener(
-  "touchend",
-  async event => {
-
-    if (
-      pinchDistance !== null
-    ) {
-
-      pinchDistance =
-        null;
-
-      return;
-
-    }
-
-
-    if (
-      mode !== "move" ||
-      touchStartX === null
-    ) {
-
-      return;
-
-    }
-
-
-    const touch =
-      event.changedTouches[0];
-
-
-    const dx =
-      touch.clientX -
-      touchStartX;
-
-
-    const dy =
-      touch.clientY -
-      touchStartY;
-
-
-    const elapsed =
-      Date.now() -
-      touchStartTime;
-
-
-    touchStartX =
-      null;
-
-    touchStartY =
-      null;
-
-
-    if (
-      elapsed > 700
-    ) {
-
-      return;
-
-    }
-
-
-    if (
-      Math.abs(dx) < 70
-    ) {
-
-      return;
-
-    }
-
-
-    if (
-      Math.abs(dx) <=
-      Math.abs(dy)
-    ) {
-
-      return;
-
-    }
-
-
-    if (
-      dx < 0
-    ) {
-
-      await nextPage();
-
-    }
-    else {
-
-      await previousPage();
-
-    }
-
-  }
-);
-
-
-/* =========================================================
-   Ctrl + Wheel Zoom
-   ========================================================= */
-
-stage.addEventListener(
-  "wheel",
-  event => {
-
-    if (
-      !event.ctrlKey
-    ) {
-
-      return;
-
-    }
-
-
-    event.preventDefault();
-
-
-    setZoom(
-      zoom +
-      (
-        event.deltaY > 0
-          ? -0.1
-          : 0.1
-      )
+  annotationCanvas.height =
+    Math.max(
+      1,
+      Math.floor(height)
     );
 
-  },
-  {
-    passive: false
-  }
-);
+
+  annotationCanvas.style.width =
+    `${width}px`;
 
 
-/* =========================================================
-   Pen
-   ========================================================= */
+  annotationCanvas.style.height =
+    `${height}px`;
+
+}
+
 
 annotationCanvas.addEventListener(
   "pointerdown",
@@ -1998,9 +2952,7 @@ annotationCanvas.addEventListener(
   event => {
 
     if (!drawing) {
-
       return;
-
     }
 
 
@@ -2028,25 +2980,23 @@ annotationCanvas.addEventListener(
 
 
     const context =
-      annotationCanvas.getContext(
-        "2d"
-      );
+      annotationCanvas
+        .getContext(
+          "2d"
+        );
 
 
     context.beginPath();
-
 
     context.moveTo(
       lastX,
       lastY
     );
 
-
     context.lineTo(
       x,
       y
     );
-
 
     context.lineCap =
       "round";
@@ -2095,9 +3045,7 @@ annotationCanvas.addEventListener(
   async () => {
 
     if (!drawing) {
-
       return;
-
     }
 
 
@@ -2123,7 +3071,7 @@ annotationCanvas.addEventListener(
 
 
 /* =========================================================
-   Annotation 保存
+   Annotation DB
    ========================================================= */
 
 async function saveAnnotation() {
@@ -2195,10 +3143,6 @@ async function saveAnnotation() {
 }
 
 
-/* =========================================================
-   Annotation 読み込み
-   ========================================================= */
-
 async function loadAnnotation() {
 
   const {
@@ -2236,9 +3180,10 @@ async function loadAnnotation() {
 
 
   const context =
-    annotationCanvas.getContext(
-      "2d"
-    );
+    annotationCanvas
+      .getContext(
+        "2d"
+      );
 
 
   context.clearRect(
@@ -2254,9 +3199,7 @@ async function loadAnnotation() {
 
 
   if (!source) {
-
     return;
-
   }
 
 
@@ -2268,15 +3211,11 @@ async function loadAnnotation() {
     () => {
 
       context.drawImage(
-
         image,
-
         0,
         0,
-
         annotationCanvas.width,
         annotationCanvas.height
-
       );
 
     };
@@ -2312,7 +3251,7 @@ document.getElementById(
     }
 
 
-    window.location.replace(
+    location.replace(
       "../books/"
     );
 
@@ -2328,10 +3267,6 @@ async function start() {
   hideMessage();
 
 
-  /*
-   * Student + Book権限
-   */
-
   student =
     await requireBookAccess(
       bookId
@@ -2339,29 +3274,21 @@ async function start() {
 
 
   if (!student) {
-
     return;
-
   }
 
-
-  /*
-   * Book
-   */
 
   const loaded =
     await loadBook();
 
 
   if (!loaded) {
-
     return;
-
   }
 
 
   /*
-   * PDF / 画像
+   * PDF
    */
 
   if (
@@ -2371,6 +3298,11 @@ async function start() {
     await loadPdf();
 
   }
+
+  /*
+   * 画像
+   */
+
   else {
 
     await loadImagePages();
@@ -2378,44 +3310,45 @@ async function start() {
   }
 
 
-  /*
-   * 最初のページ
-   */
-
   currentPage =
     1;
 
 
-  updatePageLabel();
+  /*
+   * PDFは最初に1ページを
+   * 高品質描画。
+   */
+
+  if (pdf) {
+
+    pdfRenderScale =
+      1;
+
+  }
 
 
   updateMode();
 
 
-  await renderPage();
+  await renderCurrent();
 
 }
 
 
 start()
-  .catch(
-    error => {
+.catch(
+  error => {
 
-      console.error(
-        "VIEWER ERROR:",
-        error
-      );
+    console.error(
+      "VIEWER ERROR:",
+      error
+    );
 
 
-      /*
-       * ここでは勝手に
-       * 404やsystem errorへ飛ばさない。
-       */
+    showMessage(
+      error.message ||
+      "教材を表示できませんでした。"
+    );
 
-      showMessage(
-        error.message ||
-        "教材を表示できませんでした。"
-      );
-
-    }
-  );
+  }
+);
