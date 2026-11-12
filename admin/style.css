@@ -1,4 +1,4 @@
-
+```css
 /* =========================================================
    WEB-viewer Admin
    ========================================================= */
@@ -7,16 +7,20 @@
   box-sizing: border-box;
 }
 
+
 html,
 body {
   width: 100%;
   min-height: 100%;
+
   margin: 0;
   padding: 0;
 }
 
+
 body {
   background: #f5f5f3;
+
   color: #222;
 
   font-family:
@@ -27,8 +31,10 @@ body {
     sans-serif;
 
   font-size: 14px;
+
   line-height: 1.6;
 }
+
 
 button,
 input,
@@ -37,13 +43,16 @@ select {
   font: inherit;
 }
 
+
 button {
   cursor: pointer;
 }
 
+
 a {
   color: inherit;
 }
+
 
 .hidden {
   display: none !important;
@@ -60,12 +69,15 @@ a {
   padding: 9px 17px;
 
   border: 0;
+
   border-radius: 8px;
 
   background: #d5ca3d;
+
   color: #222;
 
   font-size: 14px;
+
   font-weight: 700;
 
   line-height: 1.2;
@@ -78,19 +90,26 @@ a {
     opacity .15s ease;
 }
 
+
 .primary-button:hover {
   background: #c9be32;
 }
 
+
 .primary-button:active {
-  transform: translateY(1px);
+  transform:
+    translateY(1px);
 }
+
 
 .primary-button:disabled {
   opacity: .55;
+
   cursor: default;
+
   transform: none;
 }
+
 
 .secondary-button {
   min-height: 42px;
@@ -98,30 +117,40 @@ a {
   padding: 9px 17px;
 
   border: 1px solid #ccc;
+
   border-radius: 8px;
 
   background: #fff;
+
   color: #222;
 
   font-size: 14px;
+
   font-weight: 600;
+
+  line-height: 1.2;
 
   cursor: pointer;
 }
+
 
 .secondary-button:hover {
   background: #f4f4f4;
 }
 
+
 .secondary-button:disabled {
   opacity: .55;
+
   cursor: default;
 }
+
 
 .toolbar {
   display: flex;
 
   align-items: center;
+
   flex-wrap: wrap;
 
   gap: 9px;
@@ -142,6 +171,7 @@ a {
   width: 250px;
 
   overflow-x: hidden;
+
   overflow-y: auto;
 
   background: #fff;
@@ -155,16 +185,20 @@ a {
   scrollbar-width: thin;
 }
 
+
 .admin-side::-webkit-scrollbar {
   width: 7px;
 }
+
 
 .admin-side::-webkit-scrollbar-track {
   background: #f5f5f5;
 }
 
+
 .admin-side::-webkit-scrollbar-thumb {
   background: #ccc;
+
   border-radius: 10px;
 }
 
@@ -183,6 +217,7 @@ a {
   flex-direction: column;
 
   align-items: center;
+
   justify-content: center;
 
   padding: 20px;
@@ -196,6 +231,7 @@ a {
   user-select: none;
 }
 
+
 .admin-brand > div {
   font-size: 28px;
 
@@ -205,6 +241,7 @@ a {
 
   line-height: 1.2;
 }
+
 
 .admin-brand small {
   display: block;
@@ -216,6 +253,8 @@ a {
   font-size: 12px;
 
   font-weight: 400;
+
+  line-height: 1.3;
 }
 
 
@@ -228,6 +267,7 @@ a {
 
   padding: 12px 0 18px;
 }
+
 
 .admin-side nav a,
 .admin-side nav button {
@@ -272,10 +312,12 @@ a {
     border-color .15s ease;
 }
 
+
 .admin-side nav a:hover,
 .admin-side nav button:hover {
   background: #f2f2f2;
 }
+
 
 .admin-side nav a.active {
   background: #d5ca3d;
@@ -287,6 +329,7 @@ a {
   font-weight: 800;
 }
 
+
 .admin-side nav button {
   margin-top: 12px;
 
@@ -295,13 +338,17 @@ a {
   color: #555;
 }
 
+
 .admin-side nav button:hover {
   background: #f6f6f6;
+
   color: #222;
 }
 
+
 .admin-side nav button:disabled {
   opacity: .55;
+
   cursor: default;
 }
 
@@ -322,7 +369,7 @@ a {
 
 
 /* =========================================================
-   Notice
+   Top Notice
    ========================================================= */
 
 .admin-notice {
@@ -353,6 +400,7 @@ a {
     rgba(0,0,0,.03);
 }
 
+
 .admin-notice > div:first-child {
   flex: 0 0 auto;
 
@@ -373,6 +421,7 @@ a {
   white-space: nowrap;
 }
 
+
 .admin-notice > span {
   min-width: 0;
 
@@ -382,9 +431,9 @@ a {
 
   white-space: nowrap;
 
-  color: #666;
-
   font-size: 13px;
+
+  color: #666;
 }
 
 
@@ -401,7 +450,7 @@ a {
 
   margin: 18px 38px 0;
 
-  padding: 14px 17px;
+  padding: 12px 16px;
 
   background: #fff9d6;
 
@@ -418,44 +467,53 @@ a {
 
 
 /*
- * SVGアイコンの外側
- *
- * 送ってもらった画像の
- * 「淡い円＋中央のオレンジのレンチ」
- * を再現する。
+ * 送ってもらったレンチ画像を参考にした
+ * 淡い円形＋オレンジ線のSVG
  */
 
 .maintenance-banner-icon {
-  width: 48px;
-  height: 48px;
+  width: 52px;
 
-  flex: 0 0 48px;
+  height: 52px;
 
-  display: grid;
+  flex: 0 0 52px;
 
-  place-items: center;
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
 
   border-radius: 50%;
 
-  background: #fff1e2;
+  background: #fff1e3;
+
+  overflow: hidden;
 }
 
 
-/*
- * SVGそのもの
- */
-
 .maintenance-banner-icon svg {
-  width: 29px;
-  height: 29px;
-
   display: block;
 
+  width: 52px;
+
+  height: 52px;
+
+  overflow: visible;
+}
+
+
+.maintenance-banner-icon svg circle {
+  fill: #fff1e3;
+}
+
+
+.maintenance-banner-icon svg path {
   fill: none;
 
   stroke: #ef752c;
 
-  stroke-width: 2.35;
+  stroke-width: 3.2;
 
   stroke-linecap: round;
 
@@ -475,6 +533,7 @@ a {
   gap: 2px;
 }
 
+
 .maintenance-banner-content strong {
   color: #333;
 
@@ -484,6 +543,7 @@ a {
 
   line-height: 1.3;
 }
+
 
 .maintenance-banner-content span {
   overflow: hidden;
@@ -498,6 +558,7 @@ a {
 
   line-height: 1.4;
 }
+
 
 .maintenance-banner-link {
   flex: 0 0 auto;
@@ -521,6 +582,7 @@ a {
   white-space: nowrap;
 }
 
+
 .maintenance-banner-link:hover {
   background: #f7f7f2;
 }
@@ -542,7 +604,7 @@ a {
 
 
 /* =========================================================
-   Heading
+   Page Heading
    ========================================================= */
 
 .page-heading {
@@ -557,9 +619,11 @@ a {
   margin-bottom: 28px;
 }
 
+
 .page-heading > div {
   min-width: 0;
 }
+
 
 .page-heading h1 {
   margin: 0;
@@ -574,6 +638,7 @@ a {
 
   letter-spacing: -.4px;
 }
+
 
 .page-heading p {
   margin: 7px 0 0;
@@ -608,6 +673,7 @@ a {
     rgba(0,0,0,.025);
 }
 
+
 .admin-card h2 {
   margin: 0 0 15px;
 
@@ -618,6 +684,7 @@ a {
   line-height: 1.35;
 }
 
+
 .admin-card h3 {
   margin: 0;
 
@@ -625,6 +692,7 @@ a {
 
   font-size: 16px;
 }
+
 
 .admin-card > p {
   color: #666;
@@ -634,7 +702,7 @@ a {
 
 
 /* =========================================================
-   Dashboard
+   Dashboard Stats
    ========================================================= */
 
 .admin-stats {
@@ -650,6 +718,7 @@ a {
 
   margin-bottom: 25px;
 }
+
 
 .admin-stat {
   min-width: 0;
@@ -667,6 +736,7 @@ a {
     rgba(0,0,0,.025);
 }
 
+
 .admin-stat span {
   display: block;
 
@@ -676,6 +746,7 @@ a {
 
   font-weight: 600;
 }
+
 
 .admin-stat strong {
   display: block;
@@ -696,7 +767,7 @@ a {
 
 
 /* =========================================================
-   Section
+   Section Heading
    ========================================================= */
 
 .section-heading {
@@ -711,9 +782,11 @@ a {
   margin-bottom: 10px;
 }
 
+
 .section-heading h2 {
   margin: 0;
 }
+
 
 .section-heading p {
   margin: 5px 0 0;
@@ -725,7 +798,7 @@ a {
 
 
 /* =========================================================
-   Forms
+   Form
    ========================================================= */
 
 .admin-card label {
@@ -739,6 +812,7 @@ a {
 
   font-weight: 600;
 }
+
 
 .admin-card input:not(
   [type="checkbox"]
@@ -770,11 +844,13 @@ a {
   line-height: 1.5;
 }
 
+
 .admin-card textarea {
   min-height: 110px;
 
   resize: vertical;
 }
+
 
 .admin-card input:not(
   [type="checkbox"]
@@ -790,10 +866,12 @@ a {
     rgba(213,202,61,.16);
 }
 
+
 .admin-card input::placeholder,
 .admin-card textarea::placeholder {
   color: #aaa;
 }
+
 
 .admin-card input[type="checkbox"] {
   width: auto;
@@ -802,6 +880,7 @@ a {
 
   accent-color: #d5ca3d;
 }
+
 
 .form-help {
   margin: -4px 0 18px;
@@ -812,6 +891,7 @@ a {
 
   line-height: 1.7;
 }
+
 
 .message {
   min-height: 22px;
@@ -829,7 +909,7 @@ a {
 
 
 /* =========================================================
-   Lists
+   Generic List
    ========================================================= */
 
 .list-row {
@@ -846,13 +926,14 @@ a {
   color: #333;
 }
 
+
 .list-row:last-child {
   border-bottom: 0;
 }
 
 
 /* =========================================================
-   Books
+   Book Admin
    ========================================================= */
 
 .book-admin-list {
@@ -860,6 +941,7 @@ a {
 
   gap: 0;
 }
+
 
 .book-admin-item {
   display: flex;
@@ -875,15 +957,18 @@ a {
   border-bottom: 1px solid #eee;
 }
 
+
 .book-admin-item:last-child {
   border-bottom: 0;
 }
+
 
 .book-admin-main {
   min-width: 0;
 
   flex: 1;
 }
+
 
 .book-admin-title {
   color: #222;
@@ -895,6 +980,7 @@ a {
   line-height: 1.45;
 }
 
+
 .book-admin-description {
   margin-top: 5px;
 
@@ -904,6 +990,7 @@ a {
 
   line-height: 1.55;
 }
+
 
 .book-admin-serial {
   margin-top: 8px;
@@ -923,6 +1010,7 @@ a {
   word-break: break-all;
 }
 
+
 .book-admin-type {
   margin-top: 5px;
 
@@ -930,6 +1018,7 @@ a {
 
   font-size: 12px;
 }
+
 
 .book-admin-status {
   flex: 0 0 auto;
@@ -949,6 +1038,7 @@ a {
   white-space: nowrap;
 }
 
+
 .book-empty {
   padding: 50px 20px;
 
@@ -959,7 +1049,7 @@ a {
 
 
 /* =========================================================
-   Student
+   Student List
    ========================================================= */
 
 .student-list {
@@ -975,6 +1065,7 @@ a {
 
   background: #fff;
 }
+
 
 .student-row {
   display: flex !important;
@@ -996,9 +1087,11 @@ a {
   font-weight: 500 !important;
 }
 
+
 .student-row:last-child {
   border-bottom: 0;
 }
+
 
 .student-row input[type="checkbox"] {
   flex: 0 0 auto;
@@ -1014,6 +1107,7 @@ a {
 .serial-list {
   width: 100%;
 }
+
 
 .serial-row {
   display: grid;
@@ -1037,9 +1131,11 @@ a {
   font-size: 13px;
 }
 
+
 .serial-row:last-child {
   border-bottom: 0;
 }
+
 
 .serial-code {
   font-family:
@@ -1068,9 +1164,11 @@ a {
   border-bottom: 1px solid #eee;
 }
 
+
 .material-row:last-child {
   border-bottom: 0;
 }
+
 
 .material-title {
   color: #222;
@@ -1079,6 +1177,7 @@ a {
 
   font-weight: 700;
 }
+
 
 .material-target {
   margin-top: 5px;
@@ -1098,6 +1197,7 @@ a {
 
   margin-top: 30px;
 }
+
 
 .b4-sheet {
   width: 210mm;
@@ -1119,17 +1219,20 @@ a {
   page-break-after: always;
 }
 
+
 .b4-sheet h2 {
   margin-top: 0;
 
   font-size: 30px;
 }
 
+
 .b4-book {
   margin-top: 12px;
 
   font-size: 20px;
 }
+
 
 .b4-name {
   margin: 30px 0;
@@ -1139,12 +1242,15 @@ a {
   font-weight: 800;
 }
 
+
 .b4-qr {
   width: 250px;
+
   height: 250px;
 
   margin: 25px auto;
 }
+
 
 .b4-code {
   font-size: 22px;
@@ -1153,6 +1259,7 @@ a {
 
   letter-spacing: 2px;
 }
+
 
 .b4-note {
   margin-top: 50px;
@@ -1164,7 +1271,7 @@ a {
 
 
 /* =========================================================
-   Maintenance settings
+   Maintenance Settings
    ========================================================= */
 
 .maintenance-setting {
@@ -1183,11 +1290,13 @@ a {
   border-bottom: 1px solid #eee;
 }
 
+
 .maintenance-text {
   min-width: 0;
 
   flex: 1;
 }
+
 
 .maintenance-text h3 {
   margin: 0;
@@ -1196,6 +1305,7 @@ a {
 
   font-size: 18px;
 }
+
 
 .maintenance-text p {
   margin: 6px 0 0;
@@ -1218,6 +1328,7 @@ a {
   display: block;
 
   width: 64px;
+
   height: 36px;
 
   flex: 0 0 auto;
@@ -1225,16 +1336,19 @@ a {
   margin: 0 !important;
 }
 
+
 .toggle input {
   position: absolute;
 
   width: 0 !important;
+
   height: 0;
 
   margin: 0 !important;
 
   opacity: 0;
 }
+
 
 .toggle-slider {
   position: absolute;
@@ -1251,15 +1365,18 @@ a {
     background .2s ease;
 }
 
+
 .toggle-slider::before {
   content: "";
 
   position: absolute;
 
   width: 28px;
+
   height: 28px;
 
   top: 4px;
+
   left: 4px;
 
   border-radius: 50%;
@@ -1274,16 +1391,19 @@ a {
     transform .2s ease;
 }
 
+
 .toggle input:checked
 + .toggle-slider {
   background: #d5ca3d;
 }
+
 
 .toggle input:checked
 + .toggle-slider::before {
   transform:
     translateX(28px);
 }
+
 
 .maintenance-status {
   display: inline-block;
@@ -1302,6 +1422,7 @@ a {
 
   font-weight: 800;
 }
+
 
 .maintenance-status.on {
   background: #d5ca3d;
@@ -1331,11 +1452,15 @@ a {
   color: #222;
 }
 
+
 .page-error h2 {
   margin: 0 0 10px;
 
+  color: #222;
+
   font-size: 19px;
 }
+
 
 .page-error p {
   margin: 0 0 18px;
@@ -1384,17 +1509,21 @@ a {
     width: 210px;
   }
 
+
   .admin-main {
     margin-left: 210px;
   }
+
 
   .admin-brand {
     min-height: 125px;
   }
 
+
   .admin-brand > div {
     font-size: 23px;
   }
+
 
   .admin-side nav a,
   .admin-side nav button {
@@ -1403,19 +1532,24 @@ a {
     font-size: 13px;
   }
 
+
   .admin-content {
     padding: 28px 22px;
   }
 
+
   .maintenance-banner {
     margin-left: 22px;
+
     margin-right: 22px;
   }
+
 
   .serial-row {
     grid-template-columns:
       1fr 1fr;
   }
+
 }
 
 
@@ -1429,9 +1563,11 @@ a {
     width: 180px;
   }
 
+
   .admin-main {
     margin-left: 180px;
   }
+
 
   .admin-brand {
     min-height: 105px;
@@ -1439,17 +1575,21 @@ a {
     padding: 14px;
   }
 
+
   .admin-brand > div {
     font-size: 19px;
   }
+
 
   .admin-brand small {
     font-size: 10px;
   }
 
+
   .admin-side nav {
     padding-top: 7px;
   }
+
 
   .admin-side nav a,
   .admin-side nav button {
@@ -1460,9 +1600,11 @@ a {
     font-size: 12px;
   }
 
+
   .admin-side nav button {
     margin-top: 7px;
   }
+
 
   .admin-notice {
     min-height: 48px;
@@ -1470,19 +1612,23 @@ a {
     padding: 6px 14px;
   }
 
+
   .admin-notice > div:first-child {
     padding: 5px 10px;
 
     font-size: 10px;
   }
 
+
   .admin-notice > span {
     font-size: 11px;
   }
 
+
   .admin-content {
     padding: 22px 13px;
   }
+
 
   .page-heading {
     align-items: flex-start;
@@ -1492,13 +1638,16 @@ a {
     margin-bottom: 22px;
   }
 
+
   .page-heading h1 {
     font-size: 26px;
   }
 
+
   .admin-card {
     padding: 17px;
   }
+
 
   .admin-stats {
     grid-template-columns: 1fr;
@@ -1506,13 +1655,16 @@ a {
     gap: 12px;
   }
 
+
   .admin-stat {
     padding: 18px;
   }
 
+
   .admin-stat strong {
     font-size: 30px;
   }
+
 
   .maintenance-banner {
     margin:
@@ -1525,28 +1677,35 @@ a {
     gap: 10px;
   }
 
-  .maintenance-banner-icon {
-    width: 44px;
-    height: 44px;
 
-    flex-basis: 44px;
+  .maintenance-banner-icon {
+    width: 46px;
+
+    height: 46px;
+
+    flex-basis: 46px;
   }
+
 
   .maintenance-banner-icon svg {
-    width: 27px;
-    height: 27px;
+    width: 46px;
+
+    height: 46px;
   }
+
 
   .maintenance-banner-content {
     min-width:
       calc(
-        100% - 58px
+        100% - 56px
       );
   }
 
+
   .maintenance-banner-link {
-    margin-left: 54px;
+    margin-left: 56px;
   }
+
 
   .book-admin-item {
     align-items: flex-start;
@@ -1556,11 +1715,13 @@ a {
     gap: 10px;
   }
 
+
   .serial-row {
     grid-template-columns: 1fr;
 
     gap: 5px;
   }
+
 
   .maintenance-setting {
     align-items: flex-start;
@@ -1568,9 +1729,11 @@ a {
     flex-direction: column;
   }
 
+
   .toggle {
     align-self: flex-end;
   }
+
 }
 
 
@@ -1586,11 +1749,13 @@ a {
     display: none !important;
   }
 
+
   .admin-main {
     margin-left: 0;
 
     background: #fff;
   }
+
 
   .admin-content {
     max-width: none;
@@ -1598,9 +1763,12 @@ a {
     padding: 0;
   }
 
+
   .b4-sheet {
     margin: 0;
 
     border: 0;
   }
+
 }
+```
