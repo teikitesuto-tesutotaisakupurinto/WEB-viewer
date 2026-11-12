@@ -33,20 +33,25 @@ async function getProfile(userId) {
 
 
   if (error) {
+
     throw new Error(
       "ユーザー情報を取得できませんでした。"
     );
+
   }
 
 
   if (!data) {
+
     throw new Error(
       "このアカウントは登録されていません。"
     );
+
   }
 
 
   return data;
+
 }
 
 
@@ -69,19 +74,26 @@ async function getMaintenance() {
 
 
   if (error) {
+
     throw new Error(
       "システム状態を確認できませんでした。"
     );
+
   }
 
 
   return {
+
     enabled:
-      Boolean(data?.enabled),
+      Boolean(
+        data?.enabled
+      ),
 
     message:
       data?.message || ""
+
   };
+
 }
 
 
@@ -91,9 +103,21 @@ form.addEventListener(
 
     event.preventDefault();
 
-    button.disabled = true;
 
-    message.textContent = "";
+    if (
+      button.disabled
+    ) {
+
+      return;
+
+    }
+
+
+    button.disabled =
+      true;
+
+    message.textContent =
+      "";
 
 
     try {
@@ -112,10 +136,15 @@ form.addEventListener(
           .value;
 
 
-      if (!email || !password) {
+      if (
+        !email ||
+        !password
+      ) {
+
         throw new Error(
           "メールアドレスとパスワードを入力してください。"
         );
+
       }
 
 
@@ -125,15 +154,23 @@ form.addEventListener(
       } =
         await supabase.auth
           .signInWithPassword({
+
             email,
+
             password
+
           });
 
 
-      if (error || !data?.user) {
+      if (
+        error ||
+        !data?.user
+      ) {
+
         throw new Error(
           "メールアドレスまたはパスワードが正しくありません。"
         );
+
       }
 
 
@@ -150,8 +187,8 @@ form.addEventListener(
       /*
        * Admin
        *
-       * 通常メンテナンス中でも
-       * Admin画面へ入れる
+       * 通常メンテナンス中も
+       * Adminは通常管理画面へ。
        */
 
       if (
@@ -165,6 +202,7 @@ form.addEventListener(
         );
 
         return;
+
       }
 
 
@@ -183,16 +221,21 @@ form.addEventListener(
         );
 
         return;
+
       }
 
+
+      /*
+       * 不明な権限
+       */
 
       await supabase.auth.signOut({
         scope: "local"
       });
 
 
-      throw new Error(
-        "このアカウントには利用権限がありません。"
+      window.location.replace(
+        "../errors/?type=403"
       );
 
     }
@@ -203,11 +246,15 @@ form.addEventListener(
         error
       );
 
+
       message.textContent =
         error.message ||
         "ログインに失敗しました。";
 
-      button.disabled = false;
+
+      button.disabled =
+        false;
+
     }
 
   }
