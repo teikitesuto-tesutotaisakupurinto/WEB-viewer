@@ -1,7 +1,7 @@
-
 * {
   box-sizing: border-box;
 }
+
 
 html,
 body {
@@ -12,6 +12,7 @@ body {
 
   overflow: hidden;
 }
+
 
 body {
   background: #555;
@@ -27,10 +28,6 @@ body {
 }
 
 
-/* =========================================================
-   Viewer
-   ========================================================= */
-
 .viewer {
   width: 100%;
   height: 100%;
@@ -44,10 +41,10 @@ body {
 
 
 /* =========================================================
-   Header
+   Toolbar
    ========================================================= */
 
-.viewer-header {
+.viewer-toolbar {
   position: relative;
 
   z-index: 100;
@@ -58,13 +55,17 @@ body {
 
   align-items: center;
 
-  gap: 10px;
+  gap: 8px;
 
   padding: 7px 10px;
 
   background: #fff;
 
   border-bottom: 1px solid #ccc;
+
+  box-shadow:
+    0 2px 7px
+    rgba(0,0,0,.08);
 }
 
 
@@ -94,20 +95,25 @@ body {
 }
 
 
-.viewer-center {
+.viewer-page-controls {
   display: flex;
 
   align-items: center;
 
   gap: 4px;
-
-  flex: 0 0 auto;
 }
 
 
-.viewer-center button,
-.viewer-tools button,
-.icon-button {
+.viewer-tools {
+  display: flex;
+
+  align-items: center;
+
+  gap: 4px;
+}
+
+
+.toolbar-button {
   height: 38px;
 
   padding: 0 10px;
@@ -125,46 +131,36 @@ body {
   font-weight: 600;
 
   cursor: pointer;
+
+  white-space: nowrap;
 }
 
 
-.viewer-center button:hover,
-.viewer-tools button:hover,
-.icon-button:hover {
-  background: #f1f1f1;
+.toolbar-button:hover {
+  background: #f2f2f2;
 }
 
 
-#page {
-  min-width: 65px;
-
-  text-align: center;
-
-  font-size: 13px;
-
-  font-variant-numeric:
-    tabular-nums;
-}
-
-
-.viewer-tools {
-  display: flex;
-
-  align-items: center;
-
-  gap: 4px;
-
-  flex: 0 0 auto;
-}
-
-
-.viewer-tools button.active,
-#pen.active {
+.toolbar-button.active {
   background: #d5ca3d;
 
   border-color: #c8bd31;
 
   font-weight: 800;
+}
+
+
+#page {
+  min-width: 62px;
+
+  text-align: center;
+
+  color: #333;
+
+  font-size: 13px;
+
+  font-variant-numeric:
+    tabular-nums;
 }
 
 
@@ -214,10 +210,10 @@ body {
 
   right: 8px;
 
-  z-index: 200;
+  z-index: 300;
 
   width: min(
-    280px,
+    290px,
     calc(100vw - 16px)
   );
 
@@ -236,12 +232,12 @@ body {
 
   box-shadow:
     0 10px 30px
-    rgba(0,0,0,.2);
+    rgba(0,0,0,.22);
 }
 
 
 .mobile-menu button {
-  min-height: 44px;
+  min-height: 45px;
 
   padding: 10px 13px;
 
@@ -255,12 +251,9 @@ body {
 
   text-align: left;
 
+  font-size: 13px;
+
   font-weight: 600;
-}
-
-
-.mobile-menu button:last-child {
-  border-bottom: 0;
 }
 
 
@@ -283,15 +276,18 @@ body {
 
   justify-content: center;
 
-  padding: 25px;
+  padding: 28px;
 
   background: #555;
 
-  overscroll-behavior: contain;
+  touch-action:
+    pan-x pan-y;
 
-  touch-action: pan-x pan-y;
+  overscroll-behavior:
+    contain;
 
-  -webkit-overflow-scrolling: touch;
+  -webkit-overflow-scrolling:
+    touch;
 }
 
 
@@ -311,10 +307,33 @@ body {
   background: #fff;
 
   box-shadow:
-    0 8px 30px
-    rgba(0,0,0,.25);
+    0 7px 28px
+    rgba(0,0,0,.28);
 }
 
+
+/* =========================================================
+   PDF
+   ========================================================= */
+
+#pdfCanvas {
+  display: none;
+
+  width: auto;
+
+  height: auto;
+
+  max-width: none;
+
+  background: #fff;
+
+  vertical-align: top;
+}
+
+
+/* =========================================================
+   Images
+   ========================================================= */
 
 #imagePage {
   display: none;
@@ -324,8 +343,6 @@ body {
   height: auto;
 
   max-width: none;
-
-  min-width: 1px;
 
   background: #fff;
 
@@ -341,22 +358,9 @@ body {
 }
 
 
-#pdfFrame {
-  display: block;
-
-  width: 100%;
-
-  height: 100%;
-
-  min-width: 700px;
-
-  min-height: 900px;
-
-  border: 0;
-
-  background: #fff;
-}
-
+/* =========================================================
+   Annotation
+   ========================================================= */
 
 #annotationCanvas {
   position: absolute;
@@ -392,20 +396,18 @@ body.pen-enabled
 
   left: 50%;
 
-  bottom: 25px;
+  bottom: 24px;
+
+  z-index: 500;
 
   transform:
     translateX(-50%);
 
-  z-index: 500;
-
-  padding: 11px 17px;
+  padding: 10px 16px;
 
   border-radius: 8px;
 
   background: #fff;
-
-  color: #222;
 
   box-shadow:
     0 5px 20px
@@ -421,40 +423,7 @@ body.pen-enabled
 
 
 /* =========================================================
-   Error
-   ========================================================= */
-
-.viewer-error {
-  min-height: 100%;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
-  padding: 25px;
-}
-
-
-.viewer-error-card {
-  width: min(
-    600px,
-    100%
-  );
-
-  padding: 35px;
-
-  background: #fff;
-
-  border-radius: 12px;
-
-  text-align: center;
-}
-
-
-/* =========================================================
-   Small / Tablet
+   Tablet
    ========================================================= */
 
 @media (max-width: 1000px) {
@@ -464,23 +433,13 @@ body.pen-enabled
   }
 
 
-  .viewer-header {
-    min-height: 58px;
-  }
-
-
   .menu-button {
     display: block;
   }
 
 
-  .viewer-center {
-    margin-left: auto;
-  }
-
-
   .viewer-stage {
-    padding: 15px;
+    padding: 18px;
   }
 
 }
@@ -490,27 +449,36 @@ body.pen-enabled
    Smartphone
    ========================================================= */
 
-@media (max-width: 600px) {
+@media (max-width: 650px) {
+
+  .viewer-toolbar {
+    min-height: 56px;
+
+    padding: 6px 8px;
+  }
+
 
   .viewer-left {
     flex: 1;
   }
 
 
-  .viewer-center {
+  .viewer-page-controls {
     gap: 2px;
   }
 
 
-  .viewer-center button {
-    padding: 0 7px;
+  .viewer-page-controls
+  .toolbar-button {
+    padding:
+      0 7px;
 
     font-size: 11px;
   }
 
 
   #page {
-    min-width: 55px;
+    min-width: 52px;
 
     font-size: 11px;
   }
@@ -518,13 +486,6 @@ body.pen-enabled
 
   .viewer-stage {
     padding: 8px;
-  }
-
-
-  #pdfFrame {
-    min-width: 600px;
-
-    min-height: 800px;
   }
 
 }
