@@ -1,77 +1,20 @@
+
 import {
   supabase
 } from "../assets/js/supabase.js";
 
 
 const form =
-  document.getElementById(
-    "loginForm"
-  );
-
-const message =
-  document.getElementById(
-    "message"
-  );
+  document.getElementById("loginForm");
 
 const button =
-  document.getElementById(
-    "loginButton"
-  );
+  document.getElementById("loginButton");
+
+const message =
+  document.getElementById("message");
 
 
-/* =========================================================
-   メンテナンス状態
-   ========================================================= */
-
-async function getMaintenance() {
-
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from(
-        "maintenance_settings"
-      )
-      .select(
-        "enabled,message"
-      )
-      .eq(
-        "id",
-        1
-      )
-      .maybeSingle();
-
-
-  if (error) {
-
-    throw new Error(
-      "システム状態を確認できませんでした。"
-    );
-
-  }
-
-
-  return {
-    enabled:
-      Boolean(
-        data?.enabled
-      ),
-
-    message:
-      data?.message || ""
-  };
-
-}
-
-
-/* =========================================================
-   プロフィール
-   ========================================================= */
-
-async function getProfile(
-  userId
-) {
+async function getProfile(userId) {
 
   const {
     data,
@@ -90,31 +33,57 @@ async function getProfile(
 
 
   if (error) {
-
     throw new Error(
       "ユーザー情報を取得できませんでした。"
     );
-
   }
 
 
   if (!data) {
-
     throw new Error(
-      "このアカウントは利用登録されていません。"
+      "このアカウントは登録されていません。"
     );
-
   }
 
 
   return data;
-
 }
 
 
-/* =========================================================
-   ログイン
-   ========================================================= */
+async function getMaintenance() {
+
+  const {
+    data,
+    error
+  } =
+    await supabase
+      .from("maintenance_settings")
+      .select(
+        "enabled,message"
+      )
+      .eq(
+        "id",
+        1
+      )
+      .maybeSingle();
+
+
+  if (error) {
+    throw new Error(
+      "システム状態を確認できませんでした。"
+    );
+  }
+
+
+  return {
+    enabled:
+      Boolean(data?.enabled),
+
+    message:
+      data?.message || ""
+  };
+}
+
 
 form.addEventListener(
   "submit",
@@ -122,31 +91,16 @@ form.addEventListener(
 
     event.preventDefault();
 
+    button.disabled = true;
 
-    if (
-      button.disabled
-    ) {
-
-      return;
-
-    }
-
-
-    button.disabled =
-      true;
-
-
-    message.textContent =
-      "";
+    message.textContent = "";
 
 
     try {
 
       const email =
         document
-          .getElementById(
-            "email"
-          )
+          .getElementById("email")
           .value
           .trim()
           .toLowerCase();
@@ -154,204 +108,91 @@ form.addEventListener(
 
       const password =
         document
-          .getElementById(
-            "password"
-          )
+          .getElementById("password")
           .value;
 
 
-      if (
-        !email ||
-        !password
-      ) {
-
+      if (!email || !password) {
         throw new Error(
           "メールアドレスとパスワードを入力してください。"
         );
-
       }
 
 
-      /*
-       * Auth
-       */
-
       const {
-        data:
-          authData,
-        error:
-          authError
+        data,
+        error
       } =
         await supabase.auth
           .signInWithPassword({
-
             email,
-
             password
-
           });
 
 
-      if (authError) {
-
+      if (error || !data?.user) {
         throw new Error(
           "メールアドレスまたはパスワードが正しくありません。"
         );
-
       }
 
-
-      const user =
-        authData?.user;
-
-
-      if (!user) {
-
-        throw new Error(
-          "ログイン情報を取得できませんでした。"
-        );
-
-      }
-
-
-      /*
-       * Profile
-       */
 
       const profile =
         await getProfile(
-          user.id
+          data.user.id
         );
 
-
-      /*
-       * メンテナンス確認
-       *
-       * ログイン後にだけ行う
-       */
 
       const maintenance =
         await getMaintenance();
 
 
       /*
-       * 緊急復旧モードは
-       * 現在の通常メンテナンス設定とは
-       * 分離して扱う
-       */
-
-      const recovery =
-        false;
-
-
-      /*
-       * ======================================
        * Admin
-       * ======================================
+       *
+       * 通常メンテナンス中でも
+       * Admin画面へ入れる
        */
 
       if (
-        profile.role ===
-        "admin"
+        profile.role === "admin"
       ) {
-
-        /*
-         * 通常メンテナンス
-         *
-         * Adminは通常Admin画面へ。
-         * 画面上にメンテナンス状態を表示する。
-         */
-
-        if (
-          maintenance.enabled &&
-          !recovery
-        ) {
-
-          window.location.replace(
-            "../admin/?maintenance=1"
-          );
-
-          return;
-
-        }
-
-
-        /*
-         * 緊急復旧
-         */
-
-        if (
-          recovery
-        ) {
-
-          window.location.replace(
-            "../admin/maintenance/"
-          );
-
-          return;
-
-        }
-
 
         window.location.replace(
-          "../admin/"
-        );
-
-        return;
-
-      }
-
-
-      /*
-       * ======================================
-       * Student
-       * ======================================
-       */
-
-      if (
-        profile.role ===
-        "student"
-      ) {
-
-        /*
-         * メンテナンス中は
-         * My Booksへ入れない
-         */
-
-        if (
           maintenance.enabled
-        ) {
-
-          window.location.replace(
-            "../student/?maintenance=1"
-          );
-
-          return;
-
-        }
-
-
-        window.location.replace(
-          "../student/books/"
+            ? "../admin/?maintenance=1"
+            : "../admin/"
         );
 
         return;
-
       }
 
 
       /*
-       * 権限不明
+       * Student
        */
+
+      if (
+        profile.role === "student"
+      ) {
+
+        window.location.replace(
+          maintenance.enabled
+            ? "../student/?maintenance=1"
+            : "../student/books/"
+        );
+
+        return;
+      }
+
 
       await supabase.auth.signOut({
-        scope:
-          "local"
+        scope: "local"
       });
 
 
       throw new Error(
-        "このアカウントには利用権限が設定されていません。"
+        "このアカウントには利用権限がありません。"
       );
 
     }
@@ -362,15 +203,11 @@ form.addEventListener(
         error
       );
 
-
       message.textContent =
         error.message ||
         "ログインに失敗しました。";
 
-
-      button.disabled =
-        false;
-
+      button.disabled = false;
     }
 
   }
