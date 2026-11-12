@@ -257,7 +257,7 @@ function getExtension(
 
   const parts =
     String(
-      file.name || ""
+      file?.name || ""
     )
       .split(".");
 
@@ -279,7 +279,7 @@ function getExtension(
 
 
 /* =========================================================
-   Validate
+   Validate files
    ========================================================= */
 
 function validateFiles(
@@ -331,12 +331,12 @@ function validateFiles(
 
 
   /*
-   * PDFと画像を混在させない。
+   * PDFと画像は混在させない。
    */
 
   if (
-    pdfFiles.length &&
-    imageFiles.length
+    pdfFiles.length > 0 &&
+    imageFiles.length > 0
   ) {
 
     throw new Error(
@@ -347,7 +347,7 @@ function validateFiles(
 
 
   /*
-   * PDFは1ファイル。
+   * PDFは1ファイルのみ。
    */
 
   if (
@@ -360,6 +360,10 @@ function validateFiles(
 
   }
 
+
+  /*
+   * PDF。
+   */
 
   if (
     pdfFiles.length === 1
@@ -379,11 +383,11 @@ function validateFiles(
 
 
   /*
-   * 画像Bookは複数登録可能。
+   * 画像。
    */
 
   if (
-    imageFiles.length
+    imageFiles.length > 0
   ) {
 
     return {
@@ -572,7 +576,7 @@ function createStoragePath(
 
 
 /* =========================================================
-   Upload
+   Storage upload
    ========================================================= */
 
 async function uploadFile(
@@ -586,8 +590,9 @@ async function uploadFile(
 
 
   let contentType =
-    file.type ||
-    "";
+    String(
+      file.type || ""
+    );
 
 
   if (!contentType) {
@@ -628,6 +633,7 @@ async function uploadFile(
         path,
         file,
         {
+
           cacheControl:
             "3600",
 
@@ -635,6 +641,7 @@ async function uploadFile(
 
           upsert:
             false
+
         }
       );
 
@@ -723,51 +730,78 @@ async function cleanupStorage(
    Book INSERT
    ========================================================= */
 
-/*
- * ここが重要。
- *
- * description が
- *
- * undefined
- * null
- * 空文字
- *
- * のどれでも、DBへは必ず ""
- * を送る。
- */
-
 async function insertBook(
   values
 ) {
+
+  /*
+   * description はDBで NOT NULL。
+   *
+   * null / undefined / その他を
+   * 必ず安全な文字列に変換。
+   */
+
+  const safeDescription =
+    values.description == null
+      ? ""
+      : String(
+          values.description
+        );
+
+
+  /*
+   * file_typeもDB制約に合わせる。
+   *
+   * 許可:
+   * pdf
+   * jpg
+   * jpeg
+   * png
+   */
+
+  const allowedFileTypes = [
+    "pdf",
+    "jpg",
+    "jpeg",
+    "png"
+  ];
+
+
+  const fileType =
+    values.file_type == null
+      ? null
+      : String(
+          values.file_type
+        )
+          .trim()
+          .toLowerCase();
+
+
+  if (
+    fileType !== null &&
+    !allowedFileTypes.includes(
+      fileType
+    )
+  ) {
+
+    throw new Error(
+      `file_type "${fileType}" は登録できません。`
+    );
+
+  }
+
 
   const safeValues = {
 
     ...values,
 
     description:
-      values.description == null
-        ? ""
-        : String(
-            values.description
-          )
+      safeDescription,
+
+    file_type:
+      fileType
 
   };
-
-
-  /*
-   * 念のため、undefinedも
-   * 空文字へ統一。
-   */
-
-  if (
-    typeof safeValues.description ===
-    "undefined"
-  ) {
-
-    safeValues.description =
-      "";
-
-  }
 
 
   console.log(
@@ -824,7 +858,7 @@ async function insertBook(
 
 
 /* =========================================================
-   Book DELETE rollback
+   Rollback Book
    ========================================================= */
 
 async function deleteBook(
@@ -875,7 +909,7 @@ async function deleteBook(
 
 
 /* =========================================================
-   Page DELETE rollback
+   Rollback Pages
    ========================================================= */
 
 async function deleteBookPages(
@@ -926,7 +960,7 @@ async function deleteBookPages(
 
 
 /* =========================================================
-   PDF Book
+   Create PDF Book
    ========================================================= */
 
 async function createPdfBook(
@@ -965,10 +999,6 @@ async function createPdfBook(
 
         title:
           title,
-
-        /*
-         * null禁止。
-         */
 
         description:
           description || "",
@@ -1012,7 +1042,7 @@ async function createPdfBook(
 
 
 /* =========================================================
-   Image Book
+   Create Image Book
    ========================================================= */
 
 async function createImageBook(
@@ -1027,6 +1057,7 @@ async function createImageBook(
   const uploadedPaths =
     [];
 
+
   try {
 
     setMessage(
@@ -1035,9 +1066,36 @@ async function createImageBook(
 
 
     /*
-     * 画像Bookもdescriptionは
-     * 必ず文字列。
+     * DBのCHECK制約に合わせる。
+     *
+     * images は不可。
+     *
+     * 最初の画像の形式を
+     * 親Bookのfile_typeにする。
      */
+
+    const firstExtension =
+      getExtension(
+        files[0]
+      );
+
+
+    if (
+      ![
+        "jpg",
+        "jpeg",
+        "png"
+      ].includes(
+        firstExtension
+      )
+    ) {
+
+      throw new Error(
+        "画像形式が正しくありません。"
+      );
+
+    }
+
 
     bookId =
       await insertBook({
@@ -1049,15 +1107,19 @@ async function createImageBook(
           description || "",
 
         /*
-         * 画像Bookはページ側に
-         * ファイルを持つ。
+         * 画像本体はbook_pagesへ。
          */
 
         file_path:
           null,
 
+        /*
+         * books.file_typeには
+         * imagesを入れない。
+         */
+
         file_type:
-          "images",
+          firstExtension,
 
         enabled:
           true
@@ -1077,6 +1139,29 @@ async function createImageBook(
 
       const file =
         files[index];
+
+
+      const extension =
+        getExtension(
+          file
+        );
+
+
+      if (
+        ![
+          "jpg",
+          "jpeg",
+          "png"
+        ].includes(
+          extension
+        )
+      ) {
+
+        throw new Error(
+          "対応していない画像形式があります。"
+        );
+
+      }
 
 
       setMessage(
@@ -1107,7 +1192,7 @@ async function createImageBook(
           path,
 
         file_type:
-          getExtension(file)
+          extension
 
       });
 
@@ -1152,27 +1237,15 @@ async function createImageBook(
     error
   ) {
 
-    /*
-     * ページを削除。
-     */
-
     await deleteBookPages(
       bookId
     );
 
 
-    /*
-     * Bookを削除。
-     */
-
     await deleteBook(
       bookId
     );
 
-
-    /*
-     * Storageを削除。
-     */
 
     await cleanupStorage(
       uploadedPaths
@@ -1187,7 +1260,7 @@ async function createImageBook(
 
 
 /* =========================================================
-   Create
+   Create Book
    ========================================================= */
 
 async function createBook() {
@@ -1209,8 +1282,7 @@ async function createBook() {
 
 
   /*
-   * DBがNOT NULLなので、
-   * nullには絶対にしない。
+   * NOT NULL対応。
    */
 
   const description =
@@ -1268,9 +1340,7 @@ async function createBook() {
   }
 
 
-  if (
-    createButton
-  ) {
+  if (createButton) {
 
     createButton.disabled =
       true;
@@ -1353,9 +1423,7 @@ async function createBook() {
   }
   finally {
 
-    if (
-      createButton
-    ) {
+    if (createButton) {
 
       createButton.disabled =
         false;
@@ -1430,7 +1498,10 @@ async function loadBooks() {
   }
 
 
-  if (!data?.length) {
+  if (
+    !data ||
+    !data.length
+  ) {
 
     booksContainer.innerHTML =
       `
@@ -1456,14 +1527,32 @@ async function loadBooks() {
               .toLowerCase();
 
 
-          const typeLabel =
+          let typeLabel =
+            fileType;
+
+
+          if (
             fileType === "pdf"
-              ? "PDF"
-              : (
-                  fileType === "images"
-                    ? "画像"
-                    : fileType.toUpperCase()
-                );
+          ) {
+
+            typeLabel =
+              "PDF";
+
+          }
+          else if (
+            [
+              "jpg",
+              "jpeg",
+              "png"
+            ].includes(
+              fileType
+            )
+          ) {
+
+            typeLabel =
+              "画像";
+
+          }
 
 
           const status =
@@ -1566,9 +1655,7 @@ start()
         booksContainer.innerHTML =
           `
             <div class="book-empty">
-
               Bookを読み込めませんでした。
-
             </div>
           `;
 
