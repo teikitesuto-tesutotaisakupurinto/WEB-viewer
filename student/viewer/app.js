@@ -88,6 +88,35 @@ const penButton =
 
 
 /* =========================================================
+   Required DOM check
+   ========================================================= */
+
+const requiredElements = [
+  stage,
+  currentSlide,
+  incomingSlide,
+  currentPdfCanvas,
+  incomingPdfCanvas,
+  currentImage,
+  incomingImage,
+  annotationCanvas
+];
+
+
+if (
+  requiredElements.some(
+    element => !element
+  )
+) {
+
+  throw new Error(
+    "VIEWER_DOM_INCOMPLETE"
+  );
+
+}
+
+
+/* =========================================================
    State
    ========================================================= */
 
@@ -105,26 +134,25 @@ let currentPage = 1;
 
 
 /*
- * 画面倍率。
+ * viewerMode
+ *
+ * move
+ * pen
+ * eraser
  */
 
-let zoom = 1;
+let viewerMode =
+  "move";
 
 
 /*
- * move / pen / eraser
- */
-
-let viewerMode = "move";
-
-
-/*
+ * interactionMode
+ *
  * idle
  * undecided
+ * page-turn
  * pan
  * pinch
- * page-turn
- * neutral
  */
 
 let interactionMode =
@@ -132,80 +160,117 @@ let interactionMode =
 
 
 /*
- * ページサイズ。
+ * 表示倍率。
+ *
+ * 1 = 初期表示
+ * >1 = 拡大
  */
 
-let pageWidth = 0;
-
-let pageHeight = 0;
+let zoom =
+  1;
 
 
 /*
- * 拡大時のパン位置。
+ * ページの基準CSSサイズ。
+ *
+ * zoomを掛ける前のサイズ。
  */
 
-let panX = 0;
+let basePageWidth =
+  0;
 
-let panY = 0;
-
-let panStartX = 0;
-
-let panStartY = 0;
-
-let panBaseX = 0;
-
-let panBaseY = 0;
+let basePageHeight =
+  0;
 
 
 /*
- * ページ切り替え中。
+ * パン位置。
  */
 
-let pageChanging = false;
+let panX =
+  0;
+
+let panY =
+  0;
+
+let panStartX =
+  0;
+
+let panStartY =
+  0;
+
+let panBaseX =
+  0;
+
+let panBaseY =
+  0;
 
 
 /*
- * スワイプ。
+ * ページ切り替え。
  */
 
-let swipeStartX = 0;
+let pageChanging =
+  false;
 
-let swipeStartY = 0;
 
-let swipeDeltaX = 0;
+/*
+ * ページスワイプ。
+ */
 
-let swipeDirection = 0;
+let swipeStartX =
+  0;
 
-let swipeActive = false;
+let swipeStartY =
+  0;
 
-let adjacentPreparing = false;
+let swipeX =
+  0;
+
+let swipeY =
+  0;
+
+let swipeDirection =
+  0;
+
+let incomingReady =
+  false;
+
+let incomingPreparing =
+  false;
 
 
 /*
  * ピンチ。
  */
 
-let pinchDistance = 0;
+let pinchDistance =
+  0;
 
-let pinchStartZoom = 1;
+let pinchStartZoom =
+  1;
 
 
 /*
  * ペン。
  */
 
-let drawing = false;
+let drawing =
+  false;
 
-let lastX = 0;
+let lastX =
+  0;
 
-let lastY = 0;
+let lastY =
+  0;
 
 
 /*
  * 描画世代。
  */
 
-let renderToken = 0;
+let renderToken =
+  0;
 
 
 /*
@@ -216,32 +281,56 @@ const imageCache =
   new Map();
 
 
+/*
+ * PDF初期CSS倍率。
+ *
+ * 例えばA4を画面に収めるため
+ * 0.8などになる。
+ */
+
+let pdfBaseScale =
+  1;
+
+
 /* =========================================================
    Constants
    ========================================================= */
+
+const MAX_ZOOM =
+  4;
+
+const MIN_ZOOM =
+  1;
+
+
+/*
+ * この倍率を超えたら
+ * 1本指はパン専用。
+ */
 
 const PAN_ZOOM_LIMIT =
   1.03;
 
 
 /*
- * この距離以上でページ送り。
+ * ページ送り確定距離。
  */
 
 const SWIPE_MIN_DISTANCE =
-  90;
+  60;
 
 
 /*
- * 横方向が縦方向より明確に大きい場合。
+ * 横方向がこれだけ強ければ
+ * ページスワイプとみなす。
  */
 
 const SWIPE_AXIS_RATIO =
-  1.35;
+  1.25;
 
 
 /*
- * PDF CanvasのDPI上限。
+ * PDFの高DPI上限。
  */
 
 const MAX_DPR =
@@ -335,6 +424,25 @@ function hideMessage() {
 
 
 /* =========================================================
+   Wait
+   ========================================================= */
+
+function wait(
+  milliseconds
+) {
+
+  return new Promise(
+    resolve =>
+      setTimeout(
+        resolve,
+        milliseconds
+      )
+  );
+
+}
+
+
+/* =========================================================
    Storage
    ========================================================= */
 
@@ -377,7 +485,9 @@ async function getSignedUrl(
   }
 
 
-  if (!data?.signedUrl) {
+  if (
+    !data?.signedUrl
+  ) {
 
     throw new Error(
       "教材ファイルのURLを取得できませんでした。"
@@ -474,7 +584,7 @@ async function loadBook() {
 
 
 /* =========================================================
-   PDF判定
+   File type
    ========================================================= */
 
 function isPdfBook() {
@@ -555,7 +665,7 @@ async function loadPdfJs() {
 
 
 /* =========================================================
-   PDF
+   Load PDF
    ========================================================= */
 
 async function loadPdf() {
@@ -578,9 +688,12 @@ async function loadPdf() {
     pdf =
       await library
         .getDocument({
+
           url,
+
           withCredentials:
             false
+
         })
         .promise;
 
@@ -607,7 +720,7 @@ async function loadPdf() {
 
 
 /* =========================================================
-   Image Book
+   Load image pages
    ========================================================= */
 
 async function loadImagePages() {
@@ -635,7 +748,8 @@ async function loadImagePages() {
         .order(
           "page_number",
           {
-            ascending: true
+            ascending:
+              true
           }
         );
 
@@ -675,7 +789,9 @@ async function loadImagePages() {
         );
 
 
-    if (!pages.length) {
+    if (
+      !pages.length
+    ) {
 
       throw new Error(
         "このBookには表示できるページがありません。"
@@ -720,7 +836,7 @@ function updatePageLabel() {
 
 
 /* =========================================================
-   Image
+   Image loader
    ========================================================= */
 
 async function getImage(
@@ -851,21 +967,67 @@ async function getPdfSize(
 }
 
 
+/* =========================================================
+   DPR
+   ========================================================= */
+
 function getDpr() {
 
   return Math.min(
+
     MAX_DPR,
+
     Math.max(
       1,
       window.devicePixelRatio || 1
     )
+
   );
 
 }
 
 
 /* =========================================================
-   PDF render
+   Initial PDF scale
+   ========================================================= */
+
+async function getInitialPdfScale() {
+
+  const size =
+    await getPdfSize(
+      currentPage
+    );
+
+
+  const availableWidth =
+    Math.max(
+      200,
+      stage.clientWidth - 48
+    );
+
+
+  const availableHeight =
+    Math.max(
+      200,
+      stage.clientHeight - 48
+    );
+
+
+  return Math.min(
+
+    availableWidth /
+      size.width,
+
+    availableHeight /
+      size.height
+
+  );
+
+}
+
+
+/* =========================================================
+   PDF canvas
    ========================================================= */
 
 async function renderPdfCanvas(
@@ -884,12 +1046,20 @@ async function renderPdfCanvas(
     getDpr();
 
 
+  /*
+   * CSS上のサイズ。
+   */
+
   const cssViewport =
     page.getViewport({
       scale:
         cssScale
     });
 
+
+  /*
+   * 実CanvasはDPR倍。
+   */
 
   const renderViewport =
     page.getViewport({
@@ -909,6 +1079,10 @@ async function renderPdfCanvas(
       renderViewport.height
     );
 
+
+  /*
+   * CSSサイズは論理サイズ。
+   */
 
   canvas.style.width =
     `${cssViewport.width}px`;
@@ -967,53 +1141,239 @@ async function renderPdfCanvas(
 
 
 /* =========================================================
-   Initial scale
+   Set slide size
    ========================================================= */
 
-async function getInitialPdfScale() {
+function setSlideSize(
+  slide,
+  width,
+  height
+) {
 
-  const size =
-    await getPdfSize(
-      currentPage
-    );
-
-
-  const availableWidth =
-    Math.max(
-      200,
-      stage.clientWidth - 48
-    );
+  slide.style.width =
+    `${Math.max(
+      1,
+      width
+    )}px`;
 
 
-  const availableHeight =
-    Math.max(
-      200,
-      stage.clientHeight - 48
-    );
-
-
-  return Math.min(
-
-    availableWidth /
-      size.width,
-
-    availableHeight /
-      size.height
-
-  );
+  slide.style.height =
+    `${Math.max(
+      1,
+      height
+    )}px`;
 
 }
 
 
 /* =========================================================
-   Current page
+   View transform
    ========================================================= */
 
-async function prepareCurrentPage() {
+function applyViewTransform() {
+
+  currentSlide.style.transform =
+    `
+      translate3d(
+        calc(-50% + ${panX}px),
+        calc(-50% + ${panY}px),
+        0
+      )
+      scale(${zoom})
+    `;
+
+}
+
+
+/* =========================================================
+   Incoming transform
+   ========================================================= */
+
+function applyIncomingTransform(
+  offsetX
+) {
+
+  incomingSlide.style.transform =
+    `
+      translate3d(
+        calc(-50% + ${offsetX}px),
+        -50%,
+        0
+      )
+      scale(${zoom})
+    `;
+
+}
+
+
+/* =========================================================
+   Hide incoming
+   ========================================================= */
+
+function hideIncoming() {
+
+  incomingSlide.style.display =
+    "none";
+
+
+  incomingSlide.style.transition =
+    "none";
+
+
+  incomingPdfCanvas.style.display =
+    "none";
+
+
+  incomingImage.style.display =
+    "none";
+
+
+  incomingReady =
+    false;
+
+}
+
+
+/* =========================================================
+   Prepare current PDF
+   ========================================================= */
+
+async function prepareCurrentPdf() {
 
   const token =
     ++renderToken;
 
+
+  const scale =
+    await getInitialPdfScale();
+
+
+  if (
+    token !== renderToken
+  ) {
+
+    return;
+
+  }
+
+
+  pdfBaseScale =
+    scale;
+
+
+  const size =
+    await renderPdfCanvas(
+
+      currentPdfCanvas,
+
+      currentPage,
+
+      pdfBaseScale
+
+    );
+
+
+  if (
+    token !== renderToken
+  ) {
+
+    return;
+
+  }
+
+
+  basePageWidth =
+    size.width;
+
+
+  basePageHeight =
+    size.height;
+
+
+  currentPdfCanvas.style.display =
+    "block";
+
+}
+
+
+/* =========================================================
+   Prepare current image
+   ========================================================= */
+
+async function prepareCurrentImage() {
+
+  const token =
+    ++renderToken;
+
+
+  const image =
+    await getImage(
+      currentPage
+    );
+
+
+  if (
+    token !== renderToken
+  ) {
+
+    return;
+
+  }
+
+
+  basePageWidth =
+    image.naturalWidth;
+
+
+  basePageHeight =
+    image.naturalHeight;
+
+
+  /*
+   * 画面内に収める。
+   */
+
+  const fit =
+    Math.min(
+
+      (
+        stage.clientWidth - 48
+      ) /
+      basePageWidth,
+
+      (
+        stage.clientHeight - 48
+      ) /
+      basePageHeight
+
+    );
+
+
+  zoom =
+    Math.min(
+      1,
+      Math.max(
+        0.1,
+        fit
+      )
+    );
+
+
+  currentImage.src =
+    image.src;
+
+
+  currentImage.style.display =
+    "block";
+
+}
+
+
+/* =========================================================
+   Prepare current
+   ========================================================= */
+
+async function prepareCurrentPage() {
 
   currentPdfCanvas.style.display =
     "none";
@@ -1025,118 +1385,28 @@ async function prepareCurrentPage() {
 
   if (pdf) {
 
-    const scale =
-      await getInitialPdfScale();
-
-
-    if (
-      token !== renderToken
-    ) {
-
-      return;
-
-    }
-
-
-    const size =
-      await renderPdfCanvas(
-
-        currentPdfCanvas,
-
-        currentPage,
-
-        scale
-
-      );
-
-
-    if (
-      token !== renderToken
-    ) {
-
-      return;
-
-    }
-
-
-    pageWidth =
-      size.width;
-
-    pageHeight =
-      size.height;
-
     zoom =
       1;
 
 
-    currentPdfCanvas.style.display =
-      "block";
+    await prepareCurrentPdf();
 
   }
   else {
 
-    const image =
-      await getImage(
-        currentPage
-      );
-
-
-    if (
-      token !== renderToken
-    ) {
-
-      return;
-
-    }
-
-
-    pageWidth =
-      image.naturalWidth;
-
-    pageHeight =
-      image.naturalHeight;
-
-
-    const fit =
-      Math.min(
-
-        (
-          stage.clientWidth - 48
-        ) /
-        pageWidth,
-
-        (
-          stage.clientHeight - 48
-        ) /
-        pageHeight
-
-      );
-
-
-    zoom =
-      Math.min(
-        1,
-        Math.max(
-          0.1,
-          fit
-        )
-      );
-
-
-    currentImage.src =
-      image.src;
-
-
-    currentImage.style.display =
-      "block";
+    await prepareCurrentImage();
 
   }
 
 
   setSlideSize(
+
     currentSlide,
-    pageWidth,
-    pageHeight
+
+    basePageWidth,
+
+    basePageHeight
+
   );
 
 
@@ -1147,8 +1417,11 @@ async function prepareCurrentPage() {
 
 
   resizeAnnotationCanvas(
-    pageWidth,
-    pageHeight
+
+    basePageWidth,
+
+    basePageHeight
+
   );
 
 
@@ -1181,11 +1454,12 @@ async function renderCurrent() {
 
 
 /* =========================================================
-   Incoming page
+   Prepare incoming
    ========================================================= */
 
 async function prepareIncomingPage(
-  pageNumber
+  pageNumber,
+  direction
 ) {
 
   incomingPdfCanvas.style.display =
@@ -1198,16 +1472,10 @@ async function prepareIncomingPage(
 
   if (pdf) {
 
-    const currentSize =
-      await getPdfSize(
-        currentPage
-      );
-
-
-    const scale =
-      pageWidth /
-      currentSize.width;
-
+    /*
+     * 現在ページと同じCSS倍率で
+     * 次ページを準備。
+     */
 
     const size =
       await renderPdfCanvas(
@@ -1216,15 +1484,19 @@ async function prepareIncomingPage(
 
         pageNumber,
 
-        scale
+        pdfBaseScale
 
       );
 
 
     setSlideSize(
+
       incomingSlide,
+
       size.width,
+
       size.height
+
     );
 
 
@@ -1240,8 +1512,13 @@ async function prepareIncomingPage(
       );
 
 
+    /*
+     * 画像は現在ページと同じ
+     * 基準倍率になるようにする。
+     */
+
     const ratio =
-      pageWidth /
+      basePageWidth /
       Math.max(
         1,
         currentImage.naturalWidth
@@ -1270,6 +1547,29 @@ async function prepareIncomingPage(
 
   }
 
+
+  incomingSlide.style.display =
+    "flex";
+
+
+  incomingSlide.style.transition =
+    "none";
+
+
+  const start =
+    direction > 0
+      ? stage.clientWidth
+      : -stage.clientWidth;
+
+
+  applyIncomingTransform(
+    start
+  );
+
+
+  incomingReady =
+    true;
+
 }
 
 
@@ -1277,15 +1577,15 @@ async function prepareIncomingPage(
    Prepare adjacent
    ========================================================= */
 
-async function prepareAdjacent(
+function prepareAdjacent(
   direction
 ) {
 
   if (
-    adjacentPreparing
+    incomingPreparing
   ) {
 
-    return false;
+    return;
 
   }
 
@@ -1300,114 +1600,49 @@ async function prepareAdjacent(
     target > getPageCount()
   ) {
 
-    return false;
+    return;
 
   }
 
 
-  adjacentPreparing =
+  incomingPreparing =
     true;
 
 
-  try {
+  prepareIncomingPage(
+    target,
+    direction
+  )
+    .catch(
+      error => {
 
-    await prepareIncomingPage(
-      target
+        console.error(
+          "ADJACENT PAGE ERROR:",
+          error
+        );
+
+
+        incomingReady =
+          false;
+
+        hideIncoming();
+
+      }
+    )
+    .finally(
+      () => {
+
+        incomingPreparing =
+          false;
+
+      }
     );
-
-
-    incomingSlide.style.display =
-      "flex";
-
-
-    incomingSlide.style.transition =
-      "none";
-
-
-    const start =
-      direction > 0
-        ? stage.clientWidth
-        : -stage.clientWidth;
-
-
-    applyIncomingTransform(
-      start
-    );
-
-
-    return true;
-
-  }
-  finally {
-
-    adjacentPreparing =
-      false;
-
-  }
 
 }
 
 
 /* =========================================================
-   Slide
-   ========================================================= */
-
-function setSlideSize(
-  slide,
-  width,
-  height
-) {
-
-  slide.style.width =
-    `${Math.max(
-      1,
-      width
-    )}px`;
-
-
-  slide.style.height =
-    `${Math.max(
-      1,
-      height
-    )}px`;
-
-}
-
-
-function applyViewTransform() {
-
-  currentSlide.style.transform =
-    `
-      translate3d(
-        calc(-50% + ${panX}px),
-        calc(-50% + ${panY}px),
-        0
-      )
-      scale(${zoom})
-    `;
-
-}
-
-
-function applyIncomingTransform(
-  offsetX
-) {
-
-  incomingSlide.style.transform =
-    `
-      translate3d(
-        calc(-50% + ${offsetX}px),
-        -50%,
-        0
-      )
-      scale(${zoom})
-    `;
-
-}
-
-
-/* =========================================================
-   Pan
+   Pan limits
    ========================================================= */
 
 function getPanLimits() {
@@ -1416,20 +1651,30 @@ function getPanLimits() {
 
     x:
       Math.max(
+
         0,
+
         (
-          pageWidth * zoom -
+          basePageWidth *
+          zoom -
           stage.clientWidth
+
         ) / 2
+
       ),
 
     y:
       Math.max(
+
         0,
+
         (
-          pageHeight * zoom -
+          basePageHeight *
+          zoom -
           stage.clientHeight
+
         ) / 2
+
       )
 
   };
@@ -1492,9 +1737,9 @@ function applyZoom(
 
   const nextZoom =
     Math.max(
-      1,
+      MIN_ZOOM,
       Math.min(
-        4,
+        MAX_ZOOM,
         value
       )
     );
@@ -1561,36 +1806,21 @@ function applyZoom(
 
 
 /* =========================================================
-   Hide incoming
-   ========================================================= */
-
-function hideIncoming() {
-
-  incomingSlide.style.display =
-    "none";
-
-
-  incomingSlide.style.transition =
-    "none";
-
-
-  incomingPdfCanvas.style.display =
-    "none";
-
-
-  incomingImage.style.display =
-    "none";
-
-}
-
-
-/* =========================================================
-   Touch helpers
+   Pinch helpers
    ========================================================= */
 
 function getTouchDistance(
   touches
 ) {
+
+  if (
+    touches.length < 2
+  ) {
+
+    return 0;
+
+  }
+
 
   const a =
     touches[0];
@@ -1644,7 +1874,8 @@ stage.addEventListener(
   event => {
 
     /*
-     * 2本指なら必ずピンチ。
+     * 2本指
+     * → ピンチ。
      */
 
     if (
@@ -1682,7 +1913,15 @@ stage.addEventListener(
 
 
     if (
-      event.touches.length !== 1 ||
+      event.touches.length !== 1
+    ) {
+
+      return;
+
+    }
+
+
+    if (
       pageChanging
     ) {
 
@@ -1703,6 +1942,14 @@ stage.addEventListener(
       touch.clientY;
 
 
+    swipeX =
+      touch.clientX;
+
+
+    swipeY =
+      touch.clientY;
+
+
     swipeDeltaX =
       0;
 
@@ -1711,12 +1958,18 @@ stage.addEventListener(
       0;
 
 
+    incomingReady =
+      false;
+
+
     swipeActive =
       true;
 
 
     /*
-     * 拡大中はパン。
+     * 拡大中。
+     *
+     * 1本指は完全にパン。
      */
 
     if (
@@ -1750,6 +2003,8 @@ stage.addEventListener(
 
     /*
      * 通常倍率。
+     *
+     * ページ送り候補。
      */
 
     interactionMode =
@@ -1768,7 +2023,7 @@ stage.addEventListener(
 
 stage.addEventListener(
   "touchmove",
-  async event => {
+  event => {
 
     /*
      * =====================================================
@@ -1827,11 +2082,12 @@ stage.addEventListener(
         applyZoom(
 
           pinchStartZoom *
-          distance /
-          pinchDistance,
+          (
+            distance /
+            pinchDistance
+          ),
 
           center.x,
-
           center.y
 
         );
@@ -1844,6 +2100,12 @@ stage.addEventListener(
     }
 
 
+    /*
+     * =====================================================
+     * 1本指
+     * =====================================================
+     */
+
     if (
       event.touches.length !== 1
     ) {
@@ -1855,6 +2117,14 @@ stage.addEventListener(
 
     const touch =
       event.touches[0];
+
+
+    swipeX =
+      touch.clientX;
+
+
+    swipeY =
+      touch.clientY;
 
 
     /*
@@ -1926,8 +2196,8 @@ stage.addEventListener(
 
 
     /*
-     * 縦方向が明確なら
-     * ページ送りをキャンセル。
+     * 縦方向が強い場合は
+     * ページ送りしない。
      */
 
     if (
@@ -1948,18 +2218,19 @@ stage.addEventListener(
 
 
     /*
-     * 横方向が十分になったら
-     * ページめくり開始。
+     * 方向を決める。
      */
 
     if (
       interactionMode ===
       "undecided" &&
-      Math.abs(dx) >= 20 &&
-      Math.abs(dx) >
-      Math.abs(dy) *
-      SWIPE_AXIS_RATIO
+      Math.abs(dx) >= 12
     ) {
+
+      /*
+       * 左
+       * → 次ページ
+       */
 
       const direction =
         dx < 0
@@ -1972,27 +2243,15 @@ stage.addEventListener(
         direction;
 
 
+      /*
+       * ページがない場合は
+       * ページ送りしない。
+       */
+
       if (
         target < 1 ||
         target > getPageCount()
       ) {
-
-        interactionMode =
-          "neutral";
-
-
-        return;
-
-      }
-
-
-      const prepared =
-        await prepareAdjacent(
-          direction
-        );
-
-
-      if (!prepared) {
 
         interactionMode =
           "neutral";
@@ -2009,6 +2268,18 @@ stage.addEventListener(
 
       interactionMode =
         "page-turn";
+
+
+      /*
+       * 非同期で先読み。
+       *
+       * ここではawaitしない。
+       * だから指の操作は止まらない。
+       */
+
+      prepareAdjacent(
+        direction
+      );
 
     }
 
@@ -2027,7 +2298,7 @@ stage.addEventListener(
 
 
     /*
-     * 指の位置に完全追従。
+     * 指の距離に完全追従。
      */
 
     swipeDeltaX =
@@ -2037,7 +2308,10 @@ stage.addEventListener(
     currentSlide.style.transform =
       `
         translate3d(
-          calc(-50% + ${dx}px),
+          calc(
+            -50% +
+            ${dx}px
+          ),
           -50%,
           0
         )
@@ -2051,9 +2325,22 @@ stage.addEventListener(
         : -stage.clientWidth;
 
 
-    applyIncomingTransform(
-      incomingStart + dx
-    );
+    /*
+     * incomingがまだロード中でも
+     * 位置は更新する。
+     */
+
+    if (
+      incomingSlide.style.display !==
+      "none"
+    ) {
+
+      applyIncomingTransform(
+        incomingStart +
+        dx
+      );
+
+    }
 
   },
   {
@@ -2071,7 +2358,9 @@ stage.addEventListener(
   async event => {
 
     /*
-     * ピンチ終了。
+     * =====================================================
+     * PINCH
+     * =====================================================
      */
 
     if (
@@ -2100,14 +2389,19 @@ stage.addEventListener(
 
 
     /*
-     * パン終了。
-     * 位置は維持。
+     * =====================================================
+     * PAN
+     * =====================================================
      */
 
     if (
       interactionMode ===
       "pan"
     ) {
+
+      /*
+       * パン位置はそのまま。
+       */
 
       interactionMode =
         "idle";
@@ -2123,7 +2417,9 @@ stage.addEventListener(
 
 
     /*
-     * ページ送りでない。
+     * =====================================================
+     * PAGE TURN
+     * =====================================================
      */
 
     if (
@@ -2168,15 +2464,18 @@ stage.addEventListener(
       SWIPE_AXIS_RATIO;
 
 
+    const enough =
+      Math.abs(dx) >=
+      SWIPE_MIN_DISTANCE;
+
+
     /*
-     * 明確な距離がなければ
-     * ページ変更しない。
+     * 小さな操作ならキャンセル。
      */
 
     if (
       !horizontal ||
-      Math.abs(dx) <
-      SWIPE_MIN_DISTANCE
+      !enough
     ) {
 
       cancelPageTurn();
@@ -2186,6 +2485,42 @@ stage.addEventListener(
     }
 
 
+    /*
+     * incomingがまだロード中なら
+     * ここで待つ。
+     */
+
+    if (
+      !incomingReady
+    ) {
+
+      try {
+
+        await waitForIncoming();
+
+      }
+      catch (
+        error
+      ) {
+
+        console.error(
+          error
+        );
+
+
+        cancelPageTurn();
+
+        return;
+
+      }
+
+    }
+
+
+    /*
+     * 完全にページをめくる。
+     */
+
     await completePageTurn();
 
   },
@@ -2193,6 +2528,41 @@ stage.addEventListener(
     passive: true
   }
 );
+
+
+/* =========================================================
+   Wait for incoming
+   ========================================================= */
+
+async function waitForIncoming() {
+
+  const started =
+    performance.now();
+
+
+  while (
+    !incomingReady &&
+    performance.now() -
+      started <
+      1500
+  ) {
+
+    await wait(16);
+
+  }
+
+
+  if (
+    !incomingReady
+  ) {
+
+    throw new Error(
+      "次ページを準備できませんでした。"
+    );
+
+  }
+
+}
 
 
 /* =========================================================
@@ -2215,6 +2585,14 @@ stage.addEventListener(
       "idle";
 
 
+    swipeDirection =
+      0;
+
+
+    swipeDeltaX =
+      0;
+
+
     hideIncoming();
 
 
@@ -2228,14 +2606,14 @@ stage.addEventListener(
 
 
 /* =========================================================
-   Cancel Page Turn
+   Cancel page turn
    ========================================================= */
 
 function cancelPageTurn() {
 
   /*
-   * 現在ページの位置・倍率は
-   * 変更しない。
+   * 現在ページの位置は
+   * 勝手に変えない。
    */
 
   hideIncoming();
@@ -2252,6 +2630,10 @@ function cancelPageTurn() {
     0;
 
 
+  swipeActive =
+    false;
+
+
   interactionMode =
     "idle";
 
@@ -2259,7 +2641,7 @@ function cancelPageTurn() {
 
 
 /* =========================================================
-   Complete Page Turn
+   Complete page turn
    ========================================================= */
 
 async function completePageTurn() {
@@ -2315,6 +2697,10 @@ async function completePageTurn() {
       "transform .24s cubic-bezier(.22,.61,.36,1)";
 
 
+    /*
+     * 現在ページを画面外へ。
+     */
+
     currentSlide.style.transform =
       `
         translate3d(
@@ -2333,14 +2719,16 @@ async function completePageTurn() {
       `;
 
 
+    /*
+     * incomingを中央へ。
+     */
+
     applyIncomingTransform(
       0
     );
 
 
-    await wait(
-      250
-    );
+    await wait(250);
 
 
     currentPage =
@@ -2364,6 +2752,10 @@ async function completePageTurn() {
       0;
 
 
+    swipeActive =
+      false;
+
+
     interactionMode =
       "idle";
 
@@ -2373,12 +2765,14 @@ async function completePageTurn() {
 
 
 /* =========================================================
-   Commit Incoming
+   Commit incoming
    ========================================================= */
 
 async function commitIncoming() {
 
-  if (pdf) {
+  if (
+    pdf
+  ) {
 
     currentPdfCanvas.width =
       incomingPdfCanvas.width;
@@ -2388,18 +2782,16 @@ async function commitIncoming() {
       incomingPdfCanvas.height;
 
 
-    currentPdfCanvas.style.width =
-      incomingPdfCanvas.style.width;
-
-
-    currentPdfCanvas.style.height =
-      incomingPdfCanvas.style.height;
-
+    /*
+     * incomingのCanvasは
+     * 高DPI実体をそのままコピー。
+     */
 
     const context =
-      currentPdfCanvas.getContext(
-        "2d"
-      );
+      currentPdfCanvas
+        .getContext(
+          "2d"
+        );
 
 
     context.clearRect(
@@ -2415,6 +2807,14 @@ async function commitIncoming() {
       0,
       0
     );
+
+
+    currentPdfCanvas.style.width =
+      incomingPdfCanvas.style.width;
+
+
+    currentPdfCanvas.style.height =
+      incomingPdfCanvas.style.height;
 
 
     currentPdfCanvas.style.display =
@@ -2441,26 +2841,32 @@ async function commitIncoming() {
   }
 
 
-  pageWidth =
-    incomingSlide.offsetWidth /
-    zoom;
+  /*
+   * incomingの論理サイズを取得。
+   */
+
+  basePageWidth =
+    incomingSlide.offsetWidth;
 
 
-  pageHeight =
-    incomingSlide.offsetHeight /
-    zoom;
+  basePageHeight =
+    incomingSlide.offsetHeight;
 
 
   setSlideSize(
+
     currentSlide,
-    pageWidth,
-    pageHeight
+
+    basePageWidth,
+
+    basePageHeight
+
   );
 
 
   /*
-   * 新ページになった時だけ
-   * パンを0へ戻す。
+   * 新ページに入ったので
+   * パンは中央へ戻す。
    */
 
   resetPan();
@@ -2477,8 +2883,11 @@ async function commitIncoming() {
 
 
   resizeAnnotationCanvas(
-    pageWidth,
-    pageHeight
+
+    basePageWidth,
+
+    basePageHeight
+
   );
 
 
@@ -2511,41 +2920,64 @@ async function rerenderCurrentPdf() {
     getDpr();
 
 
-  const viewport =
+  /*
+   * 基準CSSサイズは
+   * zoom前のサイズ。
+   */
+
+  const renderViewport =
     page.getViewport({
+
       scale:
+        pdfBaseScale *
         zoom *
         dpr
+
+    });
+
+
+  const cssViewport =
+    page.getViewport({
+
+      scale:
+        pdfBaseScale
+
     });
 
 
   currentPdfCanvas.width =
     Math.ceil(
-      viewport.width
+      renderViewport.width
     );
 
 
   currentPdfCanvas.height =
     Math.ceil(
-      viewport.height
+      renderViewport.height
     );
 
 
+  /*
+   * CSSサイズは基準サイズ。
+   * slide側でzoomする。
+   */
+
   currentPdfCanvas.style.width =
-    `${viewport.width / dpr}px`;
+    `${cssViewport.width}px`;
 
 
   currentPdfCanvas.style.height =
-    `${viewport.height / dpr}px`;
+    `${cssViewport.height}px`;
 
 
   const context =
-    currentPdfCanvas.getContext(
-      "2d",
-      {
-        alpha: false
-      }
-    );
+    currentPdfCanvas
+      .getContext(
+        "2d",
+        {
+          alpha: false
+        }
+      );
 
 
   context.fillStyle =
@@ -2565,7 +2997,8 @@ async function rerenderCurrentPdf() {
     canvasContext:
       context,
 
-    viewport,
+    viewport:
+      renderViewport,
 
     intent:
       "display"
@@ -2573,20 +3006,22 @@ async function rerenderCurrentPdf() {
   }).promise;
 
 
-  pageWidth =
-    viewport.width /
-    dpr;
+  basePageWidth =
+    cssViewport.width;
 
 
-  pageHeight =
-    viewport.height /
-    dpr;
+  basePageHeight =
+    cssViewport.height;
 
 
   setSlideSize(
+
     currentSlide,
-    pageWidth,
-    pageHeight
+
+    basePageWidth,
+
+    basePageHeight
+
   );
 
 
@@ -2597,8 +3032,10 @@ async function rerenderCurrentPdf() {
 
 
   resizeAnnotationCanvas(
-    pageWidth,
-    pageHeight
+
+    basePageWidth,
+    basePageHeight
+
   );
 
 
@@ -2608,7 +3045,7 @@ async function rerenderCurrentPdf() {
 
 
 /* =========================================================
-   Button navigation
+   Page buttons
    ========================================================= */
 
 async function goToPage(
@@ -2616,15 +3053,38 @@ async function goToPage(
 ) {
 
   if (
-    pageChanging ||
+    pageChanging
+  ) {
+
+    return;
+
+  }
+
+
+  if (
     target < 1 ||
-    target > getPageCount() ||
+    target > getPageCount()
+  ) {
+
+    return;
+
+  }
+
+
+  if (
     target === currentPage
   ) {
 
     return;
 
   }
+
+
+  const direction =
+    target >
+    currentPage
+      ? 1
+      : -1;
 
 
   pageChanging =
@@ -2636,24 +3096,22 @@ async function goToPage(
     await saveAnnotation();
 
 
-    const direction =
-      target >
-      currentPage
-        ? 1
-        : -1;
+    /*
+     * ボタン操作は
+     * 必ずincomingを準備。
+     */
+
+    incomingReady =
+      false;
 
 
-    const prepared =
-      await prepareAdjacent(
-        direction
-      );
+    await prepareIncomingPage(
 
+      target,
 
-    if (!prepared) {
+      direction
 
-      return;
-
-    }
+    );
 
 
     const width =
@@ -2691,9 +3149,7 @@ async function goToPage(
     );
 
 
-    await wait(
-      250
-    );
+    await wait(250);
 
 
     currentPage =
@@ -2714,234 +3170,387 @@ async function goToPage(
 
 
 /* =========================================================
+   Page buttons
+   ========================================================= */
+
+const firstButton =
+  document.getElementById(
+    "first"
+  );
+
+const previousButton =
+  document.getElementById(
+    "previous"
+  );
+
+const nextButton =
+  document.getElementById(
+    "next"
+  );
+
+const lastButton =
+  document.getElementById(
+    "last"
+  );
+
+
+if (firstButton) {
+
+  firstButton.onclick =
+    () =>
+      goToPage(1);
+
+}
+
+
+if (previousButton) {
+
+  previousButton.onclick =
+    () =>
+      goToPage(
+        currentPage - 1
+      );
+
+}
+
+
+if (nextButton) {
+
+  nextButton.onclick =
+    () =>
+      goToPage(
+        currentPage + 1
+      );
+
+}
+
+
+if (lastButton) {
+
+  lastButton.onclick =
+    () =>
+      goToPage(
+        getPageCount()
+      );
+
+}
+
+
+/* =========================================================
    Zoom buttons
    ========================================================= */
 
-document.getElementById(
-  "zoomIn"
-).onclick =
-  async () => {
+const zoomInButton =
+  document.getElementById(
+    "zoomIn"
+  );
 
-    applyZoom(
-
-      zoom * 1.12,
-
-      stage.clientWidth / 2,
-
-      stage.clientHeight / 2
-
-    );
+const zoomOutButton =
+  document.getElementById(
+    "zoomOut"
+  );
 
 
-    if (pdf) {
+if (zoomInButton) {
 
-      await rerenderCurrentPdf();
+  zoomInButton.onclick =
+    async () => {
 
-    }
+      applyZoom(
 
-  };
+        zoom * 1.12,
 
+        stage.clientWidth / 2,
 
-document.getElementById(
-  "zoomOut"
-).onclick =
-  async () => {
+        stage.clientHeight / 2
 
-    applyZoom(
-
-      zoom / 1.12,
-
-      stage.clientWidth / 2,
-
-      stage.clientHeight / 2
-
-    );
+      );
 
 
-    if (
-      zoom <= PAN_ZOOM_LIMIT
-    ) {
+      if (pdf) {
+
+        await rerenderCurrentPdf();
+
+      }
+
+    };
+
+}
+
+
+if (zoomOutButton) {
+
+  zoomOutButton.onclick =
+    async () => {
+
+      applyZoom(
+
+        zoom / 1.12,
+
+        stage.clientWidth / 2,
+
+        stage.clientHeight / 2
+
+      );
+
+
+      if (
+        zoom <=
+        PAN_ZOOM_LIMIT
+      ) {
+
+        resetPan();
+
+        applyViewTransform();
+
+      }
+
+
+      if (pdf) {
+
+        await rerenderCurrentPdf();
+
+      }
+
+    };
+
+}
+
+
+/* =========================================================
+   Fit width
+   ========================================================= */
+
+const fitWidthButton =
+  document.getElementById(
+    "fitWidth"
+  );
+
+
+if (fitWidthButton) {
+
+  fitWidthButton.onclick =
+    async () => {
+
+      let width;
+
+
+      if (pdf) {
+
+        const size =
+          await getPdfSize(
+            currentPage
+          );
+
+
+        zoom =
+          Math.max(
+            0.25,
+            (
+              stage.clientWidth -
+              30
+            ) /
+            (
+              size.width *
+              pdfBaseScale
+            )
+          );
+
+      }
+      else {
+
+        width =
+          basePageWidth;
+
+
+        zoom =
+          Math.max(
+            0.25,
+            (
+              stage.clientWidth -
+              30
+            ) /
+            width
+          );
+
+      }
+
 
       resetPan();
 
+
       applyViewTransform();
 
-    }
 
+      if (pdf) {
 
-    if (pdf) {
+        await rerenderCurrentPdf();
 
-      await rerenderCurrentPdf();
+      }
 
-    }
+    };
 
-  };
-
-
-/* =========================================================
-   Fit Width
-   ========================================================= */
-
-document.getElementById(
-  "fitWidth"
-).onclick =
-  async () => {
-
-    let width;
-
-
-    if (pdf) {
-
-      const size =
-        await getPdfSize(
-          currentPage
-        );
-
-
-      width =
-        size.width;
-
-    }
-    else {
-
-      const image =
-        await getImage(
-          currentPage
-        );
-
-
-      width =
-        image.naturalWidth;
-
-    }
-
-
-    zoom =
-      Math.max(
-        0.25,
-        (
-          stage.clientWidth -
-          30
-        ) /
-        width
-      );
-
-
-    resetPan();
-
-    applyViewTransform();
-
-
-    if (pdf) {
-
-      await rerenderCurrentPdf();
-
-    }
-
-  };
+}
 
 
 /* =========================================================
-   Fit Height
+   Fit height
    ========================================================= */
 
-document.getElementById(
-  "fitHeight"
-).onclick =
-  async () => {
-
-    let height;
+const fitHeightButton =
+  document.getElementById(
+    "fitHeight"
+  );
 
 
-    if (pdf) {
+if (fitHeightButton) {
 
-      const size =
-        await getPdfSize(
-          currentPage
-        );
+  fitHeightButton.onclick =
+    async () => {
 
+      if (pdf) {
 
-      height =
-        size.height;
-
-    }
-    else {
-
-      const image =
-        await getImage(
-          currentPage
-        );
+        const size =
+          await getPdfSize(
+            currentPage
+          );
 
 
-      height =
-        image.naturalHeight;
+        zoom =
+          Math.max(
+            0.25,
+            (
+              stage.clientHeight -
+              30
+            ) /
+            (
+              size.height *
+              pdfBaseScale
+            )
+          );
 
-    }
+      }
+      else {
+
+        zoom =
+          Math.max(
+            0.25,
+            (
+              stage.clientHeight -
+              30
+            ) /
+            basePageHeight
+          );
+
+      }
 
 
-    zoom =
-      Math.max(
-        0.25,
-        (
-          stage.clientHeight -
-          30
-        ) /
-        height
-      );
+      resetPan();
 
 
-    resetPan();
-
-    applyViewTransform();
+      applyViewTransform();
 
 
-    if (pdf) {
+      if (pdf) {
 
-      await rerenderCurrentPdf();
+        await rerenderCurrentPdf();
 
-    }
+      }
 
-  };
+    };
+
+}
 
 
 /* =========================================================
    Fullscreen
    ========================================================= */
 
-document.getElementById(
-  "fullscreen"
-).onclick =
-  async () => {
+const fullscreenButton =
+  document.getElementById(
+    "fullscreen"
+  );
 
-    try {
 
-      if (
-        document.fullscreenElement
+if (fullscreenButton) {
+
+  fullscreenButton.onclick =
+    async () => {
+
+      try {
+
+        if (
+          document.fullscreenElement
+        ) {
+
+          await document.exitFullscreen();
+
+        }
+        else {
+
+          await document.documentElement
+            .requestFullscreen();
+
+        }
+
+      }
+      catch (
+        error
       ) {
 
-        await document.exitFullscreen();
-
-      }
-      else {
-
-        await document.documentElement
-          .requestFullscreen();
+        console.warn(
+          "FULLSCREEN ERROR:",
+          error
+        );
 
       }
 
-    }
-    catch (
-      error
+    };
+
+}
+
+
+/* =========================================================
+   Mouse wheel zoom
+   ========================================================= */
+
+stage.addEventListener(
+  "wheel",
+  event => {
+
+    if (
+      !event.ctrlKey
     ) {
 
-      console.warn(
-        "FULLSCREEN ERROR:",
-        error
-      );
+      return;
 
     }
 
-  };
+
+    event.preventDefault();
+
+
+    const factor =
+      event.deltaY > 0
+        ? 0.92
+        : 1.08;
+
+
+    applyZoom(
+
+      zoom * factor,
+
+      event.clientX,
+
+      event.clientY
+
+    );
+
+  },
+  {
+    passive: false
+  }
+);
 
 
 /* =========================================================
@@ -2950,22 +3559,30 @@ document.getElementById(
 
 function updateMode() {
 
-  moveButton.classList.toggle(
-    "active",
-    viewerMode === "move"
-  );
+  if (moveButton) {
+
+    moveButton.classList.toggle(
+      "active",
+      viewerMode === "move"
+    );
+
+  }
 
 
-  penButton.classList.toggle(
-    "active",
-    viewerMode === "pen"
-  );
+  if (penButton) {
+
+    penButton.classList.toggle(
+      "active",
+      viewerMode === "pen"
+    );
 
 
-  penButton.textContent =
-    viewerMode === "pen"
-      ? "ペン ON"
-      : "ペン OFF";
+    penButton.textContent =
+      viewerMode === "pen"
+        ? "ペン ON"
+        : "ペン OFF";
+
+  }
 
 
   document.body.classList.toggle(
@@ -2993,41 +3610,68 @@ function setMode(
 }
 
 
-moveButton.onclick =
-  () =>
-    setMode("move");
+if (moveButton) {
+
+  moveButton.onclick =
+    () =>
+      setMode("move");
+
+}
 
 
-penButton.onclick =
-  () =>
-    setMode(
-      viewerMode === "pen"
-        ? "move"
-        : "pen"
-    );
+if (penButton) {
+
+  penButton.onclick =
+    () =>
+      setMode(
+
+        viewerMode === "pen"
+          ? "move"
+          : "pen"
+
+      );
+
+}
 
 
-document.getElementById(
-  "eraser"
-).onclick =
-  () =>
-    setMode("eraser");
+const eraserButton =
+  document.getElementById(
+    "eraser"
+  );
+
+
+if (eraserButton) {
+
+  eraserButton.onclick =
+    () =>
+      setMode("eraser");
+
+}
 
 
 /* =========================================================
    Favorite
    ========================================================= */
 
-document.getElementById(
-  "favorite"
-).onclick =
-  event => {
+const favoriteButton =
+  document.getElementById(
+    "favorite"
+  );
 
-    event.currentTarget.classList.toggle(
-      "active"
-    );
 
-  };
+if (favoriteButton) {
+
+  favoriteButton.onclick =
+    event => {
+
+      event.currentTarget
+        .classList.toggle(
+          "active"
+        );
+
+    };
+
+}
 
 
 /* =========================================================
@@ -3035,6 +3679,11 @@ document.getElementById(
    ========================================================= */
 
 function closeMenu() {
+
+  if (!mobileMenu) {
+    return;
+  }
+
 
   mobileMenu.classList.remove(
     "open"
@@ -3047,190 +3696,183 @@ function closeMenu() {
   );
 
 
-  menuButton.setAttribute(
-    "aria-expanded",
-    "false"
-  );
+  if (menuButton) {
+
+    menuButton.setAttribute(
+      "aria-expanded",
+      "false"
+    );
+
+  }
 
 }
 
 
-menuButton.onclick =
-  () => {
+if (
+  menuButton &&
+  mobileMenu
+) {
 
-    const open =
-      !mobileMenu.classList.contains(
-        "open"
+  menuButton.onclick =
+    () => {
+
+      const open =
+        !mobileMenu
+          .classList
+          .contains(
+            "open"
+          );
+
+
+      mobileMenu.classList.toggle(
+        "open",
+        open
       );
 
 
-    mobileMenu.classList.toggle(
-      "open",
-      open
+      mobileMenu.setAttribute(
+        "aria-hidden",
+        String(
+          !open
+        )
+      );
+
+
+      menuButton.setAttribute(
+        "aria-expanded",
+        String(
+          open
+        )
+      );
+
+    };
+
+
+  mobileMenu
+    .querySelectorAll(
+      "[data-action]"
+    )
+    .forEach(
+      button => {
+
+        button.onclick =
+          async () => {
+
+            const action =
+              button.dataset.action;
+
+
+            if (
+              action === "first"
+            ) {
+
+              await goToPage(1);
+
+            }
+            else if (
+              action === "previous"
+            ) {
+
+              await goToPage(
+                currentPage - 1
+              );
+
+            }
+            else if (
+              action === "next"
+            ) {
+
+              await goToPage(
+                currentPage + 1
+              );
+
+            }
+            else if (
+              action === "last"
+            ) {
+
+              await goToPage(
+                getPageCount()
+              );
+
+            }
+            else if (
+              action === "move"
+            ) {
+
+              setMode("move");
+
+            }
+            else if (
+              action === "pen"
+            ) {
+
+              setMode("pen");
+
+            }
+            else if (
+              action === "eraser"
+            ) {
+
+              setMode("eraser");
+
+            }
+            else if (
+              action === "favorite"
+            ) {
+
+              favoriteButton?.click();
+
+            }
+            else if (
+              action === "zoomIn"
+            ) {
+
+              zoomInButton?.click();
+
+            }
+            else if (
+              action === "zoomOut"
+            ) {
+
+              zoomOutButton?.click();
+
+            }
+            else if (
+              action === "fitWidth"
+            ) {
+
+              fitWidthButton?.click();
+
+            }
+            else if (
+              action === "fitHeight"
+            ) {
+
+              fitHeightButton?.click();
+
+            }
+            else if (
+              action === "fullscreen"
+            ) {
+
+              fullscreenButton?.click();
+
+            }
+
+
+            closeMenu();
+
+          };
+
+      }
     );
 
-
-    mobileMenu.setAttribute(
-      "aria-hidden",
-      String(!open)
-    );
-
-
-    menuButton.setAttribute(
-      "aria-expanded",
-      String(open)
-    );
-
-  };
-
-
-mobileMenu
-  .querySelectorAll(
-    "[data-action]"
-  )
-  .forEach(
-    button => {
-
-      button.onclick =
-        async () => {
-
-          const action =
-            button.dataset.action;
-
-
-          if (
-            action === "first"
-          ) {
-
-            await goToPage(1);
-
-          }
-          else if (
-            action === "previous"
-          ) {
-
-            await goToPage(
-              currentPage - 1
-            );
-
-          }
-          else if (
-            action === "next"
-          ) {
-
-            await goToPage(
-              currentPage + 1
-            );
-
-          }
-          else if (
-            action === "last"
-          ) {
-
-            await goToPage(
-              getPageCount()
-            );
-
-          }
-          else if (
-            action === "move"
-          ) {
-
-            setMode("move");
-
-          }
-          else if (
-            action === "pen"
-          ) {
-
-            setMode("pen");
-
-          }
-          else if (
-            action === "eraser"
-          ) {
-
-            setMode("eraser");
-
-          }
-          else if (
-            action === "favorite"
-          ) {
-
-            document
-              .getElementById(
-                "favorite"
-              )
-              .click();
-
-          }
-          else if (
-            action === "zoomIn"
-          ) {
-
-            document
-              .getElementById(
-                "zoomIn"
-              )
-              .click();
-
-          }
-          else if (
-            action === "zoomOut"
-          ) {
-
-            document
-              .getElementById(
-                "zoomOut"
-              )
-              .click();
-
-          }
-          else if (
-            action === "fitWidth"
-          ) {
-
-            document
-              .getElementById(
-                "fitWidth"
-              )
-              .click();
-
-          }
-          else if (
-            action === "fitHeight"
-          ) {
-
-            document
-              .getElementById(
-                "fitHeight"
-              )
-              .click();
-
-          }
-          else if (
-            action === "fullscreen"
-          ) {
-
-            document
-              .getElementById(
-                "fullscreen"
-              )
-              .click();
-
-          }
-
-
-          closeMenu();
-
-        };
-
-    }
-  );
+}
 
 
 /* =========================================================
-   Desktop Pan
+   Desktop pan
    ========================================================= */
 
 let mouseDown =
@@ -3270,12 +3912,14 @@ stage.addEventListener(
     mouseStartX =
       event.clientX;
 
+
     mouseStartY =
       event.clientY;
 
 
     mouseBaseX =
       panX;
+
 
     mouseBaseY =
       panY;
@@ -3293,12 +3937,8 @@ window.addEventListener(
   "mousemove",
   event => {
 
-    if (
-      !mouseDown
-    ) {
-
+    if (!mouseDown) {
       return;
-
     }
 
 
@@ -3483,11 +4123,13 @@ annotationCanvas.addEventListener(
 
 
     if (
-      viewerMode === "eraser"
+      viewerMode ===
+      "eraser"
     ) {
 
       context.globalCompositeOperation =
         "destination-out";
+
 
       context.lineWidth =
         28;
@@ -3498,8 +4140,10 @@ annotationCanvas.addEventListener(
       context.globalCompositeOperation =
         "source-over";
 
+
       context.strokeStyle =
         "#111";
+
 
       context.lineWidth =
         3;
@@ -3666,10 +4310,13 @@ async function loadAnnotation() {
 
 
   context.clearRect(
+
     0,
     0,
+
     annotationCanvas.width,
     annotationCanvas.height
+
   );
 
 
@@ -3714,31 +4361,39 @@ async function loadAnnotation() {
    Close
    ========================================================= */
 
-document.getElementById(
-  "close"
-).onclick =
-  async () => {
-
-    await saveAnnotation();
+const closeButton =
+  document.getElementById(
+    "close"
+  );
 
 
-    if (
-      window.opener &&
-      !window.opener.closed
-    ) {
+if (closeButton) {
 
-      window.close();
+  closeButton.onclick =
+    async () => {
 
-      return;
-
-    }
+      await saveAnnotation();
 
 
-    window.location.replace(
-      "../books/"
-    );
+      if (
+        window.opener &&
+        !window.opener.closed
+      ) {
 
-  };
+        window.close();
+
+        return;
+
+      }
+
+
+      window.location.replace(
+        "../books/"
+      );
+
+    };
+
+}
 
 
 /* =========================================================
@@ -3751,29 +4406,11 @@ window.addEventListener(
 
     clampPan();
 
+
     applyViewTransform();
 
   }
 );
-
-
-/* =========================================================
-   Wait
-   ========================================================= */
-
-function wait(
-  milliseconds
-) {
-
-  return new Promise(
-    resolve =>
-      setTimeout(
-        resolve,
-        milliseconds
-      )
-  );
-
-}
 
 
 /* =========================================================
@@ -3816,6 +4453,11 @@ async function start() {
     await loadPdf();
 
   }
+
+  /*
+   * 画像Book
+   */
+
   else {
 
     await loadImagePages();
@@ -3831,13 +4473,17 @@ async function start() {
 
 
   /*
-   * 必ず存在する関数。
+   * 必ず存在する。
    */
 
   await renderCurrent();
 
 }
 
+
+/* =========================================================
+   Boot
+   ========================================================= */
 
 start()
   .catch(
