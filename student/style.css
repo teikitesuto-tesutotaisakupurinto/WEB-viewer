@@ -15,7 +15,6 @@ body {
 
 
 body {
-
   background: #f5f5f3;
 
   color: #222;
@@ -34,7 +33,6 @@ body {
    ========================================================= */
 
 .maintenance-page {
-
   width: 100%;
 
   min-height: 100vh;
@@ -52,7 +50,6 @@ body {
 
 
 .maintenance-card {
-
   width: min(
     620px,
     100%
@@ -74,28 +71,64 @@ body {
 }
 
 
-/*
- * 今回指定されたレンチ画像
- */
+/* =========================================================
+   レンチ
+   Adminと同じデザイン
+   ========================================================= */
 
 .maintenance-icon {
+  width: 86px;
 
+  height: 86px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  margin: 0 auto 24px;
+
+  border-radius: 50%;
+
+  background: #fff1e3;
+
+  overflow: hidden;
+}
+
+
+.maintenance-icon svg {
   display: block;
 
   width: 86px;
 
   height: 86px;
-
-  margin: 0 auto 24px;
-
-  object-fit: contain;
-
-  border-radius: 50%;
 }
 
 
-.maintenance-logo {
+.maintenance-icon svg circle {
+  fill: #fff1e3;
+}
 
+
+.maintenance-icon svg path {
+  fill: none;
+
+  stroke: #ef752c;
+
+  stroke-width: 3.2;
+
+  stroke-linecap: round;
+
+  stroke-linejoin: round;
+}
+
+
+/* =========================================================
+   Logo
+   ========================================================= */
+
+.maintenance-logo {
   font-size: 27px;
 
   font-weight: 800;
@@ -104,20 +137,28 @@ body {
 }
 
 
-.maintenance-card h1 {
+/* =========================================================
+   Title
+   ========================================================= */
 
+.maintenance-card h1 {
   margin: 28px 0 12px;
+
+  color: #222;
 
   font-size: 24px;
 
-  line-height: 1.35;
-
   font-weight: 800;
+
+  line-height: 1.35;
 }
 
 
-.maintenance-message {
+/* =========================================================
+   Message
+   ========================================================= */
 
+.maintenance-message {
   margin: 0;
 
   color: #777;
@@ -130,9 +171,12 @@ body {
 }
 
 
+/* =========================================================
+   Buttons
+   ========================================================= */
+
 .maintenance-logout,
 .maintenance-retry {
-
   min-width: 130px;
 
   height: 44px;
@@ -159,8 +203,14 @@ body {
 
 .maintenance-logout:hover,
 .maintenance-retry:hover {
-
   background: #f4f4f4;
+}
+
+
+.maintenance-logout:active,
+.maintenance-retry:active {
+  transform:
+    translateY(1px);
 }
 
 
@@ -171,43 +221,40 @@ body {
 @media (max-width: 600px) {
 
   .maintenance-page {
-
     padding: 18px;
-
   }
 
 
   .maintenance-card {
-
     padding: 38px 22px;
 
     border-radius: 15px;
-
   }
 
 
   .maintenance-icon {
-
     width: 76px;
 
     height: 76px;
+  }
 
+
+  .maintenance-icon svg {
+    width: 76px;
+
+    height: 76px;
   }
 
 
   .maintenance-logo {
-
     font-size: 23px;
-
   }
 
 
   .maintenance-card h1 {
-
     margin-top: 24px;
 
     font-size: 21px;
-
   }
 
 }
