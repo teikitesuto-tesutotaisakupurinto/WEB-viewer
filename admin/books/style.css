@@ -1,78 +1,91 @@
+
 * {
   box-sizing: border-box;
 }
 
 
 .file-preview {
+
   display: grid;
 
   grid-template-columns:
     repeat(
       auto-fill,
-      minmax(100px, 1fr)
+      minmax(110px, 1fr)
     );
 
   gap: 10px;
 
   margin:
     10px 0 20px;
+
 }
 
 
 .file-preview-item {
+
   position: relative;
 
-  min-height: 120px;
+  min-height: 125px;
 
   overflow: hidden;
 
   border:
     1px solid #ddd;
 
-  border-radius: 8px;
+  border-radius: 9px;
 
   background: #f5f5f3;
+
 }
 
 
 .file-preview-item img {
+
   display: block;
 
   width: 100%;
 
-  height: 120px;
+  height: 125px;
 
   object-fit: cover;
+
 }
 
 
 .file-preview-number {
+
   position: absolute;
 
   top: 6px;
 
   left: 6px;
 
-  min-width: 24px;
+  z-index: 2;
 
-  padding: 3px 6px;
+  min-width: 25px;
 
-  border-radius: 12px;
+  padding:
+    3px 7px;
+
+  border-radius: 15px;
 
   background: #d5ca3d;
 
   color: #222;
 
-  text-align: center;
-
   font-size: 11px;
 
   font-weight: 800;
+
+  text-align: center;
+
 }
 
 
 .file-preview-pdf {
-  height: 120px;
+
+  height: 125px;
 
   display: flex;
 
@@ -80,15 +93,17 @@
 
   justify-content: center;
 
-  color: #666;
+  color: #777;
 
   font-size: 13px;
 
-  font-weight: 700;
+  font-weight: 800;
+
 }
 
 
 .book-admin-item {
+
   display: flex;
 
   align-items: center;
@@ -99,77 +114,106 @@
 
   padding: 18px 4px;
 
-  border-bottom: 1px solid #eee;
+  border-bottom:
+    1px solid #eee;
+
 }
 
 
 .book-admin-item:last-child {
+
   border-bottom: 0;
+
 }
 
 
 .book-admin-main {
+
   min-width: 0;
 
   flex: 1;
+
 }
 
 
 .book-admin-title {
+
+  color: #222;
+
   font-size: 16px;
 
   font-weight: 800;
+
 }
 
 
 .book-admin-description {
+
   margin-top: 5px;
 
   color: #777;
 
   font-size: 13px;
+
+  line-height: 1.6;
+
 }
 
 
 .book-admin-type {
-  margin-top: 6px;
+
+  margin-top: 7px;
 
   color: #999;
 
   font-size: 12px;
+
 }
 
 
 .book-admin-status {
+
   flex: 0 0 auto;
 
-  padding: 6px 11px;
+  padding:
+    6px 11px;
 
   border-radius: 15px;
 
   background: #eee;
 
+  color: #444;
+
   font-size: 12px;
 
   font-weight: 700;
+
 }
 
 
 .book-empty {
+
   padding: 50px 20px;
 
   color: #777;
 
   text-align: center;
+
 }
 
 
 @media (max-width: 650px) {
 
   .book-admin-item {
-    align-items: flex-start;
 
-    flex-direction: column;
+    align-items:
+      flex-start;
+
+    flex-direction:
+      column;
+
+    gap: 10px;
+
   }
 
 }
