@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -19,6 +18,10 @@
 <link
   rel="stylesheet"
   href="../style.css">
+
+<link
+  rel="stylesheet"
+  href="style.css">
 
 </head>
 
@@ -116,6 +119,10 @@ Bookを追加
 </div>
 
 
+<!-- =========================
+     登録
+     ========================= -->
+
 <section
   id="formCard"
   class="admin-card hidden">
@@ -142,8 +149,7 @@ Book名
 説明
 
 <textarea
-  id="description">
-</textarea>
+  id="description"></textarea>
 
 </label>
 
@@ -161,20 +167,26 @@ Book名
 </label>
 
 
-<p class="form-help">
+<div class="form-help">
 
 PDFは1ファイルで1冊。
 
 <br>
 
-画像は複数選択でき、
-選択順がページ順になります。
+JPG・JPEG・PNGは複数選択可能です。
+選択した順番がページ順になります。
 
 <br>
 
-PDFと画像は同時に登録できません。
+PDFと画像は混在できません。
 
-</p>
+</div>
+
+
+<div
+  id="filePreview"
+  class="file-preview">
+</div>
 
 
 <div class="toolbar">
@@ -208,6 +220,10 @@ PDFと画像は同時に登録できません。
 
 </section>
 
+
+<!-- =========================
+     一覧
+     ========================= -->
 
 <section class="admin-card">
 
@@ -247,7 +263,7 @@ PDFと画像は同時に登録できません。
 
 <script
   type="module"
-  src="app.js?v=admin-books-final">
+  src="app.js?v=book-local-pdfjs-final">
 </script>
 
 </body>
