@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -7,7 +8,7 @@
 
 <meta
   name="viewport"
-  content="width=device-width,initial-scale=1,viewport-fit=cover">
+  content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <title>WEB-viewer</title>
 
@@ -29,176 +30,181 @@
 <header class="viewer-toolbar">
 
 
-<div class="viewer-left">
+  <div class="viewer-left">
 
-<button
-  id="close"
-  type="button"
-  class="toolbar-button">
+    <button
+      id="close"
+      type="button"
+      class="toolbar-button">
 
-戻る
+      戻る
 
-</button>
-
-
-<strong
-  id="title">
-読み込み中
-</strong>
-
-</div>
+    </button>
 
 
-<div class="viewer-page-controls">
+    <strong
+      id="title">
+      読み込み中
+    </strong>
 
-<button
-  id="first"
-  type="button"
-  class="toolbar-button">
-最初
-</button>
+  </div>
 
 
-<button
-  id="previous"
-  type="button"
-  class="toolbar-button">
-前
-</button>
+  <div class="viewer-page-controls">
+
+    <button
+      id="first"
+      type="button"
+      class="toolbar-button">
+
+      最初
+
+    </button>
 
 
-<span
-  id="page">
--
-</span>
+    <button
+      id="previous"
+      type="button"
+      class="toolbar-button">
+
+      前
+
+    </button>
 
 
-<button
-  id="next"
-  type="button"
-  class="toolbar-button">
-次
-</button>
+    <span id="page">
+      -
+    </span>
 
 
-<button
-  id="last"
-  type="button"
-  class="toolbar-button">
-最後
-</button>
+    <button
+      id="next"
+      type="button"
+      class="toolbar-button">
 
-</div>
+      次
 
-
-<div class="viewer-tools">
+    </button>
 
 
-<button
-  id="move"
-  type="button"
-  class="toolbar-button active">
+    <button
+      id="last"
+      type="button"
+      class="toolbar-button">
 
-移動
+      最後
 
-</button>
+    </button>
 
-
-<button
-  id="pen"
-  type="button"
-  class="toolbar-button">
-
-ペン OFF
-
-</button>
+  </div>
 
 
-<button
-  id="eraser"
-  type="button"
-  class="toolbar-button">
+  <div class="viewer-tools">
 
-消しゴム
+    <button
+      id="move"
+      type="button"
+      class="toolbar-button active">
 
-</button>
+      移動
 
-
-<button
-  id="favorite"
-  type="button"
-  class="toolbar-button">
-
-お気に入り
-
-</button>
+    </button>
 
 
-<button
-  id="zoomOut"
-  type="button"
-  class="toolbar-button">
+    <button
+      id="pen"
+      type="button"
+      class="toolbar-button">
 
-−
+      ペン OFF
 
-</button>
-
-
-<button
-  id="zoomIn"
-  type="button"
-  class="toolbar-button">
-
-＋
-
-</button>
+    </button>
 
 
-<button
-  id="fitWidth"
-  type="button"
-  class="toolbar-button">
+    <button
+      id="eraser"
+      type="button"
+      class="toolbar-button">
 
-横幅
+      消しゴム
 
-</button>
-
-
-<button
-  id="fitHeight"
-  type="button"
-  class="toolbar-button">
-
-縦幅
-
-</button>
+    </button>
 
 
-<button
-  id="fullscreen"
-  type="button"
-  class="toolbar-button">
+    <button
+      id="favorite"
+      type="button"
+      class="toolbar-button">
 
-全画面
+      お気に入り
 
-</button>
-
-
-</div>
+    </button>
 
 
-<button
-  id="menuButton"
-  type="button"
-  class="menu-button"
-  aria-label="メニュー"
-  aria-expanded="false">
+    <button
+      id="zoomOut"
+      type="button"
+      class="toolbar-button">
 
-<span></span>
-<span></span>
-<span></span>
+      −
 
-</button>
+    </button>
+
+
+    <button
+      id="zoomIn"
+      type="button"
+      class="toolbar-button">
+
+      ＋
+
+    </button>
+
+
+    <button
+      id="fitWidth"
+      type="button"
+      class="toolbar-button">
+
+      横幅
+
+    </button>
+
+
+    <button
+      id="fitHeight"
+      type="button"
+      class="toolbar-button">
+
+      縦幅
+
+    </button>
+
+
+    <button
+      id="fullscreen"
+      type="button"
+      class="toolbar-button">
+
+      全画面
+
+    </button>
+
+  </div>
+
+
+  <button
+    id="menuButton"
+    type="button"
+    class="menu-button"
+    aria-label="メニュー"
+    aria-expanded="false">
+
+    <span></span>
+    <span></span>
+    <span></span>
+
+  </button>
 
 
 </header>
@@ -209,71 +215,57 @@
   class="mobile-menu"
   aria-hidden="true">
 
+  <button data-action="first">
+    最初のページ
+  </button>
 
-<button data-action="first">
-最初のページ
-</button>
+  <button data-action="previous">
+    前のページ
+  </button>
 
+  <button data-action="next">
+    次のページ
+  </button>
 
-<button data-action="previous">
-前のページ
-</button>
+  <button data-action="last">
+    最後のページ
+  </button>
 
+  <button data-action="move">
+    移動モード
+  </button>
 
-<button data-action="next">
-次のページ
-</button>
+  <button data-action="pen">
+    ペン
+  </button>
 
+  <button data-action="eraser">
+    消しゴム
+  </button>
 
-<button data-action="last">
-最後のページ
-</button>
+  <button data-action="favorite">
+    お気に入り
+  </button>
 
+  <button data-action="zoomOut">
+    縮小
+  </button>
 
-<button data-action="move">
-移動モード
-</button>
+  <button data-action="zoomIn">
+    拡大
+  </button>
 
+  <button data-action="fitWidth">
+    横幅に合わせる
+  </button>
 
-<button data-action="pen">
-ペン
-</button>
+  <button data-action="fitHeight">
+    縦幅に合わせる
+  </button>
 
-
-<button data-action="eraser">
-消しゴム
-</button>
-
-
-<button data-action="favorite">
-お気に入り
-</button>
-
-
-<button data-action="zoomOut">
-縮小
-</button>
-
-
-<button data-action="zoomIn">
-拡大
-</button>
-
-
-<button data-action="fitWidth">
-横幅に合わせる
-</button>
-
-
-<button data-action="fitHeight">
-縦幅に合わせる
-</button>
-
-
-<button data-action="fullscreen">
-全画面
-</button>
-
+  <button data-action="fullscreen">
+    全画面
+  </button>
 
 </nav>
 
@@ -283,28 +275,34 @@
   class="viewer-stage">
 
 
-<div
-  id="pageContainer"
-  class="page-container">
+  <div
+    id="pageContainer"
+    class="page-container">
 
 
-<canvas
-  id="pdfCanvas">
-</canvas>
+    <!-- PDF -->
+
+    <canvas
+      id="pdfCanvas">
+    </canvas>
 
 
-<img
-  id="imagePage"
-  alt=""
-  draggable="false">
+    <!-- 画像Book -->
+
+    <img
+      id="imagePage"
+      alt=""
+      draggable="false">
 
 
-<canvas
-  id="annotationCanvas">
-</canvas>
+    <!-- 書き込み -->
+
+    <canvas
+      id="annotationCanvas">
+    </canvas>
 
 
-</div>
+  </div>
 
 
 </main>
@@ -321,7 +319,7 @@
 
 <script
   type="module"
-  src="app.js?v=local-pdfjs-viewer-final">
+  src="app.js?v=viewer-pdf-image-final">
 </script>
 
 </body>
