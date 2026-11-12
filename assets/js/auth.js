@@ -4,16 +4,16 @@ import {
 } from "./supabase.js";
 
 
-const AUTH_TIMEOUT = 5000;
+const AUTH_TIMEOUT = 8000;
 
 
-/*
- * タイムアウト
- */
+/* =========================================================
+   共通
+   ========================================================= */
 
-function withTimeout(
+function timeout(
   promise,
-  timeout = AUTH_TIMEOUT
+  message = "処理がタイムアウトしました。"
 ) {
 
   return Promise.race([
@@ -24,16 +24,10 @@ function withTimeout(
       (_, reject) => {
 
         setTimeout(
-          () => {
-
-            reject(
-              new Error(
-                "処理がタイムアウトしました。"
-              )
-            );
-
-          },
-          timeout
+          () => reject(
+            new Error(message)
+          ),
+          AUTH_TIMEOUT
         );
 
       }
@@ -44,9 +38,9 @@ function withTimeout(
 }
 
 
-/*
- * 現在のユーザー
- */
+/* =========================================================
+   ログインユーザー
+   ========================================================= */
 
 export async function getUser() {
 
@@ -54,8 +48,9 @@ export async function getUser() {
     data,
     error
   } =
-    await withTimeout(
-      supabase.auth.getUser()
+    await timeout(
+      supabase.auth.getUser(),
+      "ログイン情報を取得できませんでした。"
     );
 
 
@@ -64,23 +59,14 @@ export async function getUser() {
   }
 
 
-  if (!data?.user) {
-
-    throw new Error(
-      "ログインしてください。"
-    );
-
-  }
-
-
-  return data.user;
+  return data?.user || null;
 
 }
 
 
-/*
- * usersプロフィール
- */
+/* =========================================================
+   Profile
+   ========================================================= */
 
 export async function getProfile() {
 
@@ -88,11 +74,16 @@ export async function getProfile() {
     await getUser();
 
 
+  if (!user) {
+    return null;
+  }
+
+
   const {
     data,
     error
   } =
-    await withTimeout(
+    await timeout(
 
       supabase
         .from("users")
@@ -105,7 +96,163 @@ export async function getProfile() {
         )
         .maybeSingle(),
 
-      AUTH_TIMEOUT
+      "ユーザー情報を取得できませんでした。"
+
+    );
+
+
+  if (error) {
+    throw error;
+  }
+
+
+  return data || null;
+
+}
+
+
+/* =========================================================
+   Admin
+   ========================================================= */
+
+export async function requireAdmin() {
+
+  const user =
+    await getUser();
+
+
+  if (!user) {
+
+    location.replace(
+      "/errors/?type=login"
+    );
+
+    return null;
+
+  }
+
+
+  const profile =
+    await getProfile();
+
+
+  if (
+    !profile ||
+    profile.role !== "admin"
+  ) {
+
+    location.replace(
+      "/errors/?type=403"
+    );
+
+    return null;
+
+  }
+
+
+  return profile;
+
+}
+
+
+/* =========================================================
+   Student
+   ========================================================= */
+
+export async function requireStudent() {
+
+  const user =
+    await getUser();
+
+
+  if (!user) {
+
+    location.replace(
+      "/errors/?type=login"
+    );
+
+    return null;
+
+  }
+
+
+  const profile =
+    await getProfile();
+
+
+  if (
+    !profile ||
+    profile.role !== "student"
+  ) {
+
+    location.replace(
+      "/errors/?type=403"
+    );
+
+    return null;
+
+  }
+
+
+  return profile;
+
+}
+
+
+/* =========================================================
+   Book利用権限
+   ========================================================= */
+
+export async function requireBookAccess(
+  bookId
+) {
+
+  const student =
+    await requireStudent();
+
+
+  if (!student) {
+    return null;
+  }
+
+
+  if (!bookId) {
+
+    location.replace(
+      "/errors/?type=404"
+    );
+
+    return null;
+
+  }
+
+
+  const {
+    data,
+    error
+  } =
+    await timeout(
+
+      supabase
+        .from("licenses")
+        .select(
+          "id"
+        )
+        .eq(
+          "book_id",
+          bookId
+        )
+        .eq(
+          "student_id",
+          student.id
+        )
+        .eq(
+          "status",
+          "used"
+        )
+        .maybeSingle(),
+
+      "教材の利用権限を確認できませんでした。"
 
     );
 
@@ -117,35 +264,8 @@ export async function getProfile() {
 
   if (!data) {
 
-    throw new Error(
-      "ユーザー情報が登録されていません。"
-    );
-
-  }
-
-
-  return data;
-
-}
-
-
-/*
- * Admin
- */
-
-export async function requireAdmin() {
-
-  const profile =
-    await getProfile();
-
-
-  if (
-    profile.role !==
-    "admin"
-  ) {
-
-    window.location.replace(
-      "/login/"
+    location.replace(
+      "/errors/?type=book-forbidden"
     );
 
     return null;
@@ -153,228 +273,96 @@ export async function requireAdmin() {
   }
 
 
-  return profile;
+  return student;
 
 }
 
 
-/*
- * Student
- */
-
-export async function requireStudent() {
-
-  const profile =
-    await getProfile();
-
-
-  if (
-    profile.role !==
-    "student"
-  ) {
-
-    window.location.replace(
-      "/login/"
-    );
-
-    return null;
-
-  }
-
-
-  return profile;
-
-}
-
-
-/*
- * Auth Storage削除
- */
+/* =========================================================
+   ログアウト
+   ========================================================= */
 
 function clearAuthStorage() {
 
-  /*
-   * localStorage
-   */
-
-  try {
-
-    const keys = [];
+  const storageList = [
+    localStorage,
+    sessionStorage
+  ];
 
 
-    for (
-      let i = 0;
-      i < localStorage.length;
-      i++
-    ) {
-
-      const key =
-        localStorage.key(i);
-
-
-      if (!key) {
-        continue;
-      }
-
-
-      if (
-        key.startsWith("sb-")
-        &&
-        (
-          key.includes(
-            "auth-token"
-          )
-          ||
-          key.includes(
-            "auth"
-          )
-        )
-      ) {
-
-        keys.push(
-          key
-        );
-
-      }
-
-
-      if (
-        key ===
-        "supabase.auth.token"
-      ) {
-
-        keys.push(
-          key
-        );
-
-      }
-
-    }
-
-
-    for (
-      const key of keys
-    ) {
-
-      try {
-
-        localStorage.removeItem(
-          key
-        );
-
-      }
-      catch {}
-
-    }
-
-  }
-  catch (
-    error
+  for (
+    const storage of storageList
   ) {
 
-    console.error(
-      "LOCAL STORAGE ERROR:",
-      error
-    );
+    try {
 
-  }
+      const keys = [];
 
 
-  /*
-   * sessionStorage
-   */
-
-  try {
-
-    const keys = [];
-
-
-    for (
-      let i = 0;
-      i < sessionStorage.length;
-      i++
-    ) {
-
-      const key =
-        sessionStorage.key(i);
-
-
-      if (!key) {
-        continue;
-      }
-
-
-      if (
-        key.startsWith("sb-")
-        &&
-        (
-          key.includes(
-            "auth-token"
-          )
-          ||
-          key.includes(
-            "auth"
-          )
-        )
+      for (
+        let i = 0;
+        i < storage.length;
+        i++
       ) {
 
-        keys.push(
-          key
-        );
+        const key =
+          storage.key(i);
+
+
+        if (!key) {
+          continue;
+        }
+
+
+        if (
+          key.startsWith("sb-")
+          &&
+          (
+            key.includes(
+              "auth-token"
+            )
+            ||
+            key.includes(
+              "auth"
+            )
+          )
+        ) {
+
+          keys.push(key);
+
+        }
+
+
+        if (
+          key ===
+          "supabase.auth.token"
+        ) {
+
+          keys.push(key);
+
+        }
 
       }
 
 
-      if (
-        key ===
-        "supabase.auth.token"
-      ) {
+      keys.forEach(
+        key => {
 
-        keys.push(
-          key
-        );
+          try {
+            storage.removeItem(key);
+          }
+          catch {}
 
-      }
+        }
+      );
 
     }
-
-
-    for (
-      const key of keys
-    ) {
-
-      try {
-
-        sessionStorage.removeItem(
-          key
-        );
-
-      }
-      catch {}
-
-    }
-
-  }
-  catch (
-    error
-  ) {
-
-    console.error(
-      "SESSION STORAGE ERROR:",
-      error
-    );
+    catch {}
 
   }
 
 }
 
-
-/*
- * ログアウト
- *
- * Supabaseが失敗しても
- * 必ずログイン画面へ戻す。
- */
 
 export async function logout() {
 
@@ -390,10 +378,6 @@ export async function logout() {
   window.__webViewerLoggingOut =
     true;
 
-
-  /*
-   * ボタンを全部無効化
-   */
 
   document
     .querySelectorAll(
@@ -412,18 +396,23 @@ export async function logout() {
     );
 
 
-  /*
-   * Supabaseセッション削除
-   */
-
   try {
 
-    await withTimeout(
+    await Promise.race([
+
       supabase.auth.signOut({
         scope: "local"
       }),
-      3000
-    );
+
+      new Promise(
+        resolve =>
+          setTimeout(
+            resolve,
+            3000
+          )
+      )
+
+    ]);
 
   }
   catch (
@@ -431,46 +420,31 @@ export async function logout() {
   ) {
 
     console.warn(
-      "SIGN OUT ERROR:",
+      "SIGNOUT:",
       error
     );
 
   }
 
 
-  /*
-   * ブラウザ側セッション削除
-   */
-
   clearAuthStorage();
 
 
-  /*
-   * 必ずログイン画面へ
-   */
-
-  window.location.replace(
+  location.replace(
     new URL(
       "/login/",
-      window.location.origin
+      location.origin
     ).href
   );
 
 }
 
 
-/*
- * 全画面の #logout を自動接続
- *
- * Admin
- * Student
- * 資料
- * B4
- * システム
- * メンテナンス画面
- */
+/* =========================================================
+   Logoutボタン自動接続
+   ========================================================= */
 
-function bindLogoutButtons() {
+export function bindLogout() {
 
   document
     .querySelectorAll(
@@ -480,8 +454,7 @@ function bindLogoutButtons() {
       button => {
 
         if (
-          button.dataset.logoutBound ===
-          "true"
+          button.dataset.bound
         ) {
 
           return;
@@ -489,7 +462,7 @@ function bindLogoutButtons() {
         }
 
 
-        button.dataset.logoutBound =
+        button.dataset.bound =
           "true";
 
 
@@ -510,10 +483,6 @@ function bindLogoutButtons() {
 }
 
 
-/*
- * DOM読み込み時
- */
-
 if (
   document.readyState ===
   "loading"
@@ -521,7 +490,7 @@ if (
 
   document.addEventListener(
     "DOMContentLoaded",
-    bindLogoutButtons,
+    bindLogout,
     {
       once: true
     }
@@ -530,6 +499,6 @@ if (
 }
 else {
 
-  bindLogoutButtons();
+  bindLogout();
 
 }
