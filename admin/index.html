@@ -4,314 +4,322 @@
 
 <head>
 
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
 
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1">
 
-<title>WEB-viewer 管理</title>
+  <title>WEB-viewer 管理</title>
 
-<link
-  rel="stylesheet"
-  href="../assets/css/common.css">
+  <link
+    rel="stylesheet"
+    href="../assets/css/common.css">
 
-<link
-  rel="stylesheet"
-  href="style.css">
+  <link
+    rel="stylesheet"
+    href="style.css">
 
 </head>
 
 
 <body>
 
-<!-- =====================================================
-     Admin Sidebar
-     ===================================================== -->
+  <!-- =====================================================
+       管理者サイドバー
+       ===================================================== -->
 
-<aside
-  class="admin-side"
-  aria-label="管理メニュー">
+  <aside
+    class="admin-side"
+    aria-label="管理メニュー">
 
-  <div class="admin-brand">
-
-    <div>
-      WEB-viewer
-    </div>
-
-    <small>
-      管理システム
-    </small>
-
-  </div>
-
-
-  <nav>
-
-    <a
-      class="active"
-      href="./">
-      ダッシュボード
-    </a>
-
-
-    <a href="books/">
-      Book管理
-    </a>
-
-
-    <a href="serials/">
-      シリアル管理
-    </a>
-
-
-    <a href="students/">
-      生徒管理
-    </a>
-
-
-    <a href="materials/">
-      資料配信
-    </a>
-
-
-    <a href="b4/">
-      B4資料
-    </a>
-
-
-    <a href="system/">
-      システム管理
-    </a>
-
-
-    <button
-      id="logout"
-      type="button">
-
-      ログアウト
-
-    </button>
-
-  </nav>
-
-</aside>
-
-
-<!-- =====================================================
-     Main
-     ===================================================== -->
-
-<main class="admin-main">
-
-
-  <!-- ===================================================
-       Header
-       =================================================== -->
-
-  <header class="admin-notice">
-
-    <div>
-      お知らせ
-    </div>
-
-    <span>
-      WEB-viewer管理画面
-    </span>
-
-  </header>
-
-
-  <!-- ===================================================
-       Maintenance Banner
-       通常メンテナンス中でもAdminは管理画面を使用可能
-       =================================================== -->
-
-  <section
-    id="maintenanceBanner"
-    class="maintenance-banner hidden"
-    aria-label="メンテナンス情報">
-
-
-    <!-- SVGレンチ -->
-
-    <div
-      class="maintenance-banner-icon"
-      aria-hidden="true">
-
-      <svg
-        viewBox="0 0 48 48"
-        role="img">
-
-        <path
-          d="
-            M30.8 8.4
-            c-4.9-2.1-10.8-.4-13.7 4.2
-            c-2.1 3.4-2 7.4-.5 10.6
-            L7.1 32.7
-            c-1.6 1.6-1.6 4.1 0 5.7
-            c1.6 1.6 4.1 1.6 5.7 0
-            l9.5-9.5
-            c3.2 1.5 7.2 1.6 10.6-.5
-            c4.6-2.9 6.3-8.8 4.2-13.7
-            l-6.7 6.7
-            c-1.4 1.4-3.7 1.4-5.1 0
-            l-1.1-1.1
-            c-1.4-1.4-1.4-3.7 0-5.1
-            l6.6-6.8z
-          " />
-
-      </svg>
-
-    </div>
-
-
-    <!-- メッセージ -->
-
-    <div class="maintenance-banner-content">
-
-      <strong>
-        メンテナンス中
-      </strong>
-
-      <span
-        id="maintenanceBannerMessage">
-      </span>
-
-    </div>
-
-
-    <!-- 設定 -->
-
-    <a
-      href="system/"
-      class="maintenance-banner-link">
-
-      設定を開く
-
-    </a>
-
-  </section>
-
-
-  <!-- ===================================================
-       Content
-       =================================================== -->
-
-  <section class="admin-content">
-
-
-    <!-- Heading -->
-
-    <div class="page-heading">
+    <div class="admin-brand">
 
       <div>
+        WEB-viewer
+      </div>
 
-        <h1>
-          ダッシュボード
-        </h1>
+      <small>
+        管理システム
+      </small>
 
-        <p>
-          WEB-viewerの管理状況
-        </p>
+    </div>
+
+
+    <nav>
+
+      <a
+        class="active"
+        href="./">
+        ダッシュボード
+      </a>
+
+
+      <a href="books/">
+        Book管理
+      </a>
+
+
+      <a href="serials/">
+        シリアル管理
+      </a>
+
+
+      <a href="students/">
+        生徒管理
+      </a>
+
+
+      <a href="materials/">
+        資料配信
+      </a>
+
+
+      <a href="b4/">
+        B4資料
+      </a>
+
+
+      <a href="system/">
+        システム管理
+      </a>
+
+
+      <button
+        id="logout"
+        type="button">
+
+        ログアウト
+
+      </button>
+
+    </nav>
+
+  </aside>
+
+
+  <!-- =====================================================
+       メイン
+       ===================================================== -->
+
+  <main class="admin-main">
+
+
+    <!-- ===================================================
+         上部のお知らせ
+         =================================================== -->
+
+    <header class="admin-notice">
+
+      <div>
+        お知らせ
+      </div>
+
+      <span>
+        WEB-viewer管理画面
+      </span>
+
+    </header>
+
+
+    <!-- ===================================================
+         通常メンテナンスバナー
+         =================================================== -->
+
+    <section
+      id="maintenanceBanner"
+      class="maintenance-banner hidden"
+      aria-label="メンテナンス情報">
+
+
+      <!--
+        送ってもらったレンチ画像を参考にしたSVG。
+
+        ・淡いクリーム色の円
+        ・細いオレンジのレンチ
+        ・丸みのある線
+      -->
+
+      <div
+        class="maintenance-banner-icon"
+        aria-hidden="true">
+
+        <svg
+          viewBox="0 0 64 64"
+          xmlns="http://www.w3.org/2000/svg">
+
+          <circle
+            cx="32"
+            cy="32"
+            r="30"
+            fill="#FFF1E3"/>
+
+
+          <path
+            d="
+              M43.7 13.8
+              C39.8 11.2 34.7 11.1 30.7 13.4
+              C26.1 16.1 23.7 21.4 24.5 26.5
+              L13.4 37.6
+              C11.8 39.2 11.8 41.8 13.4 43.4
+              L20.6 50.6
+              C22.2 52.2 24.8 52.2 26.4 50.6
+              L37.5 39.5
+              C42.6 40.3 47.9 37.9 50.6 33.3
+              C52.9 29.3 52.8 24.2 50.2 20.3
+              L42.1 28.4
+              C40.6 29.9 38.2 29.9 36.7 28.4
+              L35.6 27.3
+              C34.1 25.8 34.1 23.4 35.6 21.9
+              Z
+            "
+            fill="none"
+            stroke="#F2762B"
+            stroke-width="3.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+
+        </svg>
 
       </div>
 
-    </div>
 
+      <div class="maintenance-banner-content">
 
-    <!-- =================================================
-         Stats
-         ================================================= -->
-
-    <div class="admin-stats">
-
-
-      <section class="admin-stat">
-
-        <span>
-          Book
-        </span>
-
-        <strong
-          id="bookCount">
-          -
+        <strong>
+          メンテナンス中
         </strong>
 
-      </section>
-
-
-      <section class="admin-stat">
-
-        <span>
-          生徒
+        <span
+          id="maintenanceBannerMessage">
         </span>
 
-        <strong
-          id="studentCount">
-          -
-        </strong>
-
-      </section>
+      </div>
 
 
-      <section class="admin-stat">
+      <a
+        href="system/"
+        class="maintenance-banner-link">
 
-        <span>
-          シリアル
-        </span>
+        設定を開く
 
-        <strong
-          id="licenseCount">
-          -
-        </strong>
-
-      </section>
-
-
-    </div>
-
-
-    <!-- =================================================
-         Menu
-         ================================================= -->
-
-    <section class="admin-card">
-
-      <h2>
-        管理メニュー
-      </h2>
-
-      <p>
-        左側のメニューから管理項目を選択してください。
-      </p>
+      </a>
 
     </section>
 
 
-    <!-- =================================================
-         Error
-         ================================================= -->
+    <!-- ===================================================
+         コンテンツ
+         =================================================== -->
 
-    <div
-      id="dashboardError">
-    </div>
+    <section class="admin-content">
 
 
-  </section>
+      <div class="page-heading">
+
+        <div>
+
+          <h1>
+            ダッシュボード
+          </h1>
+
+          <p>
+            WEB-viewerの管理状況
+          </p>
+
+        </div>
+
+      </div>
 
 
-</main>
+      <!-- =================================================
+           統計
+           ================================================= -->
+
+      <div class="admin-stats">
 
 
-<!-- =====================================================
-     Script
-     ===================================================== -->
+        <section class="admin-stat">
 
-<script
-  type="module"
-  src="app.js?v=admin-dashboard-final">
-</script>
+          <span>
+            Book
+          </span>
+
+          <strong
+            id="bookCount">
+            -
+          </strong>
+
+        </section>
+
+
+        <section class="admin-stat">
+
+          <span>
+            生徒
+          </span>
+
+          <strong
+            id="studentCount">
+            -
+          </strong>
+
+        </section>
+
+
+        <section class="admin-stat">
+
+          <span>
+            シリアル
+          </span>
+
+          <strong
+            id="licenseCount">
+            -
+          </strong>
+
+        </section>
+
+
+      </div>
+
+
+      <!-- =================================================
+           管理メニュー
+           ================================================= -->
+
+      <section class="admin-card">
+
+        <h2>
+          管理メニュー
+        </h2>
+
+        <p>
+          左側のメニューから管理項目を選択してください。
+        </p>
+
+      </section>
+
+
+      <!-- =================================================
+           エラー
+           ================================================= -->
+
+      <div
+        id="dashboardError">
+      </div>
+
+
+    </section>
+
+
+  </main>
+
+
+  <script
+    type="module"
+    src="app.js?v=admin-dashboard-final-2">
+  </script>
 
 </body>
 
