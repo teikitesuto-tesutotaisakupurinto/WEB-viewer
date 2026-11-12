@@ -14,10 +14,6 @@
 
 <link
   rel="stylesheet"
-  href="../../assets/css/common.css">
-
-<link
-  rel="stylesheet"
   href="style.css">
 
 </head>
@@ -26,122 +22,278 @@
 
 <div class="viewer">
 
+  <!-- =====================================================
+       Toolbar
+       ===================================================== -->
+
   <header class="viewer-toolbar">
 
-    <div class="viewer-left">
+    <div class="toolbar-brand">
 
       <button
         id="close"
+        class="tool-button icon-button"
         type="button"
-        class="toolbar-button">
-        戻る
+        aria-label="戻る">
+
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 18 9 12l6-6"/>
+        </svg>
+
       </button>
 
-      <strong id="title">
-        読み込み中
-      </strong>
+
+      <div class="book-title-wrap">
+
+        <div class="viewer-brand">
+          WEB-viewer
+        </div>
+
+        <div
+          id="title"
+          class="book-title">
+          読み込み中
+        </div>
+
+      </div>
 
     </div>
 
 
-    <div class="viewer-page-controls">
+    <!-- Page navigation -->
+
+    <div class="page-navigation">
 
       <button
         id="first"
+        class="tool-button icon-button"
         type="button"
-        class="toolbar-button">
-        最初
+        aria-label="最初のページ">
+
+        <svg viewBox="0 0 24 24">
+          <path d="M18 6 12 12l6 6"/>
+          <path d="M12 6 6 12l6 6"/>
+        </svg>
+
       </button>
+
 
       <button
         id="previous"
+        class="tool-button icon-button"
         type="button"
-        class="toolbar-button">
-        前
+        aria-label="前のページ">
+
+        <svg viewBox="0 0 24 24">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+
       </button>
 
-      <span id="page">-</span>
+
+      <div
+        id="page"
+        class="page-counter">
+        - / -
+      </div>
+
 
       <button
         id="next"
+        class="tool-button icon-button"
         type="button"
-        class="toolbar-button">
-        次
+        aria-label="次のページ">
+
+        <svg viewBox="0 0 24 24">
+          <path d="m9 18 6-6-6-6"/>
+        </svg>
+
       </button>
+
 
       <button
         id="last"
+        class="tool-button icon-button"
         type="button"
-        class="toolbar-button">
-        最後
+        aria-label="最後のページ">
+
+        <svg viewBox="0 0 24 24">
+          <path d="m6 6 6 6-6 6"/>
+          <path d="m12 6 6 6-6 6"/>
+        </svg>
+
       </button>
 
     </div>
 
 
-    <div class="viewer-tools">
+    <!-- Main tools -->
+
+    <div class="toolbar-tools">
 
       <button
         id="move"
-        type="button"
-        class="toolbar-button active">
-        移動
+        class="tool-button tool-with-label active"
+        type="button">
+
+        <svg viewBox="0 0 24 24">
+          <path d="M12 3v18"/>
+          <path d="m8 7 4-4 4 4"/>
+          <path d="m8 17 4 4 4-4"/>
+          <path d="M3 12h18"/>
+          <path d="m7 8-4 4 4 4"/>
+          <path d="m17 8 4 4-4 4"/>
+        </svg>
+
+        <span>移動</span>
+
       </button>
+
 
       <button
         id="pen"
-        type="button"
-        class="toolbar-button">
-        ペン OFF
+        class="tool-button tool-with-label"
+        type="button">
+
+        <svg viewBox="0 0 24 24">
+          <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/>
+          <path d="m14 7 3 3"/>
+        </svg>
+
+        <span>ペン OFF</span>
+
       </button>
+
 
       <button
         id="eraser"
-        type="button"
-        class="toolbar-button">
-        消しゴム
+        class="tool-button tool-with-label"
+        type="button">
+
+        <svg viewBox="0 0 24 24">
+          <path d="m4 15 8-8 7 7-8 8H7l-3-3a2.8 2.8 0 0 1 0-4Z"/>
+          <path d="m13 18 5 0"/>
+        </svg>
+
+        <span>消しゴム</span>
+
       </button>
 
-      <button
-        id="favorite"
-        type="button"
-        class="toolbar-button">
-        お気に入り
-      </button>
+
+      <div class="tool-divider"></div>
+
 
       <button
         id="zoomOut"
+        class="tool-button icon-button"
         type="button"
-        class="toolbar-button">
-        −
+        aria-label="縮小">
+
+        <svg viewBox="0 0 24 24">
+          <path d="M5 12h14"/>
+        </svg>
+
       </button>
+
 
       <button
         id="zoomIn"
+        class="tool-button icon-button"
         type="button"
-        class="toolbar-button">
-        ＋
+        aria-label="拡大">
+
+        <svg viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="6"/>
+          <path d="M20 20l-4.5-4.5"/>
+          <path d="M11 8v6"/>
+          <path d="M8 11h6"/>
+        </svg>
+
       </button>
+
 
       <button
         id="fitWidth"
-        type="button"
-        class="toolbar-button">
-        横幅
+        class="tool-button tool-with-label"
+        type="button">
+
+        <svg viewBox="0 0 24 24">
+          <path d="M4 8V5a1 1 0 0 1 1-1h3"/>
+          <path d="M20 8V5a1 1 0 0 0-1-1h-3"/>
+          <path d="M4 16v3a1 1 0 0 0 1 1h3"/>
+          <path d="M20 16v3a1 1 0 0 1-1 1h-3"/>
+          <path d="M8 12h8"/>
+        </svg>
+
+        <span>横幅</span>
+
       </button>
+
 
       <button
         id="fitHeight"
-        type="button"
-        class="toolbar-button">
-        縦幅
+        class="tool-button tool-with-label"
+        type="button">
+
+        <svg viewBox="0 0 24 24">
+          <path d="M8 4H5a1 1 0 0 0-1 1v3"/>
+          <path d="M16 4h3a1 1 0 0 1 1 1v3"/>
+          <path d="M8 20H5a1 1 0 0 1-1-1v-3"/>
+          <path d="M16 20h3a1 1 0 0 0 1-1v-3"/>
+          <path d="M12 8v8"/>
+        </svg>
+
+        <span>縦幅</span>
+
       </button>
+
+
+      <div class="tool-divider"></div>
+
+
+      <button
+        id="print"
+        class="tool-button tool-with-label"
+        type="button">
+
+        <svg viewBox="0 0 24 24">
+          <path d="M6 9V4h12v5"/>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <path d="M6 14h12v6H6z"/>
+        </svg>
+
+        <span>印刷</span>
+
+      </button>
+
 
       <button
         id="fullscreen"
+        class="tool-button tool-with-label"
+        type="button">
+
+        <svg viewBox="0 0 24 24">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+          <path d="M16 3h3a2 2 0 0 1 2 2v3"/>
+          <path d="M8 21H5a2 2 0 0 1-2-2v-3"/>
+          <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+        </svg>
+
+        <span>全画面</span>
+
+      </button>
+
+
+      <button
+        id="favorite"
+        class="tool-button icon-button"
         type="button"
-        class="toolbar-button">
-        全画面
+        aria-label="お気に入り">
+
+        <svg viewBox="0 0 24 24">
+          <path d="m12 4 2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 4Z"/>
+        </svg>
+
       </button>
 
     </div>
@@ -149,8 +301,8 @@
 
     <button
       id="menuButton"
-      type="button"
       class="menu-button"
+      type="button"
       aria-label="メニュー"
       aria-expanded="false">
 
@@ -162,6 +314,10 @@
 
   </header>
 
+
+  <!-- =====================================================
+       Mobile menu
+       ===================================================== -->
 
   <nav
     id="mobileMenu"
@@ -184,6 +340,8 @@
       最後のページ
     </button>
 
+    <div class="mobile-menu-divider"></div>
+
     <button data-action="move">
       移動
     </button>
@@ -194,10 +352,6 @@
 
     <button data-action="eraser">
       消しゴム
-    </button>
-
-    <button data-action="favorite">
-      お気に入り
     </button>
 
     <button data-action="zoomOut">
@@ -216,6 +370,10 @@
       縦幅に合わせる
     </button>
 
+    <button data-action="print">
+      印刷
+    </button>
+
     <button data-action="fullscreen">
       全画面
     </button>
@@ -223,12 +381,15 @@
   </nav>
 
 
+  <!-- =====================================================
+       Viewer
+       ===================================================== -->
+
   <main
     id="stage"
     class="viewer-stage">
 
     <div
-      id="slideViewport"
       class="slide-viewport">
 
       <div
@@ -272,14 +433,17 @@
   </main>
 
 
+  <!-- =====================================================
+       Loading
+       ===================================================== -->
+
   <div
     id="loadingOverlay"
     class="loading-overlay hidden"
     aria-hidden="true">
 
     <div
-      class="loading-orbit"
-      aria-hidden="true">
+      class="loading-spinner">
 
       <span></span>
       <span></span>
@@ -305,9 +469,8 @@
 
 <script
   type="module"
-  src="app.js?v=viewer-final-20261112-4">
+  src="app.js?v=viewer-hq-20261113">
 </script>
 
 </body>
-
 </html>
