@@ -1,18 +1,29 @@
 
+/* =========================================================
+   WEB-viewer
+   student/viewer/style.css
+   ========================================================= */
+
 * {
   box-sizing: border-box;
 }
+
 
 html,
 body {
   width: 100%;
   height: 100%;
+
   margin: 0;
+  padding: 0;
+
   overflow: hidden;
 }
 
+
 body {
   background: #525252;
+
   color: #222;
 
   font-family:
@@ -23,6 +34,7 @@ body {
     sans-serif;
 
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 
@@ -31,11 +43,15 @@ body {
    ========================================================= */
 
 .viewer {
+  position: relative;
+
   width: 100%;
   height: 100%;
 
   display: flex;
   flex-direction: column;
+
+  overflow: hidden;
 
   background: #525252;
 }
@@ -47,30 +63,38 @@ body {
 
 .viewer-toolbar {
   position: relative;
+
   z-index: 1000;
 
+  width: 100%;
   height: 58px;
   min-height: 58px;
 
   display: flex;
   align-items: center;
 
-  padding: 6px 10px;
+  gap: 7px;
 
-  gap: 8px;
+  padding:
+    6px 9px;
 
   background: #fff;
 
-  border-bottom: 1px solid #d8d8d8;
+  border-bottom:
+    1px solid #d8d8d8;
 
   box-shadow:
     0 1px 5px
-    rgba(0,0,0,.12);
+    rgba(0, 0, 0, .12);
 
   user-select: none;
   -webkit-user-select: none;
 }
 
+
+/* =========================================================
+   Toolbar brand
+   ========================================================= */
 
 .toolbar-brand {
   min-width: 0;
@@ -101,18 +125,18 @@ body {
   font-weight: 700;
 
   line-height: 1;
-  letter-spacing: .08em;
+
+  letter-spacing:
+    .08em;
 }
 
 
 .book-title {
-  max-width: 300px;
+  max-width: 320px;
 
   margin-top: 4px;
 
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 
   color: #222;
 
@@ -120,11 +144,14 @@ body {
   font-weight: 650;
 
   line-height: 1.2;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 
 /* =========================================================
-   Buttons
+   General button
    ========================================================= */
 
 .tool-button {
@@ -132,32 +159,43 @@ body {
   min-width: 40px;
 
   display: inline-flex;
-
   align-items: center;
   justify-content: center;
 
   gap: 6px;
 
-  padding: 0 9px;
+  padding:
+    0 9px;
 
-  border: 1px solid transparent;
+  border:
+    1px solid transparent;
+
   border-radius: 7px;
 
   background: transparent;
+
   color: #444;
 
   font-family: inherit;
+
   font-size: 11px;
   font-weight: 600;
 
+  line-height: 1;
+
   cursor: pointer;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  -webkit-tap-highlight-color:
+    transparent;
 
   transition:
     background .12s ease,
     border-color .12s ease,
-    color .12s ease;
-
-  -webkit-tap-highlight-color: transparent;
+    color .12s ease,
+    box-shadow .12s ease;
 }
 
 
@@ -171,24 +209,36 @@ body {
 }
 
 
-.tool-button.active {
-  background: #e9e9e9;
+.tool-button:focus-visible {
+  outline: none;
 
-  border-color: #d4d4d4;
+  border-color: #999;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(0, 0, 0, .08);
+}
+
+
+.tool-button.active {
+  background: #e8e8e8;
+
+  border-color:
+    #d0d0d0;
 
   color: #111;
 }
 
 
-.icon-button {
-  width: 40px;
-  padding: 0;
-}
-
+/* =========================================================
+   SVG icons
+   ========================================================= */
 
 .tool-button svg {
   width: 19px;
   height: 19px;
+
+  flex: 0 0 auto;
 
   fill: none;
 
@@ -198,8 +248,14 @@ body {
 
   stroke-linecap: round;
   stroke-linejoin: round;
+}
 
-  flex: 0 0 auto;
+
+.icon-button {
+  width: 40px;
+  min-width: 40px;
+
+  padding: 0;
 }
 
 
@@ -208,11 +264,23 @@ body {
 }
 
 
+.tool-with-label span {
+  display: inline-block;
+}
+
+
+/* =========================================================
+   Divider
+   ========================================================= */
+
 .tool-divider {
   width: 1px;
-  height: 26px;
+  height: 27px;
 
-  margin: 0 2px;
+  flex: 0 0 1px;
+
+  margin:
+    0 2px;
 
   background: #ddd;
 }
@@ -237,30 +305,35 @@ body {
   border-radius: 8px;
 
   background: #fafafa;
+
+  flex: 0 0 auto;
 }
 
 
 .page-counter {
   min-width: 72px;
 
-  padding: 0 7px;
-
-  text-align: center;
+  padding:
+    0 7px;
 
   color: #333;
 
   font-size: 12px;
   font-weight: 650;
 
-  font-variant-numeric:
-    tabular-nums;
+  line-height: 1;
+
+  text-align: center;
 
   white-space: nowrap;
+
+  font-variant-numeric:
+    tabular-nums;
 }
 
 
 /* =========================================================
-   Tools
+   Main tools
    ========================================================= */
 
 .toolbar-tools {
@@ -268,11 +341,13 @@ body {
   align-items: center;
 
   gap: 2px;
+
+  flex: 0 0 auto;
 }
 
 
 /* =========================================================
-   Menu
+   Menu button
    ========================================================= */
 
 .menu-button {
@@ -281,16 +356,23 @@ body {
   width: 42px;
   height: 42px;
 
-  padding: 8px;
+  padding: 7px;
 
   border:
-    1px solid #d4d4d4;
+    1px solid #d3d3d3;
 
   border-radius: 8px;
 
   background: #fff;
 
   cursor: pointer;
+
+  flex: 0 0 auto;
+}
+
+
+.menu-button:hover {
+  background: #f4f4f4;
 }
 
 
@@ -319,12 +401,12 @@ body {
 
 
 .mobile-menu.open {
-  position: absolute;
+  position: fixed;
 
-  top: 65px;
+  top: 64px;
   right: 8px;
 
-  z-index: 2000;
+  z-index: 5000;
 
   width:
     min(
@@ -333,8 +415,9 @@ body {
     );
 
   max-height:
-    calc(100vh - 75px);
+    calc(100vh - 76px);
 
+  overflow-x: hidden;
   overflow-y: auto;
 
   display: flex;
@@ -342,28 +425,35 @@ body {
 
   padding: 7px;
 
-  background: #fff;
-
   border:
-    1px solid #d8d8d8;
+    1px solid #d7d7d7;
 
   border-radius: 10px;
 
+  background: #fff;
+
   box-shadow:
-    0 12px 35px
-    rgba(0,0,0,.22);
+    0 14px 40px
+    rgba(0, 0, 0, .22);
+
+  overscroll-behavior:
+    contain;
 }
 
 
 .mobile-menu button {
+  width: 100%;
   min-height: 45px;
 
-  padding: 10px 13px;
+  padding:
+    10px 13px;
 
   border: 0;
+
   border-radius: 6px;
 
   background: #fff;
+
   color: #333;
 
   font-family: inherit;
@@ -371,9 +461,14 @@ body {
   font-size: 13px;
   font-weight: 600;
 
+  line-height: 1.2;
+
   text-align: left;
 
   cursor: pointer;
+
+  -webkit-tap-highlight-color:
+    transparent;
 }
 
 
@@ -382,25 +477,38 @@ body {
 }
 
 
+.mobile-menu button:active {
+  background: #e7e7e7;
+}
+
+
 .mobile-menu-divider {
+  width: calc(100% - 8px);
   height: 1px;
 
-  margin: 6px 4px;
+  margin:
+    6px 4px;
 
   background: #e4e4e4;
 }
 
 
 /* =========================================================
-   Stage
+   Viewer stage
    ========================================================= */
 
 .viewer-stage {
   position: relative;
 
+  z-index: 1;
+
   flex: 1;
 
+  min-width: 0;
   min-height: 0;
+
+  width: 100%;
+  height: 100%;
 
   overflow: hidden;
 
@@ -408,7 +516,8 @@ body {
 
   touch-action: none;
 
-  overscroll-behavior: contain;
+  overscroll-behavior:
+    contain;
 
   user-select: none;
   -webkit-user-select: none;
@@ -422,6 +531,10 @@ body {
 }
 
 
+/* =========================================================
+   Slide viewport
+   ========================================================= */
+
 .slide-viewport {
   position: relative;
 
@@ -429,11 +542,13 @@ body {
   height: 100%;
 
   overflow: hidden;
+
+  touch-action: none;
 }
 
 
 /* =========================================================
-   Page
+   Page slide
    ========================================================= */
 
 .page-slide {
@@ -451,16 +566,27 @@ body {
 
   box-shadow:
     0 8px 30px
-    rgba(0,0,0,.27);
+    rgba(0, 0, 0, .27);
 
-  transform-origin: center center;
+  transform-origin:
+    center center;
 
-  will-change: transform;
+  will-change:
+    transform;
 
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  backface-visibility:
+    hidden;
 
-  contain: layout paint;
+  -webkit-backface-visibility:
+    hidden;
+
+  contain:
+    layout paint;
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  touch-action: none;
 }
 
 
@@ -493,16 +619,17 @@ body {
 
 
 /* =========================================================
-   PDF / Image
+   PDF / Images
    ========================================================= */
 
 #currentPdfCanvas,
-#incomingPdfCanvas,
-#currentImage,
-#incomingImage {
+#incomingPdfCanvas {
   display: none;
 
   max-width: none;
+
+  margin: 0;
+  padding: 0;
 
   background: #fff;
 
@@ -510,22 +637,41 @@ body {
 
   vertical-align: top;
 
-  image-rendering: auto;
+  image-rendering:
+    auto;
 }
 
 
 #currentImage,
 #incomingImage {
-  user-select: none;
+  display: none;
 
+  max-width: none;
+
+  width: auto;
+  height: auto;
+
+  margin: 0;
+  padding: 0;
+
+  background: #fff;
+
+  pointer-events: none;
+
+  user-select: none;
   -webkit-user-select: none;
 
   -webkit-user-drag: none;
+
+  vertical-align: top;
+
+  image-rendering:
+    auto;
 }
 
 
 /* =========================================================
-   Annotation
+   Annotation canvas
    ========================================================= */
 
 .annotation-canvas {
@@ -536,17 +682,35 @@ body {
 
   z-index: 20;
 
+  display: block;
+
+  margin: 0;
+  padding: 0;
+
   pointer-events: none;
 
   touch-action: none;
+
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 
-body.pen-enabled
-.annotation-canvas {
+/*
+ * ペンだけでなく消しゴムも操作可能。
+ */
+
+body.pen-enabled .annotation-canvas,
+body.eraser-enabled .annotation-canvas {
   pointer-events: auto;
 
   cursor: crosshair;
+}
+
+
+body.eraser-enabled .annotation-canvas {
+  cursor:
+    crosshair;
 }
 
 
@@ -559,7 +723,7 @@ body.pen-enabled
 
   inset: 0;
 
-  z-index: 5000;
+  z-index: 8000;
 
   display: flex;
 
@@ -567,7 +731,9 @@ body.pen-enabled
   justify-content: center;
 
   background:
-    rgba(35,35,35,.66);
+    rgba(35, 35, 35, .66);
+
+  pointer-events: auto;
 }
 
 
@@ -583,7 +749,8 @@ body.pen-enabled
   height: 62px;
 
   animation:
-    viewer-spin 1.15s linear infinite;
+    viewer-spinner 1.15s
+    linear infinite;
 }
 
 
@@ -606,7 +773,7 @@ body.pen-enabled
   opacity: .15;
 
   animation:
-    viewer-pulse 1.1s
+    viewer-spinner-dot 1.1s
     ease-in-out infinite;
 }
 
@@ -691,20 +858,22 @@ body.pen-enabled
 }
 
 
-@keyframes viewer-spin {
+@keyframes viewer-spinner {
 
   from {
-    transform: rotate(0);
+    transform:
+      rotate(0deg);
   }
 
   to {
-    transform: rotate(360deg);
+    transform:
+      rotate(360deg);
   }
 
 }
 
 
-@keyframes viewer-pulse {
+@keyframes viewer-spinner-dot {
 
   0%,
   100% {
@@ -719,16 +888,19 @@ body.pen-enabled
 
 
 /* =========================================================
-   Message
+   Viewer message
    ========================================================= */
 
 .viewer-message {
   position: fixed;
 
   left: 50%;
-  bottom: 25px;
+  bottom: 24px;
 
-  z-index: 6000;
+  z-index: 8500;
+
+  width:
+    max-content;
 
   max-width:
     calc(100vw - 30px);
@@ -747,11 +919,15 @@ body.pen-enabled
 
   box-shadow:
     0 7px 25px
-    rgba(0,0,0,.25);
+    rgba(0, 0, 0, .25);
 
   font-size: 13px;
 
+  line-height: 1.5;
+
   text-align: center;
+
+  pointer-events: none;
 }
 
 
@@ -761,7 +937,341 @@ body.pen-enabled
 
 
 /* =========================================================
-   Responsive
+   Print dialog
+   ========================================================= */
+
+.viewer-print-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 9000;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background:
+    rgba(0, 0, 0, .45);
+
+  backdrop-filter:
+    blur(2px);
+
+  -webkit-backdrop-filter:
+    blur(2px);
+}
+
+
+.viewer-print-dialog {
+  width:
+    min(
+      430px,
+      100%
+    );
+
+  max-height:
+    calc(100vh - 40px);
+
+  overflow: hidden;
+
+  border:
+    1px solid #d8d8d8;
+
+  border-radius: 12px;
+
+  background: #fff;
+
+  box-shadow:
+    0 18px 60px
+    rgba(0, 0, 0, .28);
+
+  color: #222;
+}
+
+
+.viewer-print-header {
+  height: 54px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  padding:
+    0 14px;
+
+  border-bottom:
+    1px solid #e5e5e5;
+}
+
+
+.viewer-print-title {
+  color: #222;
+
+  font-size: 15px;
+  font-weight: 700;
+
+  line-height: 1;
+}
+
+
+.viewer-print-close {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: 0;
+
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #555;
+
+  font-family: inherit;
+
+  font-size: 24px;
+
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+
+.viewer-print-close:hover {
+  background: #f1f1f1;
+}
+
+
+.viewer-print-close:active {
+  background: #e7e7e7;
+}
+
+
+.viewer-print-body {
+  padding: 18px;
+
+  overflow-y: auto;
+}
+
+
+.viewer-print-option {
+  min-height: 44px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  color: #333;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+
+.viewer-print-option + .viewer-print-option {
+  margin-top: 3px;
+}
+
+
+.viewer-print-option input {
+  width: 17px;
+  height: 17px;
+
+  flex: 0 0 auto;
+
+  margin: 0;
+}
+
+
+.viewer-print-range {
+  margin-top: 12px;
+
+  padding: 12px;
+
+  border:
+    1px solid #e1e1e1;
+
+  border-radius: 8px;
+
+  background: #fafafa;
+}
+
+
+.viewer-print-range label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #333;
+
+  font-size: 12px;
+  font-weight: 650;
+}
+
+
+.viewer-print-range input {
+  width: 100%;
+  height: 42px;
+
+  padding:
+    0 11px;
+
+  border:
+    1px solid #cfcfcf;
+
+  border-radius: 7px;
+
+  background: #fff;
+
+  color: #222;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  line-height: 42px;
+
+  outline: none;
+}
+
+
+.viewer-print-range input:disabled {
+  background: #eee;
+
+  color: #999;
+
+  cursor: not-allowed;
+}
+
+
+.viewer-print-range input:not(:disabled):focus {
+  border-color: #888;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(0, 0, 0, .07);
+}
+
+
+.viewer-print-hint {
+  margin-top: 6px;
+
+  color: #777;
+
+  font-size: 11px;
+
+  line-height: 1.4;
+}
+
+
+.viewer-print-error {
+  margin-top: 12px;
+
+  padding:
+    9px 11px;
+
+  border-radius: 7px;
+
+  background: #f7eaea;
+
+  color: #8a2222;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+
+.viewer-print-footer {
+  display: flex;
+
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 8px;
+
+  padding:
+    12px 14px;
+
+  border-top:
+    1px solid #e5e5e5;
+
+  background: #fafafa;
+}
+
+
+.viewer-print-cancel,
+.viewer-print-start {
+  min-width: 90px;
+  height: 40px;
+
+  padding:
+    0 15px;
+
+  border-radius: 7px;
+
+  font-family: inherit;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+
+.viewer-print-cancel {
+  border:
+    1px solid #d2d2d2;
+
+  background: #fff;
+
+  color: #444;
+}
+
+
+.viewer-print-cancel:hover {
+  background: #f1f1f1;
+}
+
+
+.viewer-print-start {
+  border:
+    1px solid #222;
+
+  background: #222;
+
+  color: #fff;
+}
+
+
+.viewer-print-start:hover {
+  background: #111;
+}
+
+
+.viewer-print-start:active {
+  background: #000;
+}
+
+
+/* =========================================================
+   Desktop / medium
    ========================================================= */
 
 @media (max-width: 1180px) {
@@ -770,13 +1280,40 @@ body.pen-enabled
     display: none;
   }
 
+
   .tool-with-label {
     width: 40px;
+    min-width: 40px;
+
     padding: 0;
   }
 
 }
 
+
+@media (max-width: 920px) {
+
+  .book-title {
+    max-width: 220px;
+  }
+
+
+  .toolbar-tools {
+    gap: 1px;
+  }
+
+
+  .tool-button {
+    padding:
+      0 7px;
+  }
+
+}
+
+
+/* =========================================================
+   Tablet / mobile
+   ========================================================= */
 
 @media (max-width: 850px) {
 
@@ -820,25 +1357,40 @@ body.pen-enabled
 }
 
 
+/* =========================================================
+   Small mobile
+   ========================================================= */
+
 @media (max-width: 520px) {
 
+  .viewer-toolbar {
+    gap: 4px;
+
+    padding:
+      5px;
+  }
+
+
   .toolbar-brand {
-    flex: 1;
+    min-width: 0;
   }
 
 
   .book-title {
     max-width:
       calc(
-        100vw - 250px
+        100vw - 245px
       );
+
+    font-size: 11px;
   }
 
 
-  .page-counter {
-    min-width: 58px;
+  .page-navigation {
+    gap: 1px;
 
-    font-size: 11px;
+    padding:
+      2px;
   }
 
 
@@ -846,6 +1398,7 @@ body.pen-enabled
   .tool-button {
     width: 34px;
     min-width: 34px;
+
     height: 36px;
   }
 
@@ -857,9 +1410,127 @@ body.pen-enabled
   }
 
 
+  .page-counter {
+    min-width: 54px;
+
+    padding:
+      0 4px;
+
+    font-size: 11px;
+  }
+
+
   .icon-button {
     width: 38px;
     min-width: 38px;
+  }
+
+
+  .menu-button {
+    width: 38px;
+    height: 38px;
+  }
+
+
+  .menu-button span {
+    width: 20px;
+  }
+
+
+  .viewer-print-overlay {
+    padding:
+      12px;
+  }
+
+
+  .viewer-print-dialog {
+    border-radius: 10px;
+  }
+
+
+  .viewer-print-body {
+    padding:
+      15px;
+  }
+
+}
+
+
+/* =========================================================
+   Very small screens
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+  .book-title {
+    max-width:
+      calc(
+        100vw - 225px
+      );
+  }
+
+
+  .page-navigation
+  .tool-button {
+    width: 31px;
+    min-width: 31px;
+  }
+
+
+  .page-counter {
+    min-width: 48px;
+
+    font-size: 10px;
+  }
+
+
+  .menu-button {
+    width: 36px;
+    min-width: 36px;
+  }
+
+}
+
+
+/* =========================================================
+   Reduced motion
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+
+    scroll-behavior: auto !important;
+
+    transition-duration:
+      .01ms !important;
+
+    animation-duration:
+      .01ms !important;
+
+    animation-iteration-count:
+      1 !important;
+
+  }
+
+}
+
+
+/* =========================================================
+   Print safety
+   ========================================================= */
+
+@media print {
+
+  .viewer {
+    display: none !important;
+  }
+
+
+  .viewer-print-overlay {
+    display: none !important;
   }
 
 }
