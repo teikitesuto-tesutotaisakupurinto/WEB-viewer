@@ -9,11 +9,12 @@ body {
   height: 100%;
 
   margin: 0;
-  padding: 0;
 
   overflow: hidden;
+}
 
-  background: #e9e9e6;
+body {
+  background: #555;
 
   color: #222;
 
@@ -37,45 +38,37 @@ body {
   display: flex;
 
   flex-direction: column;
+
+  background: #555;
 }
 
 
 /* =========================================================
-   上部バー
+   Header
    ========================================================= */
 
-.viewer-bar {
+.viewer-header {
   position: relative;
 
   z-index: 100;
 
-  min-height: 62px;
+  min-height: 58px;
 
   display: flex;
 
   align-items: center;
 
-  justify-content: space-between;
-
   gap: 10px;
 
-  padding: 8px 14px;
+  padding: 7px 10px;
 
   background: #fff;
 
-  border-bottom: 1px solid #d8d8d8;
-
-  box-shadow:
-    0 2px 8px
-    rgba(0, 0, 0, .06);
+  border-bottom: 1px solid #ccc;
 }
 
 
-/* =========================================================
-   左側
-   ========================================================= */
-
-.viewer-title-area {
+.viewer-left {
   min-width: 0;
 
   display: flex;
@@ -83,13 +76,13 @@ body {
   align-items: center;
 
   gap: 9px;
+
+  flex: 1;
 }
 
 
-.viewer-title-area strong {
-  display: block;
-
-  max-width: 360px;
+.viewer-left strong {
+  min-width: 0;
 
   overflow: hidden;
 
@@ -97,35 +90,53 @@ body {
 
   white-space: nowrap;
 
-  font-size: 15px;
-
-  font-weight: 700;
+  font-size: 14px;
 }
 
 
-/* =========================================================
-   ページ操作
-   ========================================================= */
-
-.page-controls {
+.viewer-center {
   display: flex;
 
   align-items: center;
 
-  gap: 7px;
+  gap: 4px;
+
+  flex: 0 0 auto;
 }
 
 
-.page-controls span {
-  min-width: 72px;
+.viewer-center button,
+.viewer-tools button,
+.icon-button {
+  height: 38px;
 
-  padding: 7px 10px;
+  padding: 0 10px;
+
+  border: 1px solid #ccc;
 
   border-radius: 7px;
 
-  background: #f1f1f1;
+  background: #fff;
 
-  color: #333;
+  color: #222;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+
+.viewer-center button:hover,
+.viewer-tools button:hover,
+.icon-button:hover {
+  background: #f1f1f1;
+}
+
+
+#page {
+  min-width: 65px;
 
   text-align: center;
 
@@ -136,73 +147,128 @@ body {
 }
 
 
-/* =========================================================
-   ツール
-   ========================================================= */
-
-.tools {
+.viewer-tools {
   display: flex;
 
   align-items: center;
 
-  gap: 7px;
+  gap: 4px;
+
+  flex: 0 0 auto;
 }
 
 
-.viewer-bar button {
-  min-height: 38px;
-
-  padding: 8px 12px;
-
-  border: 1px solid #d0d0d0;
-
-  border-radius: 7px;
-
-  background: #fff;
-
-  color: #222;
-
-  font: inherit;
-
-  font-size: 13px;
-
-  cursor: pointer;
-
-  white-space: nowrap;
-}
-
-
-.viewer-bar button:hover {
-  background: #f3f3f3;
-}
-
-
-.viewer-bar button:active {
-  transform:
-    translateY(1px);
-}
-
-
-/* =========================================================
-   ペン ON
-   ========================================================= */
-
-.viewer-bar #pen.active {
+.viewer-tools button.active,
+#pen.active {
   background: #d5ca3d;
 
   border-color: #c8bd31;
-
-  color: #222;
 
   font-weight: 800;
 }
 
 
 /* =========================================================
-   Viewer本体
+   Mobile menu
    ========================================================= */
 
-.stage {
+.menu-button {
+  display: none;
+
+  width: 42px;
+
+  height: 42px;
+
+  padding: 8px;
+
+  border: 1px solid #ccc;
+
+  border-radius: 8px;
+
+  background: #fff;
+}
+
+
+.menu-button span {
+  display: block;
+
+  height: 2px;
+
+  margin: 5px 0;
+
+  background: #222;
+}
+
+
+.mobile-menu {
+  display: none;
+}
+
+
+.mobile-menu.open {
+  display: grid;
+
+  position: absolute;
+
+  top: 58px;
+
+  right: 8px;
+
+  z-index: 200;
+
+  width: min(
+    280px,
+    calc(100vw - 16px)
+  );
+
+  max-height:
+    calc(100vh - 70px);
+
+  overflow-y: auto;
+
+  padding: 8px;
+
+  background: #fff;
+
+  border: 1px solid #ccc;
+
+  border-radius: 10px;
+
+  box-shadow:
+    0 10px 30px
+    rgba(0,0,0,.2);
+}
+
+
+.mobile-menu button {
+  min-height: 44px;
+
+  padding: 10px 13px;
+
+  border: 0;
+
+  border-bottom: 1px solid #eee;
+
+  background: #fff;
+
+  color: #222;
+
+  text-align: left;
+
+  font-weight: 600;
+}
+
+
+.mobile-menu button:last-child {
+  border-bottom: 0;
+}
+
+
+/* =========================================================
+   Stage
+   ========================================================= */
+
+.viewer-stage {
   position: relative;
 
   flex: 1;
@@ -217,24 +283,20 @@ body {
 
   justify-content: center;
 
-  padding: 28px;
+  padding: 25px;
 
-  background: #e9e9e6;
+  background: #555;
 
-  /*
-   * 通常はブラウザのスクロールを使用。
-   * タッチ横スワイプはJS側で処理。
-   */
+  overscroll-behavior: contain;
 
   touch-action: pan-x pan-y;
 
-  overscroll-behavior:
-    contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 
 /* =========================================================
-   ページ本体
+   Page
    ========================================================= */
 
 .page-container {
@@ -243,54 +305,29 @@ body {
   flex: 0 0 auto;
 
   min-width: 1px;
+
   min-height: 1px;
 
   background: #fff;
 
   box-shadow:
-    0 5px 25px
-    rgba(0, 0, 0, .16);
+    0 8px 30px
+    rgba(0,0,0,.25);
 }
 
-
-/* =========================================================
-   PDF
-   ========================================================= */
-
-#pdfCanvas {
-  display: none;
-
-  width: auto;
-  height: auto;
-
-  max-width: none;
-
-  background: #fff;
-
-  vertical-align: top;
-}
-
-
-/* =========================================================
-   画像Book
-   ========================================================= */
 
 #imagePage {
   display: none;
 
-  position: relative;
-
   width: auto;
+
   height: auto;
 
   max-width: none;
 
   min-width: 1px;
-  min-height: 1px;
 
   background: #fff;
-
-  object-fit: contain;
 
   vertical-align: top;
 
@@ -304,34 +341,39 @@ body {
 }
 
 
-/* =========================================================
-   ペンレイヤー
-   ========================================================= */
+#pdfFrame {
+  display: block;
+
+  width: 100%;
+
+  height: 100%;
+
+  min-width: 700px;
+
+  min-height: 900px;
+
+  border: 0;
+
+  background: #fff;
+}
+
 
 #annotationCanvas {
   position: absolute;
 
   top: 0;
+
   left: 0;
 
   z-index: 5;
 
   display: block;
 
-  width: 100%;
-  height: 100%;
-
-  max-width: none;
-
   pointer-events: none;
 
   touch-action: none;
 }
 
-
-/*
- * ペンON時だけ描画可能
- */
 
 body.pen-enabled
 #annotationCanvas {
@@ -342,274 +384,147 @@ body.pen-enabled
 
 
 /* =========================================================
-   Viewer内のエラー
+   Message
    ========================================================= */
 
-.page-error {
-  width: min(
-    650px,
-    calc(100% - 40px)
-  );
+.viewer-message {
+  position: fixed;
 
-  margin: 40px auto;
+  left: 50%;
 
-  padding: 30px;
+  bottom: 25px;
+
+  transform:
+    translateX(-50%);
+
+  z-index: 500;
+
+  padding: 11px 17px;
+
+  border-radius: 8px;
 
   background: #fff;
-
-  border: 1px solid #ddd;
-
-  border-left:
-    5px solid #d5ca3d;
-
-  border-radius: 10px;
 
   color: #222;
 
   box-shadow:
-    0 8px 25px
-    rgba(0, 0, 0, .08);
+    0 5px 20px
+    rgba(0,0,0,.2);
+
+  font-size: 13px;
 }
 
 
-.page-error h2 {
-  margin-top: 0;
-
-  font-size: 21px;
-}
-
-
-.page-error p {
-  color: #666;
-
-  line-height: 1.7;
-
-  white-space: pre-wrap;
-}
-
-
-.page-error button {
-  padding: 10px 17px;
-
-  border: 0;
-
-  border-radius: 8px;
-
-  background: #d5ca3d;
-
-  color: #222;
-
-  font-weight: 700;
-
-  cursor: pointer;
+.hidden {
+  display: none !important;
 }
 
 
 /* =========================================================
-   ページ切り替え中
+   Error
    ========================================================= */
 
-.viewer.loading
-.stage {
-  cursor: wait;
+.viewer-error {
+  min-height: 100%;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 25px;
 }
 
 
-.viewer.loading
-#imagePage {
-  opacity: .7;
-}
+.viewer-error-card {
+  width: min(
+    600px,
+    100%
+  );
 
+  padding: 35px;
 
-/* =========================================================
-   スクロールバー
-   ========================================================= */
+  background: #fff;
 
-.stage::-webkit-scrollbar {
-  width: 10px;
+  border-radius: 12px;
 
-  height: 10px;
-}
-
-
-.stage::-webkit-scrollbar-track {
-  background: #dededb;
-}
-
-
-.stage::-webkit-scrollbar-thumb {
-  background: #aaa;
-
-  border-radius: 10px;
-}
-
-
-.stage::-webkit-scrollbar-thumb:hover {
-  background: #888;
+  text-align: center;
 }
 
 
 /* =========================================================
-   タブレット
+   Small / Tablet
    ========================================================= */
 
 @media (max-width: 1000px) {
 
-  .viewer-bar {
-    flex-wrap: wrap;
-
-    justify-content: flex-start;
-  }
-
-
-  .viewer-title-area {
-    width: 100%;
-  }
-
-
-  .page-controls {
-    order: 2;
-  }
-
-
-  .tools {
-    order: 3;
-
-    max-width: 100%;
-
-    overflow-x: auto;
-
-    padding-bottom: 2px;
-  }
-
-
-  .stage {
-    padding: 20px;
-  }
-
-}
-
-
-/* =========================================================
-   スマートフォン
-   ========================================================= */
-
-@media (max-width: 650px) {
-
-  .viewer-bar {
-    min-height: 56px;
-
-    padding: 7px 9px;
-
-    gap: 6px;
-  }
-
-
-  .viewer-title-area {
-    width: 100%;
-
-    gap: 6px;
-  }
-
-
-  .viewer-title-area strong {
-    max-width: calc(
-      100vw - 100px
-    );
-
-    font-size: 13px;
-  }
-
-
-  .page-controls {
-    width: 100%;
-
-    justify-content: center;
-  }
-
-
-  .page-controls span {
-    min-width: 80px;
-  }
-
-
-  .tools {
-    width: 100%;
-
-    overflow-x: auto;
-
-    justify-content: flex-start;
-
-    scrollbar-width: none;
-  }
-
-
-  .tools::-webkit-scrollbar {
+  .viewer-tools {
     display: none;
   }
 
 
-  .viewer-bar button {
-    min-height: 36px;
-
-    padding: 7px 10px;
-
-    font-size: 12px;
+  .viewer-header {
+    min-height: 58px;
   }
 
 
-  .stage {
-    padding: 12px;
-
-    /*
-     * 画像Bookを指で操作しやすくする
-     */
-
-    touch-action:
-      pan-x pan-y;
-
-    -webkit-overflow-scrolling:
-      touch;
+  .menu-button {
+    display: block;
   }
 
 
-  .page-container {
-    box-shadow:
-      0 3px 14px
-      rgba(0, 0, 0, .14);
+  .viewer-center {
+    margin-left: auto;
+  }
+
+
+  .viewer-stage {
+    padding: 15px;
   }
 
 }
 
 
 /* =========================================================
-   非常に小さい画面
+   Smartphone
    ========================================================= */
 
-@media (max-width: 430px) {
+@media (max-width: 600px) {
 
-  .viewer-title-area strong {
-    max-width: 220px;
+  .viewer-left {
+    flex: 1;
   }
 
 
-  .viewer-bar button {
-    padding: 6px 8px;
+  .viewer-center {
+    gap: 2px;
+  }
+
+
+  .viewer-center button {
+    padding: 0 7px;
 
     font-size: 11px;
   }
 
 
-  .page-controls span {
-    min-width: 68px;
+  #page {
+    min-width: 55px;
 
-    padding:
-      6px 7px;
+    font-size: 11px;
   }
 
 
-  .stage {
+  .viewer-stage {
     padding: 8px;
+  }
+
+
+  #pdfFrame {
+    min-width: 600px;
+
+    min-height: 800px;
   }
 
 }
