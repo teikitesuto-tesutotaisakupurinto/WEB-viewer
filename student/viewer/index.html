@@ -8,7 +8,7 @@
 
 <meta
   name="viewport"
-  content="width=device-width,initial-scale=1,viewport-fit=cover">
+  content="width=device-width, initial-scale=1, viewport-fit=cover">
 
 <title>WEB-viewer</title>
 
@@ -26,10 +26,6 @@
 
 <div class="viewer">
 
-  <!-- ===================================================
-       Toolbar
-       =================================================== -->
-
   <header class="viewer-toolbar">
 
     <div class="viewer-left">
@@ -38,9 +34,7 @@
         id="close"
         type="button"
         class="toolbar-button">
-
         戻る
-
       </button>
 
       <strong id="title">
@@ -171,10 +165,6 @@
   </header>
 
 
-  <!-- ===================================================
-       Mobile Menu
-       =================================================== -->
-
   <nav
     id="mobileMenu"
     class="mobile-menu"
@@ -235,10 +225,6 @@
   </nav>
 
 
-  <!-- ===================================================
-       Stage
-       =================================================== -->
-
   <main
     id="stage"
     class="viewer-stage">
@@ -246,11 +232,6 @@
     <div
       id="slideViewport"
       class="slide-viewport">
-
-      <!--
-        通常時は current だけ表示。
-        swipe開始時だけ incoming を生成。
-      -->
 
       <div
         id="currentSlide"
@@ -293,6 +274,33 @@
   </main>
 
 
+  <!-- =====================================================
+       PDF / Book loading indicator
+       ===================================================== -->
+
+  <div
+    id="loadingOverlay"
+    class="loading-overlay hidden"
+    aria-hidden="true">
+
+    <div
+      class="loading-orbit"
+      aria-hidden="true">
+
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+
+    </div>
+
+  </div>
+
+
   <div
     id="viewerMessage"
     class="viewer-message hidden">
@@ -303,7 +311,7 @@
 
 <script
   type="module"
-  src="app.js?v=book-turn-final">
+  src="app.js?v=viewer-final-20261112">
 </script>
 
 </body>
