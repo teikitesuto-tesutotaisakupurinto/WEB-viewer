@@ -53,7 +53,6 @@ body {
   align-items: center;
 
   gap: 8px;
-
   padding: 7px 10px;
 
   background: #fff;
@@ -81,17 +80,10 @@ body {
   font-size: 14px;
 }
 
-.viewer-page-controls {
-  display: flex;
-  align-items: center;
-
-  gap: 4px;
-}
-
+.viewer-page-controls,
 .viewer-tools {
   display: flex;
   align-items: center;
-
   gap: 4px;
 }
 
@@ -113,22 +105,16 @@ body {
 
   cursor: pointer;
 
-  -webkit-tap-highlight-color:
-    transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .toolbar-button:hover {
   background: #f2f2f2;
 }
 
-.toolbar-button:active {
-  transform: translateY(1px);
-}
-
 .toolbar-button.active {
   background: #d5ca3d;
   border-color: #c8bd31;
-
   font-weight: 800;
 }
 
@@ -138,9 +124,7 @@ body {
   text-align: center;
 
   font-size: 13px;
-
-  font-variant-numeric:
-    tabular-nums;
+  font-variant-numeric: tabular-nums;
 }
 
 
@@ -166,7 +150,6 @@ body {
   display: block;
 
   height: 2px;
-
   margin: 5px 0;
 
   background: #222;
@@ -202,7 +185,6 @@ body {
   background: #fff;
 
   border: 1px solid #ccc;
-
   border-radius: 10px;
 
   box-shadow:
@@ -216,7 +198,6 @@ body {
   padding: 10px 13px;
 
   border: 0;
-
   border-bottom: 1px solid #eee;
 
   background: #fff;
@@ -242,29 +223,18 @@ body {
   overflow: hidden;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
 
   background: #555;
 
-  /*
-   * ブラウザにジェスチャーを奪わせない。
-   */
   touch-action: none;
 
-  overscroll-behavior:
-    contain;
+  overscroll-behavior: contain;
 
   user-select: none;
-
   -webkit-user-select: none;
 }
-
-
-/* =========================================================
-   Slide
-   ========================================================= */
 
 .slide-viewport {
   position: relative;
@@ -297,31 +267,21 @@ body {
     0 7px 28px
     rgba(0,0,0,.28);
 
-  transform-origin:
-    center center;
+  transform-origin: center center;
 
-  will-change:
-    transform;
+  will-change: transform;
 
-  backface-visibility:
-    hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 
-  -webkit-backface-visibility:
-    hidden;
-
-  contain:
-    layout paint;
+  contain: layout paint;
 }
 
 .current-slide {
   z-index: 10;
 
   transform:
-    translate3d(
-      -50%,
-      -50%,
-      0
-    )
+    translate3d(-50%, -50%, 0)
     scale(1);
 }
 
@@ -331,39 +291,17 @@ body {
   display: none;
 
   transform:
-    translate3d(
-      -50%,
-      -50%,
-      0
-    )
+    translate3d(-50%, -50%, 0)
     scale(1);
 }
 
 
 /* =========================================================
-   PDF
+   PDF / Images
    ========================================================= */
 
 #currentPdfCanvas,
-#incomingPdfCanvas {
-  display: none;
-
-  max-width: none;
-
-  background: #fff;
-
-  vertical-align: top;
-
-  pointer-events: none;
-
-  image-rendering: auto;
-}
-
-
-/* =========================================================
-   Image
-   ========================================================= */
-
+#incomingPdfCanvas,
 #currentImage,
 #incomingImage {
   display: none;
@@ -376,13 +314,14 @@ body {
 
   pointer-events: none;
 
-  user-select: none;
-
-  -webkit-user-select: none;
-
-  -webkit-user-drag: none;
-
   image-rendering: auto;
+}
+
+#currentImage,
+#incomingImage {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
 }
 
 
@@ -406,7 +345,6 @@ body {
 body.pen-enabled
 .annotation-canvas {
   pointer-events: auto;
-
   cursor: crosshair;
 }
 
@@ -429,8 +367,6 @@ body.pen-enabled
 
   background:
     rgba(35,35,35,.72);
-
-  pointer-events: all;
 }
 
 .loading-overlay.hidden {
@@ -456,8 +392,7 @@ body.pen-enabled
   width: 8px;
   height: 8px;
 
-  margin:
-    -4px 0 0 -4px;
+  margin: -4px 0 0 -4px;
 
   border-radius: 50%;
 
@@ -473,105 +408,79 @@ body.pen-enabled
   transform:
     rotate(0deg)
     translateY(-25px);
-
-  animation-delay:
-    0s;
+  animation-delay: 0s;
 }
 
 .loading-orbit span:nth-child(2) {
   transform:
     rotate(45deg)
     translateY(-25px);
-
-  animation-delay:
-    .1375s;
+  animation-delay: .1375s;
 }
 
 .loading-orbit span:nth-child(3) {
   transform:
     rotate(90deg)
     translateY(-25px);
-
-  animation-delay:
-    .275s;
+  animation-delay: .275s;
 }
 
 .loading-orbit span:nth-child(4) {
   transform:
     rotate(135deg)
     translateY(-25px);
-
-  animation-delay:
-    .4125s;
+  animation-delay: .4125s;
 }
 
 .loading-orbit span:nth-child(5) {
   transform:
     rotate(180deg)
     translateY(-25px);
-
-  animation-delay:
-    .55s;
+  animation-delay: .55s;
 }
 
 .loading-orbit span:nth-child(6) {
   transform:
     rotate(225deg)
     translateY(-25px);
-
-  animation-delay:
-    .6875s;
+  animation-delay: .6875s;
 }
 
 .loading-orbit span:nth-child(7) {
   transform:
     rotate(270deg)
     translateY(-25px);
-
-  animation-delay:
-    .825s;
+  animation-delay: .825s;
 }
 
 .loading-orbit span:nth-child(8) {
   transform:
     rotate(315deg)
     translateY(-25px);
-
-  animation-delay:
-    .9625s;
+  animation-delay: .9625s;
 }
 
 @keyframes loading-spin {
-
   from {
-    transform:
-      rotate(0deg);
+    transform: rotate(0deg);
   }
 
   to {
-    transform:
-      rotate(360deg);
+    transform: rotate(360deg);
   }
-
 }
 
 @keyframes loading-pulse {
-
   0%,
   100% {
     opacity: .15;
-
-    transform:
-      scale(.72);
+    transform: scale(.72);
   }
 
   50% {
     opacity: 1;
-
-    transform:
-      scale(1);
+    transform: scale(1);
   }
-
 }
 
 
@@ -587,14 +496,12 @@ body.pen-enabled
 
   z-index: 1100;
 
-  transform:
-    translateX(-50%);
+  transform: translateX(-50%);
 
   max-width:
     calc(100vw - 30px);
 
-  padding:
-    10px 16px;
+  padding: 10px 16px;
 
   border-radius: 8px;
 
@@ -612,15 +519,6 @@ body.pen-enabled
 
 .hidden {
   display: none !important;
-}
-
-
-/* =========================================================
-   Desktop
-   ========================================================= */
-
-.viewer-stage.dragging {
-  cursor: grabbing;
 }
 
 
@@ -649,9 +547,7 @@ body.pen-enabled
 
   .viewer-toolbar {
     min-height: 56px;
-
-    padding:
-      6px 8px;
+    padding: 6px 8px;
   }
 
   .viewer-page-controls {
@@ -660,15 +556,12 @@ body.pen-enabled
 
   .viewer-page-controls
   .toolbar-button {
-    padding:
-      0 7px;
-
+    padding: 0 7px;
     font-size: 11px;
   }
 
   #page {
     min-width: 52px;
-
     font-size: 11px;
   }
 
