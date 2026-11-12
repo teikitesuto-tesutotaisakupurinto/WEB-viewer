@@ -16,74 +16,12 @@ import {
 from "../assets/js/common.js";
 
 
-/* =========================================================
-   起動
-   ========================================================= */
-
-async function start() {
-
-  /*
-   * Admin権限確認
-   *
-   * 直接URLでも必ずここを通る
-   */
-
-  const admin =
-    await requireAdmin();
-
-
-  if (!admin) {
-    return;
-  }
-
-
-  /*
-   * ログアウト
-   */
-
-  const logoutButton =
-    document.getElementById(
-      "logout"
-    );
-
-
-  logoutButton.onclick =
-    event => {
-
-      event.preventDefault();
-
-      logout();
-
-    };
-
-
-  /*
-   * メンテナンス状態
-   */
-
-  await loadMaintenance();
-
-
-  /*
-   * ダッシュボード
-   */
-
-  await loadDashboard();
-
-}
-
-
-/* =========================================================
-   メンテナンス
-   ========================================================= */
-
 async function loadMaintenance() {
 
   const banner =
     document.getElementById(
       "maintenanceBanner"
     );
-
 
   const message =
     document.getElementById(
@@ -111,19 +49,12 @@ async function loadMaintenance() {
 
   if (error) {
 
-    /*
-     * Admin画面そのものは
-     * メンテナンス設定取得失敗で
-     * 白紙にしない
-     */
-
     console.warn(
       "MAINTENANCE LOAD ERROR:",
       error
     );
 
     return;
-
   }
 
 
@@ -136,13 +67,11 @@ async function loadMaintenance() {
     );
 
     return;
-
   }
 
 
   message.textContent =
-    data.message ||
-    "現在システムはメンテナンス中です。";
+    data.message || "";
 
 
   banner.classList.remove(
@@ -151,10 +80,6 @@ async function loadMaintenance() {
 
 }
 
-
-/* =========================================================
-   Dashboard
-   ========================================================= */
 
 async function loadDashboard() {
 
@@ -171,49 +96,49 @@ async function loadDashboard() {
       students,
       licenses
     ] =
-      await Promise.all([
+    await Promise.all([
 
-        supabase
-          .from("books")
-          .select(
-            "id",
-            {
-              count:
-                "exact",
-              head:
-                true
-            }
-          ),
+      supabase
+        .from("books")
+        .select(
+          "id",
+          {
+            count:
+              "exact",
+            head:
+              true
+          }
+        ),
 
-        supabase
-          .from("users")
-          .select(
-            "id",
-            {
-              count:
-                "exact",
-              head:
-                true
-            }
-          )
-          .eq(
-            "role",
-            "student"
-          ),
+      supabase
+        .from("users")
+        .select(
+          "id",
+          {
+            count:
+              "exact",
+            head:
+              true
+          }
+        )
+        .eq(
+          "role",
+          "student"
+        ),
 
-        supabase
-          .from("licenses")
-          .select(
-            "id",
-            {
-              count:
-                "exact",
-              head:
-                true
-            }
-          )
+      supabase
+        .from("licenses")
+        .select(
+          "id",
+          {
+            count:
+              "exact",
+            head:
+              true
+          }
+        )
 
-      ]);
+    ]);
 
 
     if (books.error) {
@@ -252,13 +177,12 @@ async function loadDashboard() {
   catch (error) {
 
     console.error(
-      "ADMIN DASHBOARD ERROR:",
+      "DASHBOARD ERROR:",
       error
     );
 
 
-    errorBox.innerHTML =
-      `
+    errorBox.innerHTML = `
 
       <div class="page-error">
 
@@ -281,64 +205,83 @@ async function loadDashboard() {
 
       </div>
 
-      `;
+    `;
 
   }
 
 }
 
 
-/* =========================================================
-   起動エラー
-   ========================================================= */
+async function start() {
+
+  const admin =
+    await requireAdmin();
+
+
+  if (!admin) {
+    return;
+  }
+
+
+  document.getElementById(
+    "logout"
+  ).onclick =
+    event => {
+
+      event.preventDefault();
+
+      logout();
+
+    };
+
+
+  await loadMaintenance();
+
+  await loadDashboard();
+
+}
+
 
 start()
-  .catch(
-    error => {
+.catch(
+  error => {
 
-      console.error(
-        "ADMIN START ERROR:",
-        error
+    console.error(
+      "ADMIN START ERROR:",
+      error
+    );
+
+
+    const target =
+      document.getElementById(
+        "dashboardError"
       );
 
 
-      const target =
-        document.getElementById(
-          "dashboardError"
-        );
+    target.innerHTML = `
 
+      <div class="page-error">
 
-      if (
-        target
-      ) {
+        <h2>
+          管理画面を読み込めませんでした
+        </h2>
 
-        target.innerHTML =
-          `
+        <p>
+          システムへの接続を確認してください。
+        </p>
 
-          <div class="page-error">
+        <button
+          type="button"
+          class="primary-button"
+          onclick="location.reload()">
 
-            <h2>
-              管理画面を読み込めませんでした
-            </h2>
+          再読み込み
 
-            <p>
-              システムへの接続を確認してください。
-            </p>
+        </button>
 
-            <button
-              type="button"
-              class="primary-button"
-              onclick="location.reload()">
+      </div>
 
-              再読み込み
+    `;
 
-            </button>
-
-          </div>
-
-          `;
-
-      }
-
-    }
-  );
+  }
+);
