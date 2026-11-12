@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -19,10 +20,6 @@
   rel="stylesheet"
   href="../style.css">
 
-<link
-  rel="stylesheet"
-  href="style.css">
-
 </head>
 
 <body>
@@ -31,13 +28,9 @@
 
 <div class="admin-brand">
 
-<div>
-WEB-viewer
-</div>
+<div>WEB-viewer</div>
 
-<small>
-管理システム
-</small>
+<small>管理システム</small>
 
 </div>
 
@@ -57,7 +50,7 @@ Book管理
 </a>
 
 <a href="../students/">
-Student管理
+生徒管理
 </a>
 
 <a href="../materials/">
@@ -89,13 +82,9 @@ B4資料
 
 <header class="admin-notice">
 
-<div>
-お知らせ
-</div>
+<div>お知らせ</div>
 
-<span>
-システム管理
-</span>
+<span>システム管理</span>
 
 </header>
 
@@ -135,15 +124,14 @@ WEB-viewerの運用設定
 </h3>
 
 <p>
-ONにするとStudent側に
-メンテナンス画面を表示します。
+ONにすると生徒側にメンテナンス画面を表示します。
+Adminは通常の管理画面を利用できます。
 </p>
 
 </div>
 
 
-<label
-  class="toggle">
+<label class="toggle">
 
 <input
   id="maintenanceEnabled"
@@ -174,7 +162,7 @@ ONにするとStudent側に
 <textarea
   id="maintenanceMessage"
   rows="5"
-  placeholder="現在メンテナンス中です。">
+  placeholder="メンテナンス中です。">
 </textarea>
 
 </label>
@@ -197,6 +185,19 @@ ONにするとStudent側に
 
 </section>
 
+
+<section class="admin-card">
+
+<h2>
+システム情報
+</h2>
+
+<p>
+通常メンテナンス中も、この管理画面から設定を変更できます。
+</p>
+
+</section>
+
 </section>
 
 </main>
@@ -204,7 +205,7 @@ ONにするとStudent側に
 
 <script
   type="module"
-  src="app.js?v=maintenance-final">
+  src="app.js?v=admin-system-final">
 </script>
 
 </body>
