@@ -1,14 +1,25 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1">
+
 <title>資料配信</title>
 
-<link rel="stylesheet" href="../../assets/css/common.css">
-<link rel="stylesheet" href="../style.css">
-<link rel="stylesheet" href="style.css">
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
+
+<link
+  rel="stylesheet"
+  href="../style.css">
+
 </head>
 
 <body>
@@ -16,21 +27,49 @@
 <aside class="admin-side">
 
 <div class="admin-brand">
+
 <div>WEB-viewer</div>
+
 <small>管理システム</small>
+
 </div>
+
 
 <nav>
 
-<a href="../">ダッシュボード</a>
-<a href="../books/">Book管理</a>
-<a href="../serials/">シリアル管理</a>
-<a href="../students/">Student管理</a>
-<a class="active" href="./">資料配信</a>
-<a href="../b4/">B4資料</a>
-<a href="../system/">システム管理</a>
+<a href="../">
+ダッシュボード
+</a>
 
-<button id="logout" type="button">
+<a href="../books/">
+Book管理
+</a>
+
+<a href="../serials/">
+シリアル管理
+</a>
+
+<a href="../students/">
+生徒管理
+</a>
+
+<a
+  class="active"
+  href="./">
+資料配信
+</a>
+
+<a href="../b4/">
+B4資料
+</a>
+
+<a href="../system/">
+システム管理
+</a>
+
+<button
+  id="logout"
+  type="button">
 ログアウト
 </button>
 
@@ -42,8 +81,11 @@
 <main class="admin-main">
 
 <header class="admin-notice">
+
 <div>お知らせ</div>
+
 <span>資料配信</span>
+
 </header>
 
 
@@ -52,8 +94,15 @@
 <div class="page-heading">
 
 <div>
-<h1>資料配信</h1>
-<p>Studentへ資料を配信します。</p>
+
+<h1>
+資料配信
+</h1>
+
+<p>
+生徒へ資料を配信します
+</p>
+
 </div>
 
 </div>
@@ -61,32 +110,61 @@
 
 <section class="admin-card">
 
-<h2>資料を追加</h2>
+<h2>
+資料を配信
+</h2>
+
 
 <label>
+
 タイトル
-<input id="title" type="text">
+
+<input
+  id="title"
+  type="text">
+
 </label>
 
+
 <label>
+
 説明
-<textarea id="description"></textarea>
+
+<textarea
+  id="description">
+</textarea>
+
 </label>
 
+
 <label>
+
 ファイル
+
 <input
   id="file"
   type="file"
   accept=".pdf,.jpg,.jpeg,.png">
+
 </label>
 
+
 <label>
-対象
+
+配信対象
+
 <select id="target">
-<option value="all">全Student</option>
-<option value="selected">Studentを選択</option>
+
+<option value="all">
+全生徒
+</option>
+
+<option value="selected">
+指定した生徒
+</option>
+
 </select>
+
 </label>
 
 
@@ -94,36 +172,64 @@
   id="studentArea"
   class="hidden">
 
-<label>
+<label
+  class="student-row">
+
 <input
   id="selectAll"
   type="checkbox">
-全Studentを選択
+
+<span>
+全生徒を選択
+</span>
+
 </label>
 
-<div id="students"></div>
+
+<div
+  id="students"
+  class="student-list">
+</div>
 
 </div>
 
 
+<div class="toolbar">
+
 <button
   id="create"
-  class="primary-button"
-  type="button">
+  type="button"
+  class="primary-button">
+
 配信
+
 </button>
 
-<p id="message"></p>
+</div>
+
+
+<p
+  id="message"
+  class="message">
+</p>
 
 </section>
 
 
 <section class="admin-card">
 
-<h2>配信済み資料</h2>
+<h2>
+配信済み資料
+</h2>
 
-<div id="materials">
-読み込み中です。
+
+<div
+  id="materials">
+
+<div class="list-row">
+読み込んでいます。
+</div>
+
 </div>
 
 </section>
@@ -135,8 +241,9 @@
 
 <script
   type="module"
-  src="app.js">
+  src="app.js?v=admin-materials-final">
 </script>
 
 </body>
+
 </html>
