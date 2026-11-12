@@ -1,3 +1,4 @@
+
 * {
   box-sizing: border-box;
 }
@@ -45,6 +46,7 @@ body {
    ========================================================= */
 
 .viewer-toolbar {
+
   position: relative;
 
   z-index: 100;
@@ -57,20 +59,22 @@ body {
 
   gap: 8px;
 
-  padding: 7px 10px;
+  padding:
+    7px 10px;
 
   background: #fff;
 
-  border-bottom: 1px solid #ccc;
+  border-bottom:
+    1px solid #ccc;
 
-  box-shadow:
-    0 2px 7px
-    rgba(0,0,0,.08);
 }
 
 
 .viewer-left {
+
   min-width: 0;
+
+  flex: 1;
 
   display: flex;
 
@@ -78,11 +82,11 @@ body {
 
   gap: 9px;
 
-  flex: 1;
 }
 
 
 .viewer-left strong {
+
   min-width: 0;
 
   overflow: hidden;
@@ -92,33 +96,41 @@ body {
   white-space: nowrap;
 
   font-size: 14px;
+
 }
 
 
 .viewer-page-controls {
+
   display: flex;
 
   align-items: center;
 
   gap: 4px;
+
 }
 
 
 .viewer-tools {
+
   display: flex;
 
   align-items: center;
 
   gap: 4px;
+
 }
 
 
 .toolbar-button {
+
   height: 38px;
 
-  padding: 0 10px;
+  padding:
+    0 10px;
 
-  border: 1px solid #ccc;
+  border:
+    1px solid #ccc;
 
   border-radius: 7px;
 
@@ -130,37 +142,42 @@ body {
 
   font-weight: 600;
 
+  white-space: nowrap;
+
   cursor: pointer;
 
-  white-space: nowrap;
 }
 
 
 .toolbar-button:hover {
+
   background: #f2f2f2;
+
 }
 
 
 .toolbar-button.active {
+
   background: #d5ca3d;
 
   border-color: #c8bd31;
 
   font-weight: 800;
+
 }
 
 
 #page {
+
   min-width: 62px;
 
   text-align: center;
-
-  color: #333;
 
   font-size: 13px;
 
   font-variant-numeric:
     tabular-nums;
+
 }
 
 
@@ -169,6 +186,7 @@ body {
    ========================================================= */
 
 .menu-button {
+
   display: none;
 
   width: 42px;
@@ -177,15 +195,18 @@ body {
 
   padding: 8px;
 
-  border: 1px solid #ccc;
+  border:
+    1px solid #ccc;
 
   border-radius: 8px;
 
   background: #fff;
+
 }
 
 
 .menu-button span {
+
   display: block;
 
   height: 2px;
@@ -193,15 +214,19 @@ body {
   margin: 5px 0;
 
   background: #222;
+
 }
 
 
 .mobile-menu {
+
   display: none;
+
 }
 
 
 .mobile-menu.open {
+
   display: grid;
 
   position: absolute;
@@ -212,10 +237,11 @@ body {
 
   z-index: 300;
 
-  width: min(
-    290px,
-    calc(100vw - 16px)
-  );
+  width:
+    min(
+      290px,
+      calc(100vw - 16px)
+    );
 
   max-height:
     calc(100vh - 70px);
@@ -226,24 +252,29 @@ body {
 
   background: #fff;
 
-  border: 1px solid #ccc;
+  border:
+    1px solid #ccc;
 
   border-radius: 10px;
 
   box-shadow:
     0 10px 30px
     rgba(0,0,0,.22);
+
 }
 
 
 .mobile-menu button {
+
   min-height: 45px;
 
-  padding: 10px 13px;
+  padding:
+    10px 13px;
 
   border: 0;
 
-  border-bottom: 1px solid #eee;
+  border-bottom:
+    1px solid #eee;
 
   background: #fff;
 
@@ -254,6 +285,7 @@ body {
   font-size: 13px;
 
   font-weight: 600;
+
 }
 
 
@@ -262,6 +294,7 @@ body {
    ========================================================= */
 
 .viewer-stage {
+
   position: relative;
 
   flex: 1;
@@ -288,6 +321,7 @@ body {
 
   -webkit-overflow-scrolling:
     touch;
+
 }
 
 
@@ -296,9 +330,11 @@ body {
    ========================================================= */
 
 .page-container {
+
   position: relative;
 
-  flex: 0 0 auto;
+  flex:
+    0 0 auto;
 
   min-width: 1px;
 
@@ -309,33 +345,33 @@ body {
   box-shadow:
     0 7px 28px
     rgba(0,0,0,.28);
+
 }
 
 
 /* =========================================================
-   PDF
+   PDF Canvas
    ========================================================= */
 
 #pdfCanvas {
+
   display: none;
-
-  width: auto;
-
-  height: auto;
 
   max-width: none;
 
   background: #fff;
 
   vertical-align: top;
+
 }
 
 
 /* =========================================================
-   Images
+   Image
    ========================================================= */
 
 #imagePage {
+
   display: none;
 
   width: auto;
@@ -355,6 +391,7 @@ body {
   -webkit-user-drag: none;
 
   pointer-events: none;
+
 }
 
 
@@ -363,6 +400,7 @@ body {
    ========================================================= */
 
 #annotationCanvas {
+
   position: absolute;
 
   top: 0;
@@ -376,14 +414,17 @@ body {
   pointer-events: none;
 
   touch-action: none;
+
 }
 
 
 body.pen-enabled
 #annotationCanvas {
+
   pointer-events: auto;
 
   cursor: crosshair;
+
 }
 
 
@@ -392,6 +433,7 @@ body.pen-enabled
    ========================================================= */
 
 .viewer-message {
+
   position: fixed;
 
   left: 50%;
@@ -403,22 +445,33 @@ body.pen-enabled
   transform:
     translateX(-50%);
 
-  padding: 10px 16px;
+  max-width:
+    calc(100vw - 30px);
+
+  padding:
+    10px 16px;
 
   border-radius: 8px;
 
   background: #fff;
+
+  color: #222;
 
   box-shadow:
     0 5px 20px
     rgba(0,0,0,.2);
 
   font-size: 13px;
+
+  text-align: center;
+
 }
 
 
 .hidden {
+
   display: none !important;
+
 }
 
 
@@ -429,17 +482,23 @@ body.pen-enabled
 @media (max-width: 1000px) {
 
   .viewer-tools {
+
     display: none;
+
   }
 
 
   .menu-button {
+
     display: block;
+
   }
 
 
   .viewer-stage {
+
     padding: 18px;
+
   }
 
 }
@@ -452,40 +511,46 @@ body.pen-enabled
 @media (max-width: 650px) {
 
   .viewer-toolbar {
+
     min-height: 56px;
 
-    padding: 6px 8px;
-  }
+    padding:
+      6px 8px;
 
-
-  .viewer-left {
-    flex: 1;
   }
 
 
   .viewer-page-controls {
+
     gap: 2px;
+
   }
 
 
   .viewer-page-controls
   .toolbar-button {
+
     padding:
       0 7px;
 
     font-size: 11px;
+
   }
 
 
   #page {
+
     min-width: 52px;
 
     font-size: 11px;
+
   }
 
 
   .viewer-stage {
+
     padding: 8px;
+
   }
 
 }
