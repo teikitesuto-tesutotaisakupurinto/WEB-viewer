@@ -1,11 +1,13 @@
 
 import {
   requireBookAccess
-} from "../../assets/js/auth.js";
+}
+from "../../assets/js/auth.js";
 
 import {
   supabase
-} from "../../assets/js/supabase.js";
+}
+from "../../assets/js/supabase.js";
 
 
 /* =========================================================
@@ -14,7 +16,7 @@ import {
 
 const params =
   new URLSearchParams(
-    window.location.search
+    location.search
   );
 
 const bookId =
@@ -23,7 +25,7 @@ const bookId =
 
 if (!bookId) {
 
-  window.location.replace(
+  location.replace(
     "/errors/?type=404"
   );
 
@@ -38,14 +40,20 @@ if (!bookId) {
    DOM
    ========================================================= */
 
-const titleElement =
-  document.getElementById("title");
+const title =
+  document.getElementById(
+    "title"
+  );
 
-const pageElement =
-  document.getElementById("page");
+const pageLabel =
+  document.getElementById(
+    "page"
+  );
 
 const stage =
-  document.getElementById("stage");
+  document.getElementById(
+    "stage"
+  );
 
 const pageContainer =
   document.getElementById(
@@ -275,7 +283,7 @@ async function loadBook() {
 
   if (!data) {
 
-    window.location.replace(
+    location.replace(
       "/errors/?type=404"
     );
 
@@ -284,9 +292,11 @@ async function loadBook() {
   }
 
 
-  if (data.enabled === false) {
+  if (
+    data.enabled === false
+  ) {
 
-    window.location.replace(
+    location.replace(
       "/errors/?type=book-forbidden"
     );
 
@@ -299,7 +309,7 @@ async function loadBook() {
     data;
 
 
-  titleElement.textContent =
+  title.textContent =
     book.title || "";
 
 
@@ -333,7 +343,7 @@ function isPdfBook() {
 
 
 /* =========================================================
-   ローカルPDF.js
+   PDF.js
    ========================================================= */
 
 async function loadPdfJs() {
@@ -354,13 +364,12 @@ async function loadPdfJs() {
   catch (error) {
 
     console.error(
-      "PDF.JS LOAD ERROR:",
+      "PDF.JS ERROR:",
       error
     );
 
-
     throw new Error(
-      "PDF表示機能がまだ配置されていません。"
+      "PDF表示機能が配置されていません。"
     );
 
   }
@@ -391,7 +400,7 @@ async function loadPdfJs() {
 
 
 /* =========================================================
-   PDF読み込み
+   PDF
    ========================================================= */
 
 async function loadPdf() {
@@ -425,9 +434,12 @@ async function loadPdf() {
     pdf =
       await library
         .getDocument({
+
           url,
+
           withCredentials:
             false
+
         })
         .promise;
 
@@ -487,7 +499,8 @@ async function loadImagePages() {
       .order(
         "page_number",
         {
-          ascending: true
+          ascending:
+            true
         }
       );
 
@@ -535,7 +548,7 @@ async function loadImagePages() {
 
 
 /* =========================================================
-   ページ数
+   Page count
    ========================================================= */
 
 function getPageCount() {
@@ -549,14 +562,44 @@ function getPageCount() {
 
 function updatePageLabel() {
 
-  pageElement.textContent =
+  pageLabel.textContent =
     `${currentPage} / ${getPageCount()}`;
 
 }
 
 
 /* =========================================================
-   PDF Canvas
+   Annotation Canvas
+   ========================================================= */
+
+function resizeAnnotation(
+  width,
+  height
+) {
+
+  annotationCanvas.width =
+    Math.max(
+      1,
+      Math.floor(width)
+    );
+
+  annotationCanvas.height =
+    Math.max(
+      1,
+      Math.floor(height)
+    );
+
+  annotationCanvas.style.width =
+    `${width}px`;
+
+  annotationCanvas.style.height =
+    `${height}px`;
+
+}
+
+
+/* =========================================================
+   PDF Render
    ========================================================= */
 
 async function renderPdfPage() {
@@ -580,7 +623,8 @@ async function renderPdfPage() {
 
   const viewport =
     page.getViewport({
-      scale: zoom
+      scale:
+        zoom
     });
 
 
@@ -630,17 +674,10 @@ async function renderPdfPage() {
     `${height}px`;
 
 
-  annotationCanvas.width =
-    width;
-
-  annotationCanvas.height =
-    height;
-
-  annotationCanvas.style.width =
-    `${width}px`;
-
-  annotationCanvas.style.height =
-    `${height}px`;
+  resizeAnnotation(
+    width,
+    height
+  );
 
 
   const context =
@@ -706,13 +743,13 @@ async function getImage(
   }
 
 
-  const row =
+  const page =
     pages[
       pageNumber - 1
     ];
 
 
-  if (!row) {
+  if (!page) {
 
     throw new Error(
       "ページが見つかりません。"
@@ -723,7 +760,7 @@ async function getImage(
 
   const url =
     await getSignedUrl(
-      row.file_path
+      page.file_path
     );
 
 
@@ -772,7 +809,7 @@ async function getImage(
 
 
 /* =========================================================
-   Image描画
+   Image Render
    ========================================================= */
 
 async function renderImagePage() {
@@ -840,17 +877,10 @@ async function renderImagePage() {
     `${height}px`;
 
 
-  annotationCanvas.width =
-    width;
-
-  annotationCanvas.height =
-    height;
-
-  annotationCanvas.style.width =
-    `${width}px`;
-
-  annotationCanvas.style.height =
-    `${height}px`;
+  resizeAnnotation(
+    width,
+    height
+  );
 
 
   updatePageLabel();
@@ -858,10 +888,6 @@ async function renderImagePage() {
 
   await loadAnnotation();
 
-
-  /*
-   * 前後を先読み
-   */
 
   void preloadImage(
     currentPage + 1
@@ -874,10 +900,6 @@ async function renderImagePage() {
 }
 
 
-/* =========================================================
-   Preload
-   ========================================================= */
-
 async function preloadImage(
   number
 ) {
@@ -886,7 +908,9 @@ async function preloadImage(
     number < 1 ||
     number > pages.length
   ) {
+
     return;
+
   }
 
 
@@ -912,12 +936,12 @@ async function renderPage() {
 
     await renderPdfPage();
 
-    return;
+  }
+  else {
+
+    await renderImagePage();
 
   }
-
-
-  await renderImagePage();
 
 }
 
@@ -1013,10 +1037,6 @@ async function lastPage() {
 
 }
 
-
-/* =========================================================
-   Buttons
-   ========================================================= */
 
 document.getElementById(
   "first"
@@ -1254,7 +1274,9 @@ function setMode(
 
 moveButton.onclick =
   () =>
-    setMode("move");
+    setMode(
+      "move"
+    );
 
 
 penButton.onclick =
@@ -1270,7 +1292,9 @@ document.getElementById(
   "eraser"
 ).onclick =
   () =>
-    setMode("eraser");
+    setMode(
+      "eraser"
+    );
 
 
 /* =========================================================
@@ -1290,7 +1314,7 @@ document.getElementById(
 
 
 /* =========================================================
-   Mobile menu
+   Mobile Menu
    ========================================================= */
 
 function closeMenu() {
@@ -1326,14 +1350,20 @@ menuButton.onclick =
       open
     );
 
+
     mobileMenu.setAttribute(
       "aria-hidden",
-      String(!open)
+      String(
+        !open
+      )
     );
+
 
     menuButton.setAttribute(
       "aria-expanded",
-      String(open)
+      String(
+        open
+      )
     );
 
   };
@@ -1355,115 +1385,88 @@ mobileMenu
 
           if (
             action === "first"
-          ) {
-
+          )
             await firstPage();
 
-          }
           else if (
             action === "previous"
-          ) {
-
+          )
             await previousPage();
 
-          }
           else if (
             action === "next"
-          ) {
-
+          )
             await nextPage();
 
-          }
           else if (
             action === "last"
-          ) {
-
+          )
             await lastPage();
 
-          }
           else if (
             action === "move"
-          ) {
-
+          )
             setMode("move");
 
-          }
           else if (
             action === "pen"
-          ) {
-
+          )
             setMode("pen");
 
-          }
           else if (
             action === "eraser"
-          ) {
-
+          )
             setMode("eraser");
 
-          }
           else if (
             action === "favorite"
-          ) {
-
+          )
             document
               .getElementById(
                 "favorite"
               )
               .click();
 
-          }
           else if (
             action === "zoomIn"
-          ) {
-
+          )
             await setZoom(
               zoom + 0.1
             );
 
-          }
           else if (
             action === "zoomOut"
-          ) {
-
+          )
             await setZoom(
               zoom - 0.1
             );
 
-          }
           else if (
             action === "fitWidth"
-          ) {
-
+          )
             await document
               .getElementById(
                 "fitWidth"
               )
               .click();
 
-          }
           else if (
             action === "fitHeight"
-          ) {
-
+          )
             await document
               .getElementById(
                 "fitHeight"
               )
               .click();
 
-          }
           else if (
             action === "fullscreen"
-          ) {
-
+          )
             await document
               .getElementById(
                 "fullscreen"
               )
               .click();
-
-          }
 
 
           closeMenu();
@@ -1486,22 +1489,17 @@ stage.addEventListener(
       event.touches.length === 2
     ) {
 
-      const first =
+      const a =
         event.touches[0];
 
-      const second =
+      const b =
         event.touches[1];
 
 
       pinchDistance =
         Math.hypot(
-
-          second.clientX -
-          first.clientX,
-
-          second.clientY -
-          first.clientY
-
+          b.clientX - a.clientX,
+          b.clientY - a.clientY
         );
 
 
@@ -1558,49 +1556,38 @@ stage.addEventListener(
     event.preventDefault();
 
 
-    const first =
+    const a =
       event.touches[0];
 
-    const second =
+    const b =
       event.touches[1];
 
 
     const distance =
       Math.hypot(
-
-        second.clientX -
-        first.clientX,
-
-        second.clientY -
-        first.clientY
-
+        b.clientX - a.clientX,
+        b.clientY - a.clientY
       );
 
 
     zoom =
       Math.max(
-
         0.25,
-
         Math.min(
-
           5,
-
           pinchStartZoom *
           distance /
           pinchDistance
-
         )
-
       );
 
 
     clearTimeout(
-      window.__pinchTimer
+      window.__viewerPinchTimer
     );
 
 
-    window.__pinchTimer =
+    window.__viewerPinchTimer =
       setTimeout(
         () =>
           renderPage(),
@@ -1666,24 +1653,14 @@ stage.addEventListener(
 
 
     if (
-      elapsed > 700
-    ) {
-      return;
-    }
-
-
-    if (
-      Math.abs(dx) < 70
-    ) {
-      return;
-    }
-
-
-    if (
+      elapsed > 700 ||
+      Math.abs(dx) < 70 ||
       Math.abs(dx) <=
-      Math.abs(dy)
+        Math.abs(dy)
     ) {
+
       return;
+
     }
 
 
@@ -1700,40 +1677,6 @@ stage.addEventListener(
 
     }
 
-  }
-);
-
-
-/* =========================================================
-   Ctrl + Wheel
-   ========================================================= */
-
-stage.addEventListener(
-  "wheel",
-  event => {
-
-    if (
-      !event.ctrlKey
-    ) {
-      return;
-    }
-
-
-    event.preventDefault();
-
-
-    setZoom(
-      zoom +
-      (
-        event.deltaY > 0
-          ? -0.1
-          : 0.1
-      )
-    );
-
-  },
-  {
-    passive: false
   }
 );
 
@@ -1766,7 +1709,8 @@ annotationCanvas.addEventListener(
 
 
     const rect =
-      annotationCanvas.getBoundingClientRect();
+      annotationCanvas
+        .getBoundingClientRect();
 
 
     lastX =
@@ -1800,7 +1744,8 @@ annotationCanvas.addEventListener(
 
 
     const rect =
-      annotationCanvas.getBoundingClientRect();
+      annotationCanvas
+        .getBoundingClientRect();
 
 
     const x =
@@ -1903,6 +1848,17 @@ annotationCanvas.addEventListener(
 );
 
 
+annotationCanvas.addEventListener(
+  "pointercancel",
+  () => {
+
+    drawing =
+      false;
+
+  }
+);
+
+
 /* =========================================================
    Annotation
    ========================================================= */
@@ -1967,7 +1923,7 @@ async function saveAnnotation() {
   if (error) {
 
     console.warn(
-      "ANNOTATION SAVE:",
+      "ANNOTATION SAVE ERROR:",
       error
     );
 
@@ -1979,7 +1935,8 @@ async function saveAnnotation() {
 async function loadAnnotation() {
 
   const {
-    data
+    data,
+    error
   } =
     await supabase
       .from("annotations")
@@ -1999,6 +1956,16 @@ async function loadAnnotation() {
         currentPage
       )
       .maybeSingle();
+
+
+  if (error) {
+
+    console.warn(
+      "ANNOTATION LOAD ERROR:",
+      error
+    );
+
+  }
 
 
   const context =
@@ -2089,9 +2056,9 @@ async function start() {
 
 
   /*
-   * 1. ログイン
-   * 2. Student
-   * 3. このBookのLicense
+   * Student権限
+   * ↓
+   * Book利用権限
    */
 
   student =
@@ -2119,18 +2086,26 @@ async function start() {
 
 
   /*
-   * PDFならPDF.js
-   * 画像ならbook_pages
+   * PDF / 画像
    */
 
   if (
     isPdfBook()
   ) {
 
+    /*
+     * PDFはfile_pathから直接読む。
+     * book_pagesは不要。
+     */
+
     await loadPdf();
 
   }
   else {
+
+    /*
+     * 画像Bookはbook_pages。
+     */
 
     await loadImagePages();
 
@@ -2141,8 +2116,6 @@ async function start() {
     1;
 
 
-  updatePageLabel();
-
   updateMode();
 
 
@@ -2152,19 +2125,19 @@ async function start() {
 
 
 start()
-  .catch(
-    error => {
+.catch(
+  error => {
 
-      console.error(
-        "VIEWER ERROR:",
-        error
-      );
+    console.error(
+      "VIEWER ERROR:",
+      error
+    );
 
 
-      showMessage(
-        error.message ||
-        "教材を表示できませんでした。"
-      );
+    showMessage(
+      error.message ||
+      "教材を表示できませんでした。"
+    );
 
-    }
-  );
+  }
+);
