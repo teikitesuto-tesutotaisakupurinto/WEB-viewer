@@ -15,113 +15,92 @@ import {
 from "../../assets/js/common.js";
 
 
-async function start() {
+const target =
+  document.getElementById(
+    "target"
+  );
 
-  const admin =
-    await requireAdmin();
+const studentArea =
+  document.getElementById(
+    "studentArea"
+  );
 
-  if (!admin) {
-    return;
+
+document.getElementById(
+  "logout"
+).onclick =
+  () => logout();
+
+
+target.onchange =
+  () => {
+
+    studentArea.classList.toggle(
+      "hidden",
+      target.value !==
+        "selected"
+    );
+
+  };
+
+
+document.getElementById(
+  "selectAll"
+).onchange =
+  event => {
+
+    document
+      .querySelectorAll(
+        ".student-check"
+      )
+      .forEach(
+        checkbox => {
+
+          checkbox.checked =
+            event.target.checked;
+
+        }
+      );
+
+  };
+
+
+document.getElementById(
+  "create"
+).onclick =
+  createMaterial;
+
+
+async function loadStudents() {
+
+  const {
+    data,
+    error
+  } =
+  await supabase
+    .from("users")
+    .select(
+      "id,display_name"
+    )
+    .eq(
+      "role",
+      "student"
+    )
+    .order(
+      "display_name"
+    );
+
+
+  if (error) {
+    throw error;
   }
 
 
   document.getElementById(
-    "logout"
-  ).onclick =
-    event => {
-
-      event.preventDefault();
-
-      logout();
-
-    };
-
-
-  const target =
-    document.getElementById(
-      "target"
-    );
-
-
-  const studentArea =
-    document.getElementById(
-      "studentArea"
-    );
-
-
-  target.onchange =
-    () => {
-
-      studentArea.classList.toggle(
-        "hidden",
-        target.value !==
-          "selected"
-      );
-
-    };
-
-
-  document.getElementById(
-    "selectAll"
-  ).onchange =
-    event => {
-
-      document
-        .querySelectorAll(
-          ".student-check"
-        )
-        .forEach(
-          checkbox => {
-
-            checkbox.checked =
-              event.target.checked;
-
-          }
-        );
-
-    };
-
-
-  document.getElementById(
-    "create"
-  ).onclick =
-    createMaterial;
-
-
-  await loadStudents();
-
-  await loadMaterials();
-
-
-  async function loadStudents() {
-
-    const {
-      data,
-      error
-    } =
-      await supabase
-        .from("users")
-        .select(
-          "id,display_name"
-        )
-        .eq(
-          "role",
-          "student"
-        )
-        .order(
-          "display_name"
-        );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    document.getElementById(
-      "students"
-    ).innerHTML =
-      (data || []).map(
+    "students"
+  ).innerHTML =
+    (data || [])
+      .map(
         student => `
 
         <label class="student-row">
@@ -140,36 +119,199 @@ async function start() {
         `
       ).join("");
 
+}
+
+
+async function loadMaterials() {
+
+  const box =
+    document.getElementById(
+      "materials"
+    );
+
+
+  const {
+    data,
+    error
+  } =
+  await supabase
+    .from("materials")
+    .select(`
+      id,
+      title,
+      description,
+      all_students,
+      created_at
+    `)
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
+
+
+  if (error) {
+    throw error;
   }
 
 
-  async function loadMaterials() {
+  if (!data?.length) {
 
-    const box =
-      document.getElementById(
-        "materials"
-      );
+    box.innerHTML =
+      `
+      <div class="book-empty">
+        配信済み資料はありません。
+      </div>
+      `;
+
+    return;
+  }
+
+
+  box.innerHTML =
+    data.map(
+      item => `
+
+      <div class="material-row">
+
+        <div class="material-title">
+          ${escapeHtml(
+            item.title
+          )}
+        </div>
+
+        <div class="material-target">
+          ${
+            item.all_students
+              ? "全生徒"
+              : "指定生徒"
+          }
+        </div>
+
+      </div>
+
+      `
+    ).join("");
+
+}
+
+
+async function createMaterial() {
+
+  const title =
+    document.getElementById(
+      "title"
+    ).value.trim();
+
+
+  const description =
+    document.getElementById(
+      "description"
+    ).value.trim();
+
+
+  const file =
+    document.getElementById(
+      "file"
+    ).files[0];
+
+
+  const message =
+    document.getElementById(
+      "message"
+    );
+
+
+  if (!title || !file) {
+
+    message.textContent =
+      "タイトルとファイルを入力してください。";
+
+    return;
+  }
+
+
+  if (
+    !(
+      /\.pdf$/i.test(file.name) ||
+      /\.(jpg|jpeg|png)$/i.test(file.name)
+    )
+  ) {
+
+    message.textContent =
+      "PDF、JPG、JPEG、PNGのみ対応しています。";
+
+    return;
+  }
+
+
+  try {
+
+    message.textContent =
+      "登録しています。";
+
+
+    const ext =
+      file.name
+        .split(".")
+        .pop()
+        .toLowerCase();
+
+
+    const path =
+      `materials/${crypto.randomUUID()}.${ext}`;
 
 
     const {
-      data,
+      error:
+        uploadError
+    } =
+    await supabase.storage
+      .from("web-viewer")
+      .upload(
+        path,
+        file,
+        {
+          contentType:
+            file.type
+        }
+      );
+
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+
+    const allStudents =
+      target.value === "all";
+
+
+    const {
+      data: material,
       error
     } =
-      await supabase
-        .from("materials")
-        .select(`
-          id,
-          title,
-          description,
-          all_students,
-          created_at
-        `)
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        );
+    await supabase
+      .from("materials")
+      .insert({
+
+        title,
+
+        description,
+
+        file_path:
+          path,
+
+        file_type:
+          ext,
+
+        all_students:
+          allStudents
+
+      })
+      .select()
+      .single();
 
 
     if (error) {
@@ -177,259 +319,112 @@ async function start() {
     }
 
 
-    box.innerHTML =
-      (data || []).map(
-        material => `
+    if (!allStudents) {
 
-        <div class="material-row">
-
-          <div class="material-title">
-            ${escapeHtml(
-              material.title
-            )}
-          </div>
-
-          <div class="material-target">
-            ${
-              material.all_students
-                ? "全生徒"
-                : "指定生徒"
-            }
-          </div>
-
-        </div>
-
-        `
-      ).join("")
-      ||
-      "配信済み資料はありません。";
-
-  }
+      const ids =
+        Array.from(
+          document.querySelectorAll(
+            ".student-check:checked"
+          )
+        ).map(
+          checkbox =>
+            checkbox.value
+        );
 
 
-  async function createMaterial() {
+      if (!ids.length) {
 
-    const title =
-      document.getElementById(
-        "title"
-      ).value.trim();
+        throw new Error(
+          "対象生徒を選択してください。"
+        );
 
-
-    const description =
-      document.getElementById(
-        "description"
-      ).value.trim();
-
-
-    const file =
-      document.getElementById(
-        "file"
-      ).files[0];
-
-
-    const message =
-      document.getElementById(
-        "message"
-      );
-
-
-    if (
-      !title ||
-      !file
-    ) {
-
-      message.textContent =
-        "タイトルとファイルを入力してください。";
-
-      return;
-
-    }
-
-
-    const extension =
-      file.name
-        .split(".")
-        .pop()
-        .toLowerCase();
-
-
-    if (
-      ![
-        "pdf",
-        "jpg",
-        "jpeg",
-        "png"
-      ].includes(
-        extension
-      )
-    ) {
-
-      message.textContent =
-        "PDF、JPG、JPEG、PNGのみ対応しています。";
-
-      return;
-
-    }
-
-
-    try {
-
-      const path =
-        "materials/" +
-        crypto.randomUUID() +
-        "." +
-        extension;
+      }
 
 
       const {
         error:
-          uploadError
+          recipientError
       } =
-        await supabase.storage
-          .from("web-viewer")
-          .upload(
-            path,
-            file
-          );
+      await supabase
+        .from(
+          "material_recipients"
+        )
+        .insert(
+          ids.map(
+            student_id => ({
+              material_id:
+                material.id,
+
+              student_id
+            })
+          )
+        );
 
 
-      if (uploadError) {
-        throw uploadError;
+      if (recipientError) {
+        throw recipientError;
       }
-
-
-      const allStudents =
-        target.value ===
-        "all";
-
-
-      const {
-        data: material,
-        error
-      } =
-        await supabase
-          .from("materials")
-          .insert({
-            title,
-
-            description,
-
-            file_path:
-              path,
-
-            file_type:
-              extension,
-
-            all_students:
-              allStudents,
-
-            created_by:
-              admin.id
-
-          })
-          .select()
-          .single();
-
-
-      if (error) {
-        throw error;
-      }
-
-
-      if (!allStudents) {
-
-        const ids =
-          Array.from(
-            document.querySelectorAll(
-              ".student-check:checked"
-            )
-          ).map(
-            checkbox =>
-              checkbox.value
-          );
-
-
-        if (!ids.length) {
-
-          throw new Error(
-            "対象生徒を選択してください。"
-          );
-
-        }
-
-
-        const {
-          error:
-            recipientError
-        } =
-          await supabase
-            .from(
-              "material_recipients"
-            )
-            .insert(
-              ids.map(
-                student_id => ({
-                  material_id:
-                    material.id,
-
-                  student_id
-                })
-              )
-            );
-
-
-        if (recipientError) {
-          throw recipientError;
-        }
-
-      }
-
-
-      message.textContent =
-        "資料を配信しました。";
-
-
-      await loadMaterials();
 
     }
-    catch (error) {
 
-      message.textContent =
-        "登録エラー: " +
-        error.message;
 
-    }
+    message.textContent =
+      "資料を配信しました。";
+
+
+    await loadMaterials();
+
+  }
+  catch (error) {
+
+    message.textContent =
+      "登録エラー: " +
+      error.message;
 
   }
 
 }
 
 
+async function start() {
+
+  const admin =
+    await requireAdmin();
+
+  if (!admin) {
+    return;
+  }
+
+
+  await loadStudents();
+
+  await loadMaterials();
+
+}
+
+
 start()
-  .catch(
-    error => {
+.catch(
+  error => {
 
-      console.error(error);
+    document.querySelector(
+      ".admin-content"
+    ).insertAdjacentHTML(
+      "beforeend",
+      `
+      <div class="page-error">
 
-      document.querySelector(
-        ".admin-content"
-      ).innerHTML += `
+        <h2>
+          資料配信を読み込めませんでした
+        </h2>
 
-        <div class="page-error">
+        <p>
+          データの取得に失敗しました。
+        </p>
 
-          <h2>
-            資料画面を読み込めませんでした
-          </h2>
+      </div>
+      `
+    );
 
-          <p>
-            ${escapeHtml(
-              error.message
-            )}
-          </p>
-
-        </div>
-
-      `;
-
-    }
-  );
+  }
+);
