@@ -21,14 +21,12 @@ const formCard =
     "formCard"
   );
 
-
 const message =
   document.getElementById(
     "message"
   );
 
-
-const studentsContainer =
+const students =
   document.getElementById(
     "students"
   );
@@ -55,19 +53,15 @@ document.getElementById(
       "hidden"
     );
 
+    message.textContent = "";
+
   };
 
 
 document.getElementById(
   "logout"
 ).onclick =
-  event => {
-
-    event.preventDefault();
-
-    logout();
-
-  };
+  () => logout();
 
 
 document.getElementById(
@@ -76,39 +70,32 @@ document.getElementById(
   createStudent;
 
 
-async function start() {
-
-  const admin =
-    await requireAdmin();
-
-  if (!admin) {
-    return;
-  }
-
-
-  await loadStudents();
-
-}
-
-
 async function loadStudents() {
+
+  students.innerHTML =
+    `
+    <div class="list-row">
+      生徒を読み込んでいます。
+    </div>
+    `;
+
 
   const {
     data,
     error
   } =
-    await supabase
-      .from("users")
-      .select(
-        "id,display_name"
-      )
-      .eq(
-        "role",
-        "student"
-      )
-      .order(
-        "display_name"
-      );
+  await supabase
+    .from("users")
+    .select(
+      "id,display_name"
+    )
+    .eq(
+      "role",
+      "student"
+    )
+    .order(
+      "display_name"
+    );
 
 
   if (error) {
@@ -116,24 +103,33 @@ async function loadStudents() {
   }
 
 
-  studentsContainer.innerHTML =
-    (data || []).map(
+  if (!data?.length) {
+
+    students.innerHTML =
+      `
+      <div class="list-row">
+        登録されている生徒はいません。
+      </div>
+      `;
+
+    return;
+  }
+
+
+  students.innerHTML =
+    data.map(
       student => `
 
       <div class="list-row">
+
         ${escapeHtml(
           student.display_name
         )}
+
       </div>
 
       `
-    ).join("")
-    ||
-    `
-    <div class="list-row">
-      登録されている生徒はいません。
-    </div>
-    `;
+    ).join("");
 
 }
 
@@ -165,7 +161,6 @@ async function createStudent() {
       "氏名を入力してください。";
 
     return;
-
   }
 
 
@@ -175,7 +170,6 @@ async function createStudent() {
       "メールアドレスを入力してください。";
 
     return;
-
   }
 
 
@@ -187,33 +181,36 @@ async function createStudent() {
       "パスワードは8文字以上にしてください。";
 
     return;
-
   }
 
 
-  const session =
+  try {
+
+    const {
+      data:
+        sessionData,
+      error:
+        sessionError
+    } =
     await supabase.auth
       .getSession();
 
 
-  if (
-    session.error ||
-    !session.data.session
-  ) {
+    if (
+      sessionError ||
+      !sessionData?.session
+    ) {
+
+      throw new Error(
+        "管理者のログインセッションがありません。"
+      );
+
+    }
+
 
     message.textContent =
-      "ログインセッションがありません。";
+      "登録しています。";
 
-    return;
-
-  }
-
-
-  message.textContent =
-    "登録しています。";
-
-
-  try {
 
     const response =
       await fetch(
@@ -225,7 +222,7 @@ async function createStudent() {
           headers: {
 
             Authorization:
-              `Bearer ${session.data.session.access_token}`,
+              `Bearer ${sessionData.session.access_token}`,
 
             apikey:
               SUPABASE_KEY,
@@ -257,19 +254,14 @@ async function createStudent() {
 
     let result;
 
-
     try {
-
       result =
         JSON.parse(text);
-
     }
     catch {
-
       result = {
         error: text
       };
-
     }
 
 
@@ -322,31 +314,47 @@ async function createStudent() {
 }
 
 
+async function start() {
+
+  const admin =
+    await requireAdmin();
+
+  if (!admin) {
+    return;
+  }
+
+
+  await loadStudents();
+
+}
+
+
 start()
-  .catch(
-    error => {
+.catch(
+  error => {
 
-      studentsContainer.innerHTML =
-        `
-        <div class="page-error">
+    students.innerHTML =
+      `
+      <div class="page-error">
 
-          <h2>
-            生徒一覧を読み込めませんでした
-          </h2>
+        <h2>
+          生徒一覧を読み込めませんでした
+        </h2>
 
-          <p>
-            ${escapeHtml(
-              error.message
-            )}
-          </p>
+        <p>
+          データの取得に失敗しました。
+        </p>
 
-          <button
-            onclick="location.reload()">
-            再読み込み
-          </button>
+        <button
+          class="primary-button"
+          onclick="location.reload()">
 
-        </div>
-        `;
+          再読み込み
 
-    }
-  );
+        </button>
+
+      </div>
+      `;
+
+  }
+);
