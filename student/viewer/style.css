@@ -3,21 +3,16 @@
   box-sizing: border-box;
 }
 
-
 html,
 body {
   width: 100%;
   height: 100%;
-
   margin: 0;
-
   overflow: hidden;
 }
 
-
 body {
   background: #555;
-
   color: #222;
 
   font-family:
@@ -29,12 +24,15 @@ body {
 }
 
 
+/* =========================================================
+   Viewer
+   ========================================================= */
+
 .viewer {
   width: 100%;
   height: 100%;
 
   display: flex;
-
   flex-direction: column;
 
   background: #555;
@@ -46,129 +44,100 @@ body {
    ========================================================= */
 
 .viewer-toolbar {
-
   position: relative;
-
   z-index: 100;
 
   min-height: 58px;
 
   display: flex;
-
   align-items: center;
 
   gap: 8px;
 
-  padding:
-    7px 10px;
+  padding: 7px 10px;
 
   background: #fff;
 
-  border-bottom:
-    1px solid #ccc;
+  border-bottom: 1px solid #ccc;
 
+  box-shadow:
+    0 2px 7px
+    rgba(0,0,0,.08);
 }
 
-
 .viewer-left {
-
   min-width: 0;
-
   flex: 1;
 
   display: flex;
-
   align-items: center;
 
   gap: 9px;
-
 }
 
-
 .viewer-left strong {
-
   min-width: 0;
 
   overflow: hidden;
-
   text-overflow: ellipsis;
-
   white-space: nowrap;
 
   font-size: 14px;
-
 }
-
 
 .viewer-page-controls {
-
   display: flex;
-
   align-items: center;
 
   gap: 4px;
-
 }
-
 
 .viewer-tools {
-
   display: flex;
-
   align-items: center;
 
   gap: 4px;
-
 }
 
-
 .toolbar-button {
-
   height: 38px;
 
-  padding:
-    0 10px;
+  padding: 0 10px;
 
-  border:
-    1px solid #ccc;
-
+  border: 1px solid #ccc;
   border-radius: 7px;
 
   background: #fff;
-
   color: #222;
 
   font-size: 12px;
-
   font-weight: 600;
 
   white-space: nowrap;
 
   cursor: pointer;
 
+  transition:
+    background .12s ease,
+    transform .08s ease;
 }
-
 
 .toolbar-button:hover {
-
   background: #f2f2f2;
-
 }
 
+.toolbar-button:active {
+  transform: translateY(1px);
+}
 
 .toolbar-button.active {
-
   background: #d5ca3d;
-
   border-color: #c8bd31;
 
   font-weight: 800;
-
 }
 
-
 #page {
-
   min-width: 62px;
 
   text-align: center;
@@ -177,36 +146,28 @@ body {
 
   font-variant-numeric:
     tabular-nums;
-
 }
 
 
 /* =========================================================
-   Mobile menu
+   Mobile Menu
    ========================================================= */
 
 .menu-button {
-
   display: none;
 
   width: 42px;
-
   height: 42px;
 
   padding: 8px;
 
-  border:
-    1px solid #ccc;
-
+  border: 1px solid #ccc;
   border-radius: 8px;
 
   background: #fff;
-
 }
 
-
 .menu-button span {
-
   display: block;
 
   height: 2px;
@@ -214,25 +175,18 @@ body {
   margin: 5px 0;
 
   background: #222;
-
 }
-
 
 .mobile-menu {
-
   display: none;
-
 }
 
-
 .mobile-menu.open {
-
   display: grid;
 
   position: absolute;
 
   top: 58px;
-
   right: 8px;
 
   z-index: 300;
@@ -252,29 +206,23 @@ body {
 
   background: #fff;
 
-  border:
-    1px solid #ccc;
+  border: 1px solid #ccc;
 
   border-radius: 10px;
 
   box-shadow:
     0 10px 30px
     rgba(0,0,0,.22);
-
 }
 
-
 .mobile-menu button {
-
   min-height: 45px;
 
-  padding:
-    10px 13px;
+  padding: 10px 13px;
 
   border: 0;
 
-  border-bottom:
-    1px solid #eee;
+  border-bottom: 1px solid #eee;
 
   background: #fff;
 
@@ -283,9 +231,7 @@ body {
   text-align: left;
 
   font-size: 13px;
-
   font-weight: 600;
-
 }
 
 
@@ -294,51 +240,63 @@ body {
    ========================================================= */
 
 .viewer-stage {
-
   position: relative;
 
   flex: 1;
 
   min-height: 0;
 
-  overflow: auto;
+  overflow: hidden;
 
   display: flex;
-
-  align-items: flex-start;
-
+  align-items: center;
   justify-content: center;
-
-  padding: 28px;
 
   background: #555;
 
-  touch-action:
-    pan-x pan-y;
+  /*
+   * ブラウザに横スワイプを奪わせない。
+   */
+  touch-action: none;
 
   overscroll-behavior:
     contain;
-
-  -webkit-overflow-scrolling:
-    touch;
-
 }
 
 
 /* =========================================================
-   Page
+   Slide viewport
    ========================================================= */
 
-.page-container {
-
+.slide-viewport {
   position: relative;
 
-  flex:
-    0 0 auto;
+  width: 100%;
+  height: 100%;
 
-  min-width: 1px;
+  overflow: hidden;
 
-  min-height: 1px;
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* =========================================================
+   Page slide
+   ========================================================= */
+
+.page-slide {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
 
   background: #fff;
 
@@ -346,16 +304,54 @@ body {
     0 7px 28px
     rgba(0,0,0,.28);
 
+  transform-origin:
+    center center;
+
+  will-change:
+    transform;
+
+  backface-visibility:
+    hidden;
+
+  -webkit-backface-visibility:
+    hidden;
+}
+
+.current-slide {
+  z-index: 10;
+
+  transform:
+    translate3d(
+      -50%,
+      -50%,
+      0
+    );
+}
+
+.incoming-slide {
+  z-index: 9;
+
+  display: none;
+
+  transform:
+    translate3d(
+      -50%,
+      -50%,
+      0
+    );
 }
 
 
 /* =========================================================
-   PDF Canvas
+   PDF
    ========================================================= */
 
-#pdfCanvas {
-
+#currentPdfCanvas,
+#incomingPdfCanvas {
   display: none;
+
+  width: 100%;
+  height: 100%;
 
   max-width: none;
 
@@ -363,26 +359,24 @@ body {
 
   vertical-align: top;
 
+  pointer-events: none;
 }
 
 
 /* =========================================================
-   Image
+   Images
    ========================================================= */
 
-#imagePage {
-
+#currentImage,
+#incomingImage {
   display: none;
 
-  width: auto;
-
-  height: auto;
+  width: 100%;
+  height: 100%;
 
   max-width: none;
 
-  background: #fff;
-
-  vertical-align: top;
+  object-fit: fill;
 
   user-select: none;
 
@@ -391,7 +385,6 @@ body {
   -webkit-user-drag: none;
 
   pointer-events: none;
-
 }
 
 
@@ -399,32 +392,24 @@ body {
    Annotation
    ========================================================= */
 
-#annotationCanvas {
-
+.annotation-canvas {
   position: absolute;
 
   top: 0;
-
   left: 0;
 
-  z-index: 5;
-
-  display: block;
+  z-index: 20;
 
   pointer-events: none;
 
   touch-action: none;
-
 }
 
-
 body.pen-enabled
-#annotationCanvas {
-
+.annotation-canvas {
   pointer-events: auto;
 
   cursor: crosshair;
-
 }
 
 
@@ -433,11 +418,9 @@ body.pen-enabled
    ========================================================= */
 
 .viewer-message {
-
   position: fixed;
 
   left: 50%;
-
   bottom: 24px;
 
   z-index: 500;
@@ -464,14 +447,10 @@ body.pen-enabled
   font-size: 13px;
 
   text-align: center;
-
 }
 
-
 .hidden {
-
   display: none !important;
-
 }
 
 
@@ -482,23 +461,11 @@ body.pen-enabled
 @media (max-width: 1000px) {
 
   .viewer-tools {
-
     display: none;
-
   }
-
 
   .menu-button {
-
     display: block;
-
-  }
-
-
-  .viewer-stage {
-
-    padding: 18px;
-
   }
 
 }
@@ -511,46 +478,28 @@ body.pen-enabled
 @media (max-width: 650px) {
 
   .viewer-toolbar {
-
     min-height: 56px;
 
     padding:
       6px 8px;
-
   }
-
 
   .viewer-page-controls {
-
     gap: 2px;
-
   }
-
 
   .viewer-page-controls
   .toolbar-button {
-
     padding:
       0 7px;
 
     font-size: 11px;
-
   }
 
-
   #page {
-
     min-width: 52px;
 
     font-size: 11px;
-
-  }
-
-
-  .viewer-stage {
-
-    padding: 8px;
-
   }
 
 }
