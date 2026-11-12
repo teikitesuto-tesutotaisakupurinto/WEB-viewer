@@ -1,3 +1,4 @@
+
 import {
   requireBookAccess
 }
@@ -18,7 +19,6 @@ const params =
     location.search
   );
 
-
 const bookId =
   params.get("book");
 
@@ -30,7 +30,7 @@ if (!bookId) {
   );
 
   throw new Error(
-    "Book ID missing"
+    "BOOK_ID_MISSING"
   );
 
 }
@@ -40,12 +40,12 @@ if (!bookId) {
    DOM
    ========================================================= */
 
-const title =
+const titleElement =
   document.getElementById(
     "title"
   );
 
-const pageLabel =
+const pageElement =
   document.getElementById(
     "page"
   );
@@ -90,6 +90,11 @@ const mobileMenu =
     "mobileMenu"
   );
 
+const viewerMessage =
+  document.getElementById(
+    "viewerMessage"
+  );
+
 
 /* =========================================================
    State
@@ -125,37 +130,100 @@ let pinchDistance = null;
 
 let pinchStartZoom = 1;
 
+let pdfjs = null;
+
 const imageCache =
   new Map();
+
+
+/* =========================================================
+   Message
+   ========================================================= */
+
+function showMessage(
+  text
+) {
+
+  if (!viewerMessage) {
+    return;
+  }
+
+
+  viewerMessage.textContent =
+    text;
+
+
+  viewerMessage.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+function hideMessage() {
+
+  if (!viewerMessage) {
+    return;
+  }
+
+
+  viewerMessage.textContent =
+    "";
+
+  viewerMessage.classList.add(
+    "hidden"
+  );
+
+}
 
 
 /* =========================================================
    Storage
    ========================================================= */
 
-async function signedUrl(
+async function getSignedUrl(
   path
 ) {
+
+  if (!path) {
+
+    throw new Error(
+      "教材ファイルが登録されていません。"
+    );
+
+  }
+
 
   const {
     data,
     error
   } =
-  await supabase.storage
-    .from("web-viewer")
-    .createSignedUrl(
-      path,
-      600
+    await supabase.storage
+      .from("web-viewer")
+      .createSignedUrl(
+        path,
+        600
+      );
+
+
+  if (error) {
+
+    console.error(
+      "STORAGE ERROR:",
+      error
     );
-
-
-  if (
-    error ||
-    !data?.signedUrl
-  ) {
 
     throw new Error(
       "教材ファイルを取得できませんでした。"
+    );
+
+  }
+
+
+  if (!data?.signedUrl) {
+
+    throw new Error(
+      "教材ファイルのURLを取得できませんでした。"
     );
 
   }
@@ -176,25 +244,34 @@ async function loadBook() {
     data,
     error
   } =
-  await supabase
-    .from("books")
-    .select(`
-      id,
-      title,
-      description,
-      file_path,
-      file_type,
-      enabled
-    `)
-    .eq(
-      "id",
-      bookId
-    )
-    .maybeSingle();
+    await supabase
+      .from("books")
+      .select(`
+        id,
+        title,
+        description,
+        file_path,
+        file_type,
+        enabled
+      `)
+      .eq(
+        "id",
+        bookId
+      )
+      .maybeSingle();
 
 
   if (error) {
-    throw error;
+
+    console.error(
+      "BOOK ERROR:",
+      error
+    );
+
+    throw new Error(
+      "Bookを取得できませんでした。"
+    );
+
   }
 
 
@@ -209,7 +286,9 @@ async function loadBook() {
   }
 
 
-  if (!data.enabled) {
+  if (
+    data.enabled === false
+  ) {
 
     location.replace(
       "/errors/?type=book-forbidden"
@@ -224,8 +303,13 @@ async function loadBook() {
     data;
 
 
-  title.textContent =
-    book.title || "";
+  if (titleElement) {
+
+    titleElement.textContent =
+      book.title || "";
+
+  }
+
 
   return true;
 
@@ -233,12 +317,94 @@ async function loadBook() {
 
 
 /* =========================================================
-   PDF.js LOCAL
+   Type
+   ========================================================= */
+
+function isPdfBook() {
+
+  const type =
+    String(
+      book?.file_type || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  return (
+    type === "pdf" ||
+    /\.pdf$/i.test(
+      book?.file_path || ""
+    )
+  );
+
+}
+
+
+/* =========================================================
+   PDF.js
+   ========================================================= */
+
+async function loadPdfJs() {
+
+  if (pdfjs) {
+    return pdfjs;
+  }
+
+
+  try {
+
+    pdfjs =
+      await import(
+        "../../assets/pdfjs/pdf.min.mjs"
+      );
+
+  }
+  catch (error) {
+
+    console.error(
+      "PDF.JS LOAD ERROR:",
+      error
+    );
+
+
+    throw new Error(
+      "PDF表示機能が見つかりません。"
+    );
+
+  }
+
+
+  if (
+    typeof pdfjs.getDocument !==
+    "function"
+  ) {
+
+    throw new Error(
+      "PDF表示機能を利用できません。"
+    );
+
+  }
+
+
+  pdfjs.GlobalWorkerOptions.workerSrc =
+    new URL(
+      "../../assets/pdfjs/pdf.worker.min.mjs",
+      import.meta.url
+    ).href;
+
+
+  return pdfjs;
+
+}
+
+
+/* =========================================================
+   PDF
    ========================================================= */
 
 async function loadPdf() {
 
-  if (!book.file_path) {
+  if (!book?.file_path) {
 
     throw new Error(
       "PDFファイルが登録されていません。"
@@ -247,38 +413,49 @@ async function loadPdf() {
   }
 
 
-  /*
-   * 外部CDNではない。
-   *
-   * プロジェクト内:
-   * assets/pdfjs/pdf.min.mjs
-   */
-
-  const pdfjs =
-    await import(
-      "../../assets/pdfjs/pdf.min.mjs"
-    );
+  showMessage(
+    "PDFを読み込んでいます。"
+  );
 
 
-  pdfjs.GlobalWorkerOptions.workerSrc =
-    "../../assets/pdfjs/pdf.worker.min.mjs";
+  const library =
+    await loadPdfJs();
 
 
   const url =
-    await signedUrl(
+    await getSignedUrl(
       book.file_path
     );
 
 
-  pdf =
-    await pdfjs
-      .getDocument({
-        url
-      })
-      .promise;
+  try {
+
+    pdf =
+      await library
+        .getDocument({
+          url,
+          withCredentials:
+            false
+        })
+        .promise;
+
+  }
+  catch (error) {
+
+    console.error(
+      "PDF LOAD ERROR:",
+      error
+    );
+
+    throw new Error(
+      "PDFを読み込めませんでした。"
+    );
+
+  }
 
 
   if (
+    !pdf ||
     !pdf.numPages
   ) {
 
@@ -288,11 +465,14 @@ async function loadPdf() {
 
   }
 
+
+  hideMessage();
+
 }
 
 
 /* =========================================================
-   Images
+   Image pages
    ========================================================= */
 
 async function loadImagePages() {
@@ -301,28 +481,36 @@ async function loadImagePages() {
     data,
     error
   } =
-  await supabase
-    .from("book_pages")
-    .select(`
-      page_number,
-      file_path,
-      file_type
-    `)
-    .eq(
-      "book_id",
-      bookId
-    )
-    .order(
-      "page_number",
-      {
-        ascending:
-          true
-      }
-    );
+    await supabase
+      .from("book_pages")
+      .select(`
+        page_number,
+        file_path,
+        file_type
+      `)
+      .eq(
+        "book_id",
+        bookId
+      )
+      .order(
+        "page_number",
+        {
+          ascending: true
+        }
+      );
 
 
   if (error) {
-    throw error;
+
+    console.error(
+      "BOOK PAGES ERROR:",
+      error
+    );
+
+    throw new Error(
+      "教材ページを取得できませんでした。"
+    );
+
   }
 
 
@@ -349,7 +537,7 @@ async function loadImagePages() {
   if (!pages.length) {
 
     throw new Error(
-      "このBookにはページがありません。"
+      "このBookには表示できるページがありません。"
     );
 
   }
@@ -363,22 +551,52 @@ async function loadImagePages() {
 
 function getPageCount() {
 
-  if (pdf) {
-
-    return pdf.numPages;
-
-  }
-
-
-  return pages.length;
+  return pdf
+    ? pdf.numPages
+    : pages.length;
 
 }
 
 
 function updatePageLabel() {
 
-  pageLabel.textContent =
+  if (!pageElement) {
+    return;
+  }
+
+
+  pageElement.textContent =
     `${currentPage} / ${getPageCount()}`;
+
+}
+
+
+/* =========================================================
+   Annotation size
+   ========================================================= */
+
+function resizeAnnotation(
+  width,
+  height
+) {
+
+  annotationCanvas.width =
+    Math.max(
+      1,
+      Math.floor(width)
+    );
+
+  annotationCanvas.height =
+    Math.max(
+      1,
+      Math.floor(height)
+    );
+
+  annotationCanvas.style.width =
+    `${width}px`;
+
+  annotationCanvas.style.height =
+    `${height}px`;
 
 }
 
@@ -397,30 +615,33 @@ async function renderPdf() {
 
   const viewport =
     page.getViewport({
-      scale:
-        zoom
+      scale: zoom
     });
 
 
-  pdfCanvas.width =
+  const width =
     Math.floor(
       viewport.width
     );
 
-
-  pdfCanvas.height =
+  const height =
     Math.floor(
       viewport.height
     );
 
 
-  pdfCanvas.style.width =
-    `${viewport.width}px`;
+  pdfCanvas.width =
+    width;
 
+  pdfCanvas.height =
+    height;
+
+
+  pdfCanvas.style.width =
+    `${width}px`;
 
   pdfCanvas.style.height =
-    `${viewport.height}px`;
-
+    `${height}px`;
 
   pdfCanvas.style.display =
     "block";
@@ -431,24 +652,36 @@ async function renderPdf() {
 
 
   pageContainer.style.width =
-    `${viewport.width}px`;
-
+    `${width}px`;
 
   pageContainer.style.height =
-    `${viewport.height}px`;
+    `${height}px`;
+
+
+  resizeAnnotation(
+    width,
+    height
+  );
 
 
   const context =
     pdfCanvas.getContext(
-      "2d"
+      "2d",
+      {
+        alpha: false
+      }
     );
 
 
-  context.clearRect(
+  context.fillStyle =
+    "#fff";
+
+
+  context.fillRect(
     0,
     0,
-    pdfCanvas.width,
-    pdfCanvas.height
+    width,
+    height
   );
 
 
@@ -457,29 +690,12 @@ async function renderPdf() {
     canvasContext:
       context,
 
-    viewport
+    viewport,
+
+    intent:
+      "display"
 
   }).promise;
-
-
-  annotationCanvas.width =
-    Math.floor(
-      viewport.width
-    );
-
-
-  annotationCanvas.height =
-    Math.floor(
-      viewport.height
-    );
-
-
-  annotationCanvas.style.width =
-    `${viewport.width}px`;
-
-
-  annotationCanvas.style.height =
-    `${viewport.height}px`;
 
 
   updatePageLabel();
@@ -487,10 +703,6 @@ async function renderPdf() {
 
   await loadAnnotation();
 
-
-  /*
-   * 次ページを軽く先読み
-   */
 
   if (
     currentPage <
@@ -509,7 +721,7 @@ async function renderPdf() {
 
 
 /* =========================================================
-   Image cache
+   Image
    ========================================================= */
 
 async function getImage(
@@ -545,7 +757,7 @@ async function getImage(
 
 
   const url =
-    await signedUrl(
+    await getSignedUrl(
       page.file_path
     );
 
@@ -554,12 +766,12 @@ async function getImage(
     new Image();
 
 
-  image.src =
-    url;
-
-
   image.decoding =
     "async";
+
+
+  image.src =
+    url;
 
 
   await new Promise(
@@ -649,25 +861,14 @@ async function renderImage() {
   pageContainer.style.width =
     `${width}px`;
 
-
   pageContainer.style.height =
     `${height}px`;
 
 
-  annotationCanvas.width =
-    width;
-
-
-  annotationCanvas.height =
-    height;
-
-
-  annotationCanvas.style.width =
-    `${width}px`;
-
-
-  annotationCanvas.style.height =
-    `${height}px`;
+  resizeAnnotation(
+    width,
+    height
+  );
 
 
   updatePageLabel();
@@ -680,7 +881,6 @@ async function renderImage() {
     currentPage + 1
   );
 
-
   preloadImage(
     currentPage - 1
   );
@@ -689,23 +889,21 @@ async function renderImage() {
 
 
 async function preloadImage(
-  number
+  pageNumber
 ) {
 
   if (
-    number < 1 ||
-    number > pages.length
+    pageNumber < 1 ||
+    pageNumber > pages.length
   ) {
-
     return;
-
   }
 
 
   try {
 
     await getImage(
-      number
+      pageNumber
     );
 
   }
@@ -735,7 +933,7 @@ async function render() {
 
 
 /* =========================================================
-   Page navigation
+   Navigation
    ========================================================= */
 
 async function nextPage() {
@@ -744,16 +942,14 @@ async function nextPage() {
     currentPage >=
     getPageCount()
   ) {
-
     return;
-
   }
 
 
   await saveAnnotation();
 
 
-  currentPage++;
+  currentPage += 1;
 
 
   await render();
@@ -766,16 +962,14 @@ async function previousPage() {
   if (
     currentPage <= 1
   ) {
-
     return;
-
   }
 
 
   await saveAnnotation();
 
 
-  currentPage--;
+  currentPage -= 1;
 
 
   await render();
@@ -788,9 +982,7 @@ async function firstPage() {
   if (
     currentPage === 1
   ) {
-
     return;
-
   }
 
 
@@ -815,9 +1007,7 @@ async function lastPage() {
   if (
     currentPage === last
   ) {
-
     return;
-
   }
 
 
@@ -832,10 +1022,6 @@ async function lastPage() {
 
 }
 
-
-/* =========================================================
-   Controls
-   ========================================================= */
 
 document.getElementById(
   "first"
@@ -871,12 +1057,10 @@ async function setZoom(
 
   zoom =
     Math.max(
-      .25,
+      0.25,
       Math.min(
         5,
-        Number(
-          value
-        )
+        Number(value)
       )
     );
 
@@ -891,7 +1075,7 @@ document.getElementById(
 ).onclick =
   () =>
     setZoom(
-      zoom + .1
+      zoom + 0.1
     );
 
 
@@ -900,7 +1084,7 @@ document.getElementById(
 ).onclick =
   () =>
     setZoom(
-      zoom - .1
+      zoom - 0.1
     );
 
 
@@ -909,12 +1093,7 @@ document.getElementById(
 ).onclick =
   async () => {
 
-    const image =
-      pdf
-        ? null
-        : await getImage(
-            currentPage
-          );
+    let width;
 
 
     if (pdf) {
@@ -924,31 +1103,32 @@ document.getElementById(
           currentPage
         );
 
-
-      const viewport =
+      width =
         page.getViewport({
           scale: 1
-        });
+        }).width;
 
+    }
+    else {
 
-      await setZoom(
-        (
-          stage.clientWidth - 56
-        ) /
-        viewport.width
-      );
+      const image =
+        await getImage(
+          currentPage
+        );
 
-
-      return;
+      width =
+        image.naturalWidth;
 
     }
 
 
     await setZoom(
-      (
-        stage.clientWidth - 56
-      ) /
-      image.naturalWidth
+      Math.max(
+        0.25,
+        (
+          stage.clientWidth - 56
+        ) / width
+      )
     );
 
   };
@@ -959,6 +1139,9 @@ document.getElementById(
 ).onclick =
   async () => {
 
+    let height;
+
+
     if (pdf) {
 
       const page =
@@ -966,37 +1149,32 @@ document.getElementById(
           currentPage
         );
 
-
-      const viewport =
+      height =
         page.getViewport({
           scale: 1
-        });
+        }).height;
 
+    }
+    else {
 
-      await setZoom(
-        (
-          stage.clientHeight - 56
-        ) /
-        viewport.height
-      );
+      const image =
+        await getImage(
+          currentPage
+        );
 
-
-      return;
+      height =
+        image.naturalHeight;
 
     }
 
 
-    const image =
-      await getImage(
-        currentPage
-      );
-
-
     await setZoom(
-      (
-        stage.clientHeight - 56
-      ) /
-      image.naturalHeight
+      Math.max(
+        0.25,
+        (
+          stage.clientHeight - 56
+        ) / height
+      )
     );
 
   };
@@ -1067,11 +1245,11 @@ function updateMode() {
 
 
 function setMode(
-  value
+  next
 ) {
 
   mode =
-    value;
+    next;
 
   updateMode();
 
@@ -1082,7 +1260,9 @@ document.getElementById(
   "move"
 ).onclick =
   () =>
-    setMode("move");
+    setMode(
+      "move"
+    );
 
 
 penButton.onclick =
@@ -1098,7 +1278,9 @@ document.getElementById(
   "eraser"
 ).onclick =
   () =>
-    setMode("eraser");
+    setMode(
+      "eraser"
+    );
 
 
 /* =========================================================
@@ -1154,12 +1336,10 @@ menuButton.onclick =
       open
     );
 
-
     mobileMenu.setAttribute(
       "aria-hidden",
       String(!open)
     );
-
 
     menuButton.setAttribute(
       "aria-expanded",
@@ -1188,88 +1368,76 @@ mobileMenu
           )
             await firstPage();
 
-
-          if (
+          else if (
             action === "previous"
           )
             await previousPage();
 
-
-          if (
+          else if (
             action === "next"
           )
             await nextPage();
 
-
-          if (
+          else if (
             action === "last"
           )
             await lastPage();
 
-
-          if (
+          else if (
             action === "move"
           )
             setMode("move");
 
-
-          if (
+          else if (
             action === "pen"
           )
             setMode("pen");
 
-
-          if (
+          else if (
             action === "eraser"
           )
             setMode("eraser");
 
+          else if (
+            action === "favorite"
+          )
+            document.getElementById(
+              "favorite"
+            ).click();
 
-          if (
+          else if (
             action === "zoomIn"
           )
             await setZoom(
-              zoom + .1
+              zoom + 0.1
             );
 
-
-          if (
+          else if (
             action === "zoomOut"
           )
             await setZoom(
-              zoom - .1
+              zoom - 0.1
             );
 
-
-          if (
+          else if (
             action === "fitWidth"
           )
             await document.getElementById(
               "fitWidth"
             ).click();
 
-
-          if (
+          else if (
             action === "fitHeight"
           )
             await document.getElementById(
               "fitHeight"
             ).click();
 
-
-          if (
+          else if (
             action === "fullscreen"
           )
             await document.getElementById(
               "fullscreen"
-            ).click();
-
-
-          if (
-            action === "favorite"
-          )
-            document.getElementById(
-              "favorite"
             ).click();
 
 
@@ -1302,11 +1470,8 @@ stage.addEventListener(
 
       pinchDistance =
         Math.hypot(
-          b.clientX -
-          a.clientX,
-
-          b.clientY -
-          a.clientY
+          b.clientX - a.clientX,
+          b.clientY - a.clientY
         );
 
 
@@ -1322,9 +1487,7 @@ stage.addEventListener(
     if (
       mode !== "move"
     ) {
-
       return;
-
     }
 
 
@@ -1335,18 +1498,15 @@ stage.addEventListener(
     touchStartX =
       touch.clientX;
 
-
     touchStartY =
       touch.clientY;
-
 
     touchStartTime =
       Date.now();
 
   },
   {
-    passive:
-      true
+    passive: true
   }
 );
 
@@ -1356,63 +1516,56 @@ stage.addEventListener(
   event => {
 
     if (
-      event.touches.length === 2 &&
-      pinchDistance !== null
+      event.touches.length !== 2 ||
+      pinchDistance === null
     ) {
-
-      event.preventDefault();
-
-
-      const a =
-        event.touches[0];
-
-      const b =
-        event.touches[1];
+      return;
+    }
 
 
-      const distance =
-        Math.hypot(
-          b.clientX -
-          a.clientX,
-
-          b.clientY -
-          a.clientY
-        );
+    event.preventDefault();
 
 
-      zoom =
-        Math.max(
-          .25,
-          Math.min(
-            5,
-            pinchStartZoom *
-            distance /
-            pinchDistance
-          )
-        );
+    const a =
+      event.touches[0];
+
+    const b =
+      event.touches[1];
 
 
-      clearTimeout(
-        window.__zoomTimer
+    const distance =
+      Math.hypot(
+        b.clientX - a.clientX,
+        b.clientY - a.clientY
       );
 
 
-      window.__zoomTimer =
-        setTimeout(
-          () => {
+    zoom =
+      Math.max(
+        0.25,
+        Math.min(
+          5,
+          pinchStartZoom *
+          distance /
+          pinchDistance
+        )
+      );
 
-            render();
 
-          },
-          80
-        );
+    clearTimeout(
+      window.__pinchTimer
+    );
 
-    }
+
+    window.__pinchTimer =
+      setTimeout(
+        () => render(),
+        80
+      );
 
   },
   {
-    passive:
-      false
+    passive: false
   }
 );
 
@@ -1437,9 +1590,7 @@ stage.addEventListener(
       mode !== "move" ||
       touchStartX === null
     ) {
-
       return;
-
     }
 
 
@@ -1450,7 +1601,6 @@ stage.addEventListener(
     const dx =
       touch.clientX -
       touchStartX;
-
 
     const dy =
       touch.clientY -
@@ -1470,22 +1620,11 @@ stage.addEventListener(
 
 
     if (
-      elapsed > 700
-    ) {
-
-      return;
-
-    }
-
-
-    if (
+      elapsed > 700 ||
       Math.abs(dx) < 70 ||
-      Math.abs(dx) <=
-        Math.abs(dy)
+      Math.abs(dx) <= Math.abs(dy)
     ) {
-
       return;
-
     }
 
 
@@ -1507,7 +1646,6 @@ stage.addEventListener(
 
 
 /* =========================================================
-   Wheel zoom
    Ctrl + Wheel
    ========================================================= */
 
@@ -1518,9 +1656,7 @@ stage.addEventListener(
     if (
       !event.ctrlKey
     ) {
-
       return;
-
     }
 
 
@@ -1531,15 +1667,14 @@ stage.addEventListener(
       zoom +
       (
         event.deltaY > 0
-          ? -.1
-          : .1
+          ? -0.1
+          : 0.1
       )
     );
 
   },
   {
-    passive:
-      false
+    passive: false
   }
 );
 
@@ -1556,9 +1691,7 @@ annotationCanvas.addEventListener(
       mode !== "pen" &&
       mode !== "eraser"
     ) {
-
       return;
-
     }
 
 
@@ -1572,8 +1705,7 @@ annotationCanvas.addEventListener(
 
 
     const rect =
-      annotationCanvas
-        .getBoundingClientRect();
+      annotationCanvas.getBoundingClientRect();
 
 
     lastX =
@@ -1601,14 +1733,15 @@ annotationCanvas.addEventListener(
   "pointermove",
   event => {
 
-    if (!drawing) {
+    if (
+      !drawing
+    ) {
       return;
     }
 
 
     const rect =
-      annotationCanvas
-        .getBoundingClientRect();
+      annotationCanvas.getBoundingClientRect();
 
 
     const x =
@@ -1630,10 +1763,9 @@ annotationCanvas.addEventListener(
 
 
     const context =
-      annotationCanvas
-        .getContext(
-          "2d"
-        );
+      annotationCanvas.getContext(
+        "2d"
+      );
 
 
     context.beginPath();
@@ -1709,6 +1841,17 @@ annotationCanvas.addEventListener(
 );
 
 
+annotationCanvas.addEventListener(
+  "pointercancel",
+  () => {
+
+    drawing =
+      false;
+
+  }
+);
+
+
 /* =========================================================
    Annotation
    ========================================================= */
@@ -1719,9 +1862,7 @@ async function saveAnnotation() {
     !annotationCanvas.width ||
     !annotationCanvas.height
   ) {
-
     return;
-
   }
 
 
@@ -1773,7 +1914,7 @@ async function saveAnnotation() {
   if (error) {
 
     console.warn(
-      "ANNOTATION SAVE:",
+      "ANNOTATION SAVE ERROR:",
       error
     );
 
@@ -1785,7 +1926,8 @@ async function saveAnnotation() {
 async function loadAnnotation() {
 
   const {
-    data
+    data,
+    error
   } =
   await supabase
     .from("annotations")
@@ -1807,11 +1949,20 @@ async function loadAnnotation() {
     .maybeSingle();
 
 
+  if (error) {
+
+    console.warn(
+      "ANNOTATION LOAD ERROR:",
+      error
+    );
+
+  }
+
+
   const context =
-    annotationCanvas
-      .getContext(
-        "2d"
-      );
+    annotationCanvas.getContext(
+      "2d"
+    );
 
 
   context.clearRect(
@@ -1822,11 +1973,11 @@ async function loadAnnotation() {
   );
 
 
-  const src =
+  const source =
     data?.annotation_data?.image;
 
 
-  if (!src) {
+  if (!source) {
     return;
   }
 
@@ -1850,7 +2001,7 @@ async function loadAnnotation() {
 
 
   image.src =
-    src;
+    source;
 
 }
 
@@ -1892,8 +2043,11 @@ document.getElementById(
 
 async function start() {
 
+  hideMessage();
+
+
   /*
-   * Student + Book所有権限
+   * Student + Book権限
    */
 
   student =
@@ -1907,38 +2061,30 @@ async function start() {
   }
 
 
-  const exists =
+  /*
+   * Book
+   */
+
+  const loaded =
     await loadBook();
 
 
-  if (!exists) {
+  if (!loaded) {
     return;
   }
 
 
-  const type =
-    String(
-      book.file_type || ""
-    ).toLowerCase();
-
-
   /*
-   * PDF
+   * PDF / 画像
    */
 
   if (
-    type === "pdf"
+    isPdfBook()
   ) {
 
     await loadPdf();
 
   }
-
-
-  /*
-   * 画像Book
-   */
-
   else {
 
     await loadImagePages();
@@ -1968,13 +2114,9 @@ start()
     );
 
 
-    /*
-     * 内部エラーの詳細を
-     * 生徒に表示しない。
-     */
-
-    location.replace(
-      "/errors/?type=system"
+    showMessage(
+      error.message ||
+      "教材を表示できませんでした。"
     );
 
   }
