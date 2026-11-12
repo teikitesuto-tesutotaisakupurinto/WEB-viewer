@@ -15,62 +15,43 @@ import {
 from "../../assets/js/common.js";
 
 
-async function start() {
-
-  const admin =
-    await requireAdmin();
-
-  if (!admin) {
-    return;
-  }
-
-
+const message =
   document.getElementById(
-    "logout"
-  ).onclick =
-    event => {
-
-      event.preventDefault();
-
-      logout();
-
-    };
+    "message"
+  );
 
 
-  document.getElementById(
-    "selectAll"
-  ).onchange =
-    event => {
-
-      document
-        .querySelectorAll(
-          ".student-checkbox"
-        )
-        .forEach(
-          checkbox => {
-
-            checkbox.checked =
-              event.target.checked;
-
-          }
-        );
-
-    };
+document.getElementById(
+  "logout"
+).onclick =
+  () => logout();
 
 
-  document.getElementById(
-    "issue"
-  ).onclick =
-    () => issue(admin);
+document.getElementById(
+  "selectAll"
+).onchange =
+  event => {
+
+    document
+      .querySelectorAll(
+        ".student-checkbox"
+      )
+      .forEach(
+        checkbox => {
+
+          checkbox.checked =
+            event.target.checked;
+
+        }
+      );
+
+  };
 
 
-  await loadBooks();
-
-  await loadStudents();
-
-  await loadSerials();
-
-}
+document.getElementById(
+  "issue"
+).onclick =
+  issue;
 
 
 async function loadBooks() {
@@ -79,16 +60,14 @@ async function loadBooks() {
     data,
     error
   } =
-    await supabase
-      .from("books")
-      .select(
-        "id,title"
-      )
-      .eq(
-        "enabled",
-        true
-      )
-      .order("title");
+  await supabase
+    .from("books")
+    .select(
+      "id,title"
+    )
+    .order(
+      "title"
+    );
 
 
   if (error) {
@@ -104,13 +83,19 @@ async function loadBooks() {
       Bookを選択してください
     </option>
     ` +
-    (data || []).map(
-      book => `
-      <option value="${book.id}">
-        ${escapeHtml(book.title)}
-      </option>
-      `
-    ).join("");
+    (data || [])
+      .map(
+        book => `
+
+        <option value="${book.id}">
+          ${escapeHtml(
+            book.title
+          )}
+        </option>
+
+        `
+      )
+      .join("");
 
 }
 
@@ -121,18 +106,18 @@ async function loadStudents() {
     data,
     error
   } =
-    await supabase
-      .from("users")
-      .select(
-        "id,display_name"
-      )
-      .eq(
-        "role",
-        "student"
-      )
-      .order(
-        "display_name"
-      );
+  await supabase
+    .from("users")
+    .select(
+      "id,display_name"
+    )
+    .eq(
+      "role",
+      "student"
+    )
+    .order(
+      "display_name"
+    );
 
 
   if (error) {
@@ -143,173 +128,28 @@ async function loadStudents() {
   document.getElementById(
     "students"
   ).innerHTML =
-    (data || []).map(
-      student => `
+    (data || [])
+      .map(
+        student => `
 
-      <label class="student-row">
+        <label class="student-row">
 
-        <input
-          class="student-checkbox"
-          type="checkbox"
-          value="${student.id}">
+          <input
+            class="student-checkbox"
+            type="checkbox"
+            value="${student.id}">
 
-        ${escapeHtml(
-          student.display_name
-        )}
+          <span>
+            ${escapeHtml(
+              student.display_name
+            )}
+          </span>
 
-      </label>
+        </label>
 
-      `
-    ).join("");
-
-}
-
-
-async function issue(admin) {
-
-  const bookId =
-    document.getElementById(
-      "book"
-    ).value;
-
-
-  const studentIds =
-    Array.from(
-      document.querySelectorAll(
-        ".student-checkbox:checked"
+        `
       )
-    ).map(
-      checkbox =>
-        checkbox.value
-    );
-
-
-  const message =
-    document.getElementById(
-      "message"
-    );
-
-
-  if (!bookId) {
-
-    message.textContent =
-      "Bookを選択してください。";
-
-    return;
-
-  }
-
-
-  if (!studentIds.length) {
-
-    message.textContent =
-      "生徒を選択してください。";
-
-    return;
-
-  }
-
-
-  message.textContent =
-    "発行しています。";
-
-
-  try {
-
-    const {
-      data: existing,
-      error
-    } =
-      await supabase
-        .from("licenses")
-        .select(
-          "student_id"
-        )
-        .eq(
-          "book_id",
-          bookId
-        )
-        .in(
-          "student_id",
-          studentIds
-        );
-
-
-    if (error) {
-      throw error;
-    }
-
-
-    const existingIds =
-      new Set(
-        (existing || []).map(
-          row =>
-            row.student_id
-        )
-      );
-
-
-    const newIds =
-      studentIds.filter(
-        id =>
-          !existingIds.has(id)
-      );
-
-
-    if (!newIds.length) {
-
-      message.textContent =
-        "選択した生徒にはすでに発行済みです。";
-
-      return;
-
-    }
-
-
-    const {
-      error:
-        insertError
-    } =
-      await supabase
-        .from("licenses")
-        .insert(
-          newIds.map(
-            student_id => ({
-              book_id:
-                bookId,
-
-              student_id,
-
-              status:
-                "unused",
-
-              created_by:
-                admin.id
-
-            })
-          )
-        );
-
-
-    if (insertError) {
-      throw insertError;
-    }
-
-
-    message.textContent =
-      `${newIds.length}人分を発行しました。`;
-
-
-    await loadSerials();
-
-  }
-  catch (error) {
-
-    message.textContent =
-      "発行エラー: " +
-      error.message;
-
-  }
+      .join("");
 
 }
 
@@ -326,21 +166,21 @@ async function loadSerials() {
     data,
     error
   } =
-    await supabase
-      .from("licenses")
-      .select(`
-        id,
-        code,
-        status,
-        books(title),
-        users:student_id(display_name)
-      `)
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      );
+  await supabase
+    .from("licenses")
+    .select(`
+      id,
+      code,
+      status,
+      books(title),
+      users:student_id(display_name)
+    `)
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
 
 
   if (error) {
@@ -358,7 +198,6 @@ async function loadSerials() {
       `;
 
     return;
-
   }
 
 
@@ -402,26 +241,184 @@ async function loadSerials() {
 }
 
 
-start()
-  .catch(
-    error => {
+async function issue() {
 
-      console.error(error);
+  const bookId =
+    document.getElementById(
+      "book"
+    ).value;
 
-      const box =
-        document.querySelector(
-          ".admin-content"
-        );
 
-      box.innerHTML += `
-        <div class="page-error">
-          <h2>シリアル管理を読み込めませんでした</h2>
-          <p>${escapeHtml(error.message)}</p>
-          <button onclick="location.reload()">
-            再読み込み
-          </button>
-        </div>
-      `;
+  const studentIds =
+    Array.from(
+      document.querySelectorAll(
+        ".student-checkbox:checked"
+      )
+    ).map(
+      checkbox =>
+        checkbox.value
+    );
 
+
+  if (!bookId) {
+
+    message.textContent =
+      "Bookを選択してください。";
+
+    return;
+  }
+
+
+  if (!studentIds.length) {
+
+    message.textContent =
+      "生徒を選択してください。";
+
+    return;
+  }
+
+
+  message.textContent =
+    "シリアルを発行しています。";
+
+
+  try {
+
+    const {
+      data: existing,
+      error
+    } =
+    await supabase
+      .from("licenses")
+      .select(
+        "student_id"
+      )
+      .eq(
+        "book_id",
+        bookId
+      )
+      .in(
+        "student_id",
+        studentIds
+      );
+
+
+    if (error) {
+      throw error;
     }
-  );
+
+
+    const existingIds =
+      new Set(
+        (existing || [])
+          .map(
+            row =>
+              row.student_id
+          )
+      );
+
+
+    const targets =
+      studentIds.filter(
+        id =>
+          !existingIds.has(id)
+      );
+
+
+    if (!targets.length) {
+
+      message.textContent =
+        "選択した生徒にはすでに発行済みです。";
+
+      return;
+    }
+
+
+    const {
+      error:
+        insertError
+    } =
+    await supabase
+      .from("licenses")
+      .insert(
+        targets.map(
+          student_id => ({
+            book_id:
+              bookId,
+
+            student_id,
+
+            status:
+              "unused"
+          })
+        )
+      );
+
+
+    if (insertError) {
+      throw insertError;
+    }
+
+
+    message.textContent =
+      `${targets.length}人分を発行しました。`;
+
+
+    await loadSerials();
+
+  }
+  catch (error) {
+
+    message.textContent =
+      "発行エラー: " +
+      error.message;
+
+  }
+
+}
+
+
+async function start() {
+
+  const admin =
+    await requireAdmin();
+
+  if (!admin) {
+    return;
+  }
+
+
+  await loadBooks();
+
+  await loadStudents();
+
+  await loadSerials();
+
+}
+
+
+start()
+.catch(
+  error => {
+
+    document.querySelector(
+      ".admin-content"
+    ).insertAdjacentHTML(
+      "beforeend",
+      `
+      <div class="page-error">
+
+        <h2>
+          シリアル管理を読み込めませんでした
+        </h2>
+
+        <p>
+          データの取得に失敗しました。
+        </p>
+
+      </div>
+      `
+    );
+
+  }
+);
