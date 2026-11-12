@@ -9,106 +9,85 @@ import {
 }
 from "../../assets/js/supabase.js";
 
-import {
-  showError
-}
-from "../../assets/js/common.js";
+
+document.getElementById(
+  "logout"
+).onclick =
+  () => logout();
 
 
-async function start() {
-
-  const admin =
-    await requireAdmin();
-
-  if (!admin) {
-    return;
-  }
-
-
+const enabled =
   document.getElementById(
-    "logout"
-  ).onclick =
-    event => {
-
-      event.preventDefault();
-
-      logout();
-
-    };
+    "maintenanceEnabled"
+  );
 
 
-  const enabled =
-    document.getElementById(
-      "maintenanceEnabled"
-    );
+const message =
+  document.getElementById(
+    "maintenanceMessage"
+  );
 
 
-  const message =
-    document.getElementById(
-      "maintenanceMessage"
-    );
+const status =
+  document.getElementById(
+    "status"
+  );
 
 
-  const status =
-    document.getElementById(
-      "status"
-    );
+const result =
+  document.getElementById(
+    "result"
+  );
 
 
-  const result =
-    document.getElementById(
-      "result"
-    );
+function updateStatus() {
+
+  const on =
+    enabled.checked;
 
 
-  function updateStatus() {
-
-    if (
-      enabled.checked
-    ) {
-
-      status.textContent =
-        "現在：ON";
-
-      status.classList.add(
-        "on"
-      );
-
-    }
-    else {
-
-      status.textContent =
-        "現在：OFF";
-
-      status.classList.remove(
-        "on"
-      );
-
-    }
-
-  }
+  status.textContent =
+    on
+      ? "現在：ON"
+      : "現在：OFF";
 
 
-  enabled.onchange =
-    updateStatus;
+  status.classList.toggle(
+    "on",
+    on
+  );
 
+}
+
+
+enabled.onchange =
+  updateStatus;
+
+
+document.getElementById(
+  "save"
+).onclick =
+  saveMaintenance;
+
+
+async function loadMaintenance() {
 
   const {
     data,
     error
   } =
-    await supabase
-      .from(
-        "maintenance_settings"
-      )
-      .select(
-        "enabled,message"
-      )
-      .eq(
-        "id",
-        1
-      )
-      .maybeSingle();
+  await supabase
+    .from(
+      "maintenance_settings"
+    )
+    .select(
+      "enabled,message"
+    )
+    .eq(
+      "id",
+      1
+    )
+    .maybeSingle();
 
 
   if (error) {
@@ -137,79 +116,119 @@ async function start() {
 
   updateStatus();
 
-
-  document.getElementById(
-    "save"
-  ).onclick =
-    async () => {
-
-      result.textContent =
-        "保存しています。";
+}
 
 
-      try {
+async function saveMaintenance() {
 
-        const {
-          error
-        } =
-          await supabase
-            .from(
-              "maintenance_settings"
-            )
-            .update({
-
-              enabled:
-                enabled.checked,
-
-              message:
-                message.value.trim(),
-
-              updated_at:
-                new Date()
-                  .toISOString()
-
-            })
-            .eq(
-              "id",
-              1
-            );
+  const button =
+    document.getElementById(
+      "save"
+    );
 
 
-        if (error) {
-          throw error;
-        }
+  button.disabled =
+    true;
 
 
-        result.textContent =
-          "保存しました。";
+  result.textContent =
+    "保存しています。";
 
 
-        updateStatus();
+  try {
 
-      }
-      catch (error) {
+    const {
+      error
+    } =
+    await supabase
+      .from(
+        "maintenance_settings"
+      )
+      .update({
 
-        result.textContent =
-          "保存エラー: " +
-          error.message;
+        enabled:
+          enabled.checked,
 
-      }
+        message:
+          message.value.trim(),
 
-    };
+        updated_at:
+          new Date()
+            .toISOString()
+
+      })
+      .eq(
+        "id",
+        1
+      );
+
+
+    if (error) {
+      throw error;
+    }
+
+
+    result.textContent =
+      "保存しました。";
+
+
+    updateStatus();
+
+  }
+  catch (error) {
+
+    result.textContent =
+      "保存できませんでした。";
+
+    console.error(
+      error
+    );
+
+  }
+  finally {
+
+    button.disabled =
+      false;
+
+  }
+
+}
+
+
+async function start() {
+
+  const admin =
+    await requireAdmin();
+
+  if (!admin) {
+    return;
+  }
+
+
+  await loadMaintenance();
 
 }
 
 
 start()
-  .catch(
-    error => {
+.catch(
+  error => {
 
-      showError(
-        error.message,
-        document.querySelector(
-          ".admin-content"
-        )
-      );
+    document.querySelector(
+      ".admin-content"
+    ).innerHTML += `
+      <div class="page-error">
 
-    }
-  );
+        <h2>
+          システム設定を読み込めませんでした
+        </h2>
+
+        <p>
+          設定情報を取得できませんでした。
+        </p>
+
+      </div>
+    `;
+
+  }
+);
