@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -7,9 +8,13 @@
 
 <meta
   name="viewport"
-  content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes">
+  content="width=device-width,initial-scale=1,viewport-fit=cover">
 
 <title>WEB-viewer</title>
+
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css">
 
 <link
   rel="stylesheet"
@@ -21,43 +26,55 @@
 
 <div class="viewer">
 
-<header class="viewer-bar">
 
-<div class="viewer-title-area">
+<header class="viewer-header">
+
+<div class="viewer-left">
 
 <button
   id="close"
-  class="viewer-button">
-戻る
+  type="button"
+  class="icon-button"
+  title="戻る">
+  戻る
 </button>
 
-<div
-  id="title"
-  class="viewer-title">
-WEB-viewer
-</div>
+<strong
+  id="title">
+読み込み中
+</strong>
 
 </div>
 
 
-<div class="viewer-page-controls">
+<div class="viewer-center">
+
+<button
+  id="first"
+  type="button">
+最初
+</button>
 
 <button
   id="previous"
-  class="viewer-button">
-前へ
+  type="button">
+前
 </button>
 
-<div
-  id="page"
-  class="page-number">
+<span id="page">
 -
-</div>
+</span>
 
 <button
   id="next"
-  class="viewer-button">
-次へ
+  type="button">
+次
+</button>
+
+<button
+  id="last"
+  type="button">
+最後
 </button>
 
 </div>
@@ -66,50 +83,169 @@ WEB-viewer
 <div class="viewer-tools">
 
 <button
+  id="move"
+  type="button">
+移動
+</button>
+
+<button
   id="pen"
-  class="viewer-button pen-button">
+  type="button">
 ペン OFF
 </button>
 
 <button
-  id="highlighter"
-  class="viewer-button">
-蛍光ペン
-</button>
-
-<button
   id="eraser"
-  class="viewer-button">
+  type="button">
 消しゴム
 </button>
 
 <button
-  id="clear"
-  class="viewer-button">
-消去
+  id="favorite"
+  type="button">
+お気に入り
+</button>
+
+<button
+  id="zoomOut"
+  type="button">
+−
+</button>
+
+<button
+  id="zoomIn"
+  type="button">
+＋
+</button>
+
+<button
+  id="fitWidth"
+  type="button">
+横幅
+</button>
+
+<button
+  id="fitHeight"
+  type="button">
+縦幅
+</button>
+
+<button
+  id="fullscreen"
+  type="button">
+全画面
 </button>
 
 </div>
 
+
+<button
+  id="menuButton"
+  type="button"
+  class="menu-button"
+  aria-label="メニュー"
+  aria-expanded="false">
+
+<span></span>
+<span></span>
+<span></span>
+
+</button>
+
 </header>
 
 
+<nav
+  id="mobileMenu"
+  class="mobile-menu"
+  aria-hidden="true">
+
+<button
+  data-action="first">
+最初のページ
+</button>
+
+<button
+  data-action="previous">
+前のページ
+</button>
+
+<button
+  data-action="next">
+次のページ
+</button>
+
+<button
+  data-action="last">
+最後のページ
+</button>
+
+<button
+  data-action="move">
+移動モード
+</button>
+
+<button
+  data-action="pen">
+ペン
+</button>
+
+<button
+  data-action="eraser">
+消しゴム
+</button>
+
+<button
+  data-action="favorite">
+お気に入り
+</button>
+
+<button
+  data-action="zoomOut">
+縮小
+</button>
+
+<button
+  data-action="zoomIn">
+拡大
+</button>
+
+<button
+  data-action="fitWidth">
+横幅に合わせる
+</button>
+
+<button
+  data-action="fitHeight">
+縦幅に合わせる
+</button>
+
+<button
+  data-action="fullscreen">
+全画面
+</button>
+
+</nav>
+
+
 <main
-  id="viewerStage"
+  id="stage"
   class="viewer-stage">
 
 <div
   id="pageContainer"
   class="page-container">
 
-<canvas
-  id="pdfCanvas">
-</canvas>
-
 <img
   id="imagePage"
-  class="image-page"
-  alt="">
+  alt=""
+  draggable="false">
+
+<iframe
+  id="pdfFrame"
+  title="PDF"
+  hidden>
+</iframe>
 
 <canvas
   id="annotationCanvas">
@@ -118,6 +254,13 @@ WEB-viewer
 </div>
 
 </main>
+
+
+<div
+  id="viewerMessage"
+  class="viewer-message hidden">
+</div>
+
 
 </div>
 
