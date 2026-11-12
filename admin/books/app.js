@@ -1,4 +1,3 @@
-
 import {
   requireAdmin,
   logout
@@ -16,270 +15,148 @@ import {
 from "../../assets/js/common.js";
 
 
+const books =
+  document.getElementById("books");
+
 const formCard =
-  document.getElementById(
-    "formCard"
-  );
-
-
-const showFormButton =
-  document.getElementById(
-    "showForm"
-  );
-
-
-const cancelButton =
-  document.getElementById(
-    "cancel"
-  );
-
-
-const createButton =
-  document.getElementById(
-    "create"
-  );
-
-
-const logoutButton =
-  document.getElementById(
-    "logout"
-  );
-
+  document.getElementById("formCard");
 
 const message =
-  document.getElementById(
-    "message"
+  document.getElementById("message");
+
+
+/* =========================
+   UI
+   ========================= */
+
+document.getElementById(
+  "logout"
+).onclick = () => logout();
+
+
+document.getElementById(
+  "showForm"
+).onclick = () => {
+
+  formCard.classList.remove(
+    "hidden"
   );
 
+};
 
-const booksContainer =
-  document.getElementById(
-    "books"
+
+document.getElementById(
+  "cancel"
+).onclick = () => {
+
+  formCard.classList.add(
+    "hidden"
   );
 
+  message.textContent = "";
 
-/* ========================================
-   最初にUIイベントを登録
-   ======================================== */
-
-
-/*
- * Book追加
- */
-
-showFormButton.onclick =
-  () => {
-
-    formCard.classList.remove(
-      "hidden"
-    );
-
-    message.textContent =
-      "";
-
-  };
+};
 
 
-/*
- * キャンセル
- */
-
-cancelButton.onclick =
-  () => {
-
-    formCard.classList.add(
-      "hidden"
-    );
-
-    message.textContent =
-      "";
-
-  };
+document.getElementById(
+  "create"
+).onclick = createBook;
 
 
-/*
- * ログアウト
- */
-
-logoutButton.onclick =
-  event => {
-
-    event.preventDefault();
-
-    logout();
-
-  };
-
-
-/*
- * Book登録
- */
-
-createButton.onclick =
-  async () => {
-
-    try {
-
-      const admin =
-        await requireAdmin();
-
-
-      if (!admin) {
-        return;
-      }
-
-
-      await createBook(
-        admin
-      );
-
-    }
-    catch (error) {
-
-      console.error(
-        "BOOK CREATE ERROR:",
-        error
-      );
-
-
-      message.textContent =
-        "登録エラー: " +
-        (
-          error.message ||
-          "Book登録に失敗しました。"
-        );
-
-    }
-
-  };
-
-
-/* ========================================
+/* =========================
    Book一覧
-   ======================================== */
+   ========================= */
 
 async function loadBooks() {
 
-  booksContainer.innerHTML =
-    `
+  books.innerHTML = `
     <div class="book-empty">
-      Bookを読み込んでいます。
+      読み込んでいます。
     </div>
-    `;
+  `;
 
 
   const {
     data,
     error
   } =
-    await supabase
-      .from("books")
-      .select(`
-        id,
-        title,
-        description,
-        book_serial,
-        file_type,
-        enabled,
-        created_at
-      `)
-      .order(
-        "created_at",
-        {
-          ascending: false
-        }
-      );
+  await supabase
+    .from("books")
+    .select(`
+      id,
+      title,
+      description,
+      book_serial,
+      file_type,
+      enabled,
+      created_at
+    `)
+    .order(
+      "created_at",
+      {
+        ascending: false
+      }
+    );
 
 
   if (error) {
-
-    throw new Error(
-      "Book取得エラー: " +
-      error.message
-    );
-
+    throw error;
   }
 
 
-  if (
-    !data ||
-    data.length === 0
-  ) {
+  if (!data?.length) {
 
-    booksContainer.innerHTML =
-      `
+    books.innerHTML = `
       <div class="book-empty">
         登録されたBookはありません。
       </div>
-      `;
+    `;
 
     return;
-
   }
 
 
-  booksContainer.innerHTML =
+  books.innerHTML =
     data.map(
       book => `
 
-      <article
-        class="book-admin-item">
+      <article class="book-admin-item">
 
-        <div
-          class="book-admin-main">
+        <div class="book-admin-main">
 
-          <div
-            class="book-admin-title">
-
+          <div class="book-admin-title">
             ${escapeHtml(
               book.title
             )}
-
           </div>
 
-
-          <div
-            class="book-admin-description">
-
+          <div class="book-admin-description">
             ${escapeHtml(
               book.description || ""
             )}
-
           </div>
 
-
-          <div
-            class="book-admin-serial">
-
+          <div class="book-admin-serial">
             Bookシリアル：
             ${escapeHtml(
               book.book_serial || ""
             )}
-
           </div>
 
-
-          <div
-            class="book-admin-type">
-
+          <div class="book-admin-type">
             ${escapeHtml(
               book.file_type || ""
             )}
-
           </div>
 
         </div>
 
-
-        <div
-          class="book-admin-status">
-
+        <div class="book-admin-status">
           ${
             book.enabled
               ? "公開"
               : "停止"
           }
-
         </div>
 
       </article>
@@ -290,13 +167,11 @@ async function loadBooks() {
 }
 
 
-/* ========================================
+/* =========================
    Book登録
-   ======================================== */
+   ========================= */
 
-async function createBook(
-  admin
-) {
+async function createBook() {
 
   const title =
     document.getElementById(
@@ -322,250 +197,139 @@ async function createBook(
     );
 
 
-  /* --------------------------------------
-     入力確認
-     -------------------------------------- */
-
   if (!title) {
 
     message.textContent =
       "Book名を入力してください。";
 
     return;
-
   }
 
 
-  if (
-    files.length === 0
-  ) {
+  if (!files.length) {
 
     message.textContent =
       "教材ファイルを選択してください。";
 
     return;
-
   }
 
 
-  /* --------------------------------------
-     拡張子
-     -------------------------------------- */
-
-  const extensions =
-    files.map(
+  const pdf =
+    files.filter(
       file =>
-        file.name
-          .split(".")
-          .pop()
-          .toLowerCase()
-    );
-
-
-  const allowedExtensions = [
-    "pdf",
-    "jpg",
-    "jpeg",
-    "png"
-  ];
-
-
-  const invalid =
-    extensions.find(
-      extension =>
-        !allowedExtensions.includes(
-          extension
+        /\.pdf$/i.test(
+          file.name
         )
     );
 
 
-  if (invalid) {
-
-    message.textContent =
-      "PDF、JPG、JPEG、PNGのみ対応しています。";
-
-    return;
-
-  }
-
-
-  /* --------------------------------------
-     PDF / 画像を分類
-     -------------------------------------- */
-
-  const pdfFiles =
+  const images =
     files.filter(
       file =>
-        file.name
-          .toLowerCase()
-          .endsWith(".pdf")
+        /\.(jpg|jpeg|png)$/i.test(
+          file.name
+        )
     );
 
-
-  const imageFiles =
-    files.filter(
-      file =>
-        /\.(jpg|jpeg|png)$/i
-          .test(
-            file.name
-          )
-    );
-
-
-  /*
-   * PDFと画像の混在禁止
-   */
 
   if (
-    pdfFiles.length > 0 &&
-    imageFiles.length > 0
+    pdf.length &&
+    images.length
   ) {
 
     message.textContent =
-      "PDFと画像を同時に登録することはできません。";
+      "PDFと画像を同時には登録できません。";
 
     return;
-
   }
 
 
-  /*
-   * PDFは1ファイルだけ
-   */
-
   if (
-    pdfFiles.length > 1
+    pdf.length > 1
   ) {
 
     message.textContent =
       "PDFは1ファイルだけ登録できます。";
 
     return;
-
   }
 
 
-  createButton.disabled =
-    true;
-
-
-  const uploadedFiles =
-    [];
+  const uploaded = [];
 
 
   try {
 
-    let filePath =
-      null;
+    message.textContent =
+      "登録しています。";
 
+
+    let filePath = null;
 
     let fileType =
-      null;
+      images.length
+        ? "images"
+        : "pdf";
 
 
-    /* ====================================
-       PDF
-       ==================================== */
+    /*
+     * PDF
+     */
 
-    if (
-      pdfFiles.length === 1
-    ) {
-
-      const pdf =
-        pdfFiles[0];
-
-
-      fileType =
-        "pdf";
-
+    if (pdf.length === 1) {
 
       filePath =
-        "books/" +
-        crypto.randomUUID() +
-        ".pdf";
-
-
-      message.textContent =
-        "PDFをアップロードしています。";
+        `books/${crypto.randomUUID()}.pdf`;
 
 
       const {
-        error:
-          uploadError
+        error
       } =
-        await supabase.storage
-          .from("web-viewer")
-          .upload(
-            filePath,
-            pdf,
-            {
-              upsert:
-                false,
-
-              contentType:
-                "application/pdf"
-            }
-          );
+      await supabase.storage
+        .from("web-viewer")
+        .upload(
+          filePath,
+          pdf[0],
+          {
+            contentType:
+              "application/pdf"
+          }
+        );
 
 
-      if (uploadError) {
-        throw uploadError;
+      if (error) {
+        throw error;
       }
 
 
-      uploadedFiles.push(
+      uploaded.push(
         filePath
       );
 
     }
 
 
-    /* ====================================
-       画像Book
-       ==================================== */
-
-    if (
-      imageFiles.length > 0
-    ) {
-
-      fileType =
-        "images";
-
-    }
-
-
-    /* ====================================
-       Book本体
-       ==================================== */
-
-    message.textContent =
-      "Book情報を登録しています。";
-
+    /*
+     * Book
+     */
 
     const {
       data: book,
       error: bookError
     } =
-      await supabase
-        .from("books")
-        .insert({
-
-          title,
-
-          description,
-
-          file_path:
-            filePath,
-
-          file_type:
-            fileType,
-
-          created_by:
-            admin.id
-
-        })
-        .select()
-        .single();
+    await supabase
+      .from("books")
+      .insert({
+        title,
+        description,
+        file_path:
+          filePath,
+        file_type:
+          fileType
+      })
+      .select()
+      .single();
 
 
     if (bookError) {
@@ -573,57 +337,42 @@ async function createBook(
     }
 
 
-    /* ====================================
-       画像ページ登録
-       ==================================== */
+    /*
+     * 複数画像
+     */
 
-    if (
-      imageFiles.length > 0
-    ) {
+    if (images.length) {
 
-      const pageRows =
-        [];
+      const rows = [];
 
 
       for (
-        let index = 0;
-        index < imageFiles.length;
-        index++
+        let i = 0;
+        i < images.length;
+        i++
       ) {
 
         const file =
-          imageFiles[index];
+          images[i];
 
 
-        const extension =
+        const ext =
           file.name
             .split(".")
             .pop()
             .toLowerCase();
 
 
-        /*
-         * 選択順をそのままページ順にする
-         */
-
-        const pageNumber =
-          index + 1;
-
-
         const path =
-          "books/" +
-          crypto.randomUUID() +
-          "." +
-          extension;
+          `books/${crypto.randomUUID()}.${ext}`;
 
 
         message.textContent =
-          `画像 ${pageNumber} / ${imageFiles.length} をアップロードしています。`;
+          `画像 ${i + 1} / ${images.length} を登録しています。`;
 
 
         const {
-          error:
-            uploadError
+          error
         } =
         await supabase.storage
           .from("web-viewer")
@@ -631,46 +380,37 @@ async function createBook(
             path,
             file,
             {
-              upsert:
-                false,
-
               contentType:
                 file.type
             }
           );
 
 
-        if (uploadError) {
-          throw uploadError;
+        if (error) {
+          throw error;
         }
 
 
-        uploadedFiles.push(
-          path
-        );
+        uploaded.push(path);
 
 
-        pageRows.push({
+        rows.push({
 
           book_id:
             book.id,
 
           page_number:
-            pageNumber,
+            i + 1,
 
           file_path:
             path,
 
           file_type:
-            extension
+            ext
 
         });
 
       }
-
-
-      message.textContent =
-        "ページ情報を登録しています。";
 
 
       const {
@@ -679,9 +419,7 @@ async function createBook(
       } =
       await supabase
         .from("book_pages")
-        .insert(
-          pageRows
-        );
+        .insert(rows);
 
 
       if (pageError) {
@@ -691,28 +429,21 @@ async function createBook(
     }
 
 
-    /* ====================================
-       完了
-       ==================================== */
-
     message.textContent =
       "Bookを登録しました。";
 
 
     document.getElementById(
       "title"
-    ).value =
-      "";
+    ).value = "";
 
 
     document.getElementById(
       "description"
-    ).value =
-      "";
+    ).value = "";
 
 
-    fileInput.value =
-      "";
+    fileInput.value = "";
 
 
     formCard.classList.add(
@@ -726,92 +457,44 @@ async function createBook(
   catch (error) {
 
     console.error(
-      "BOOK CREATE ERROR:",
       error
     );
 
 
-    /*
-     * 途中までアップロードしたファイルを
-     * 可能な限り削除
-     */
-
-    if (
-      uploadedFiles.length > 0
-    ) {
-
-      try {
-
-        await supabase.storage
-          .from("web-viewer")
-          .remove(
-            uploadedFiles
-          );
-
-      }
-      catch (
-        cleanupError
-      ) {
-
-        console.error(
-          "CLEANUP ERROR:",
-          cleanupError
-        );
-
-      }
-
-    }
-
-
     message.textContent =
       "登録エラー: " +
-      (
-        error.message ||
-        "Book登録に失敗しました。"
-      );
-
-  }
-  finally {
-
-    createButton.disabled =
-      false;
+      error.message;
 
   }
 
 }
 
 
-/* ========================================
-   起動
-   ======================================== */
+async function start() {
 
-(async () => {
+  const admin =
+    await requireAdmin();
 
-  try {
-
-    const admin =
-      await requireAdmin();
-
-
-    if (!admin) {
-      return;
-    }
-
-
-    await loadBooks();
-
+  if (!admin) {
+    return;
   }
-  catch (error) {
+
+
+  await loadBooks();
+
+}
+
+
+start()
+.catch(
+  error => {
 
     console.error(
-      "BOOK PAGE ERROR:",
       error
     );
 
 
-    booksContainer.innerHTML =
-      `
-
+    books.innerHTML = `
       <div class="page-error">
 
         <h2>
@@ -819,30 +502,19 @@ async function createBook(
         </h2>
 
         <p>
-          ${escapeHtml(
-            error.message ||
-            "予期しないエラーが発生しました。"
-          )}
+          データの取得に失敗しました。
         </p>
 
+        <button
+          class="primary-button"
+          onclick="location.reload()">
 
-        <div class="toolbar">
+          再読み込み
 
-          <button
-            type="button"
-            class="primary-button"
-            onclick="location.reload()">
-
-            再読み込み
-
-          </button>
-
-        </div>
+        </button>
 
       </div>
-
-      `;
+    `;
 
   }
-
-})();
+);
