@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -7,7 +8,7 @@
 
 <meta
   name="viewport"
-  content="width=device-width,initial-scale=1">
+  content="width=device-width, initial-scale=1">
 
 <title>Book管理</title>
 
@@ -29,241 +30,243 @@
 
 <aside class="admin-side">
 
-<div class="admin-brand">
+  <div class="admin-brand">
 
-<div>WEB-viewer</div>
+    <div>
+      WEB-viewer
+    </div>
 
-<small>管理システム</small>
+    <small>
+      管理システム
+    </small>
 
-</div>
+  </div>
 
 
-<nav>
+  <nav>
 
-<a href="../">
-ダッシュボード
-</a>
+    <a href="../">
+      ダッシュボード
+    </a>
 
-<a
-  class="active"
-  href="./">
-Book管理
-</a>
+    <a
+      href="./"
+      class="active">
+      Book管理
+    </a>
 
-<a href="../serials/">
-シリアル管理
-</a>
+    <a href="../serials/">
+      シリアル管理
+    </a>
 
-<a href="../students/">
-生徒管理
-</a>
+    <a href="../students/">
+      生徒管理
+    </a>
 
-<a href="../materials/">
-資料配信
-</a>
+    <a href="../materials/">
+      資料配信
+    </a>
 
-<a href="../b4/">
-B4資料
-</a>
+    <a href="../b4/">
+      B4資料
+    </a>
 
-<a href="../system/">
-システム管理
-</a>
+    <a href="../system/">
+      システム管理
+    </a>
 
-<button
-  id="logout"
-  type="button">
-ログアウト
-</button>
+    <button
+      id="logout"
+      type="button">
+      ログアウト
+    </button>
 
-</nav>
+  </nav>
 
 </aside>
 
 
 <main class="admin-main">
 
-<header class="admin-notice">
+  <header class="admin-notice">
 
-<div>お知らせ</div>
+    <div>
+      お知らせ
+    </div>
 
-<span>Book管理</span>
+    <span>
+      Book管理
+    </span>
 
-</header>
+  </header>
 
 
-<section class="admin-content">
+  <section class="admin-content">
 
-<div class="page-heading">
+    <div class="page-heading">
 
-<div>
+      <div>
 
-<h1>Book管理</h1>
+        <h1>
+          Book管理
+        </h1>
 
-<p>
-教材の登録と管理
-</p>
+        <p>
+          PDFまたは複数画像から教材を登録します。
+        </p>
 
-</div>
+      </div>
 
 
-<button
-  id="showForm"
-  type="button"
-  class="primary-button">
+      <button
+        id="showForm"
+        type="button"
+        class="primary-button">
 
-Bookを追加
+        Bookを追加
 
-</button>
+      </button>
 
-</div>
+    </div>
 
 
-<!-- =========================
-     登録
-     ========================= -->
+    <section
+      id="formCard"
+      class="admin-card hidden">
 
-<section
-  id="formCard"
-  class="admin-card hidden">
+      <h2>
+        Bookを追加
+      </h2>
 
-<h2>
-Bookを追加
-</h2>
 
+      <label>
 
-<label>
+        Book名
 
-Book名
+        <input
+          id="title"
+          type="text"
+          autocomplete="off">
 
-<input
-  id="title"
-  type="text"
-  autocomplete="off">
+      </label>
 
-</label>
 
+      <label>
 
-<label>
+        説明
 
-説明
+        <textarea
+          id="description"></textarea>
 
-<textarea
-  id="description"></textarea>
+      </label>
 
-</label>
 
+      <label>
 
-<label>
+        教材ファイル
 
-教材ファイル
+        <input
+          id="files"
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          multiple>
 
-<input
-  id="files"
-  type="file"
-  accept=".pdf,.jpg,.jpeg,.png"
-  multiple>
+      </label>
 
-</label>
 
+      <p class="form-help">
 
-<div class="form-help">
+        PDFは1ファイルで登録します。
 
-PDFは1ファイルで1冊。
+        <br>
 
-<br>
+        JPG・JPEG・PNGは複数選択でき、
+        選択した順番がページ順になります。
 
-JPG・JPEG・PNGは複数選択可能です。
-選択した順番がページ順になります。
+        <br>
 
-<br>
+        PDFと画像は同時に登録できません。
 
-PDFと画像は混在できません。
+      </p>
 
-</div>
 
+      <div
+        id="filePreview"
+        class="file-preview">
+      </div>
 
-<div
-  id="filePreview"
-  class="file-preview">
-</div>
 
+      <div class="toolbar">
 
-<div class="toolbar">
+        <button
+          id="create"
+          type="button"
+          class="primary-button">
 
-<button
-  id="create"
-  type="button"
-  class="primary-button">
+          登録
 
-登録
+        </button>
 
-</button>
 
+        <button
+          id="cancel"
+          type="button"
+          class="secondary-button">
 
-<button
-  id="cancel"
-  type="button"
-  class="secondary-button">
+          キャンセル
 
-キャンセル
+        </button>
 
-</button>
+      </div>
 
-</div>
 
+      <p
+        id="message"
+        class="message">
+      </p>
 
-<p
-  id="message"
-  class="message">
-</p>
+    </section>
 
-</section>
 
+    <section class="admin-card">
 
-<!-- =========================
-     一覧
-     ========================= -->
+      <div class="section-heading">
 
-<section class="admin-card">
+        <div>
 
-<div class="section-heading">
+          <h2>
+            登録済みBook
+          </h2>
 
-<div>
+          <p>
+            PDFと画像教材
+          </p>
 
-<h2>
-登録済みBook
-</h2>
+        </div>
 
-<p>
-登録されている教材
-</p>
+      </div>
 
-</div>
 
-</div>
+      <div
+        id="books"
+        class="book-admin-list">
 
+        <div class="book-empty">
+          読み込んでいます。
+        </div>
 
-<div
-  id="books"
-  class="book-admin-list">
+      </div>
 
-<div class="book-empty">
-読み込んでいます。
-</div>
+    </section>
 
-</div>
-
-</section>
-
-</section>
+  </section>
 
 </main>
 
 
 <script
   type="module"
-  src="app.js?v=book-local-pdfjs-final">
+  src="app.js?v=book-final-20261112">
 </script>
 
 </body>
