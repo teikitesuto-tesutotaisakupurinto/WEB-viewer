@@ -8,7 +8,7 @@
 
 <meta
   name="viewport"
-  content="width=device-width, initial-scale=1, viewport-fit=cover">
+  content="width=device-width,initial-scale=1,viewport-fit=cover">
 
 <title>WEB-viewer</title>
 
@@ -26,300 +26,284 @@
 
 <div class="viewer">
 
+  <!-- ===================================================
+       Toolbar
+       =================================================== -->
 
-<header class="viewer-toolbar">
+  <header class="viewer-toolbar">
+
+    <div class="viewer-left">
+
+      <button
+        id="close"
+        type="button"
+        class="toolbar-button">
+
+        戻る
+
+      </button>
+
+      <strong id="title">
+        読み込み中
+      </strong>
+
+    </div>
 
 
-  <div class="viewer-left">
+    <div class="viewer-page-controls">
+
+      <button
+        id="first"
+        type="button"
+        class="toolbar-button">
+        最初
+      </button>
+
+      <button
+        id="previous"
+        type="button"
+        class="toolbar-button">
+        前
+      </button>
+
+      <span id="page">
+        -
+      </span>
+
+      <button
+        id="next"
+        type="button"
+        class="toolbar-button">
+        次
+      </button>
+
+      <button
+        id="last"
+        type="button"
+        class="toolbar-button">
+        最後
+      </button>
+
+    </div>
+
+
+    <div class="viewer-tools">
+
+      <button
+        id="move"
+        type="button"
+        class="toolbar-button active">
+        移動
+      </button>
+
+      <button
+        id="pen"
+        type="button"
+        class="toolbar-button">
+        ペン OFF
+      </button>
+
+      <button
+        id="eraser"
+        type="button"
+        class="toolbar-button">
+        消しゴム
+      </button>
+
+      <button
+        id="favorite"
+        type="button"
+        class="toolbar-button">
+        お気に入り
+      </button>
+
+      <button
+        id="zoomOut"
+        type="button"
+        class="toolbar-button">
+        −
+      </button>
+
+      <button
+        id="zoomIn"
+        type="button"
+        class="toolbar-button">
+        ＋
+      </button>
+
+      <button
+        id="fitWidth"
+        type="button"
+        class="toolbar-button">
+        横幅
+      </button>
+
+      <button
+        id="fitHeight"
+        type="button"
+        class="toolbar-button">
+        縦幅
+      </button>
+
+      <button
+        id="fullscreen"
+        type="button"
+        class="toolbar-button">
+        全画面
+      </button>
+
+    </div>
+
 
     <button
-      id="close"
+      id="menuButton"
       type="button"
-      class="toolbar-button">
+      class="menu-button"
+      aria-label="メニュー"
+      aria-expanded="false">
 
-      戻る
+      <span></span>
+      <span></span>
+      <span></span>
 
     </button>
 
-
-    <strong
-      id="title">
-      読み込み中
-    </strong>
-
-  </div>
+  </header>
 
 
-  <div class="viewer-page-controls">
+  <!-- ===================================================
+       Mobile Menu
+       =================================================== -->
 
-    <button
-      id="first"
-      type="button"
-      class="toolbar-button">
+  <nav
+    id="mobileMenu"
+    class="mobile-menu"
+    aria-hidden="true">
 
-      最初
-
+    <button data-action="first">
+      最初のページ
     </button>
 
-
-    <button
-      id="previous"
-      type="button"
-      class="toolbar-button">
-
-      前
-
+    <button data-action="previous">
+      前のページ
     </button>
 
-
-    <span id="page">
-      -
-    </span>
-
-
-    <button
-      id="next"
-      type="button"
-      class="toolbar-button">
-
-      次
-
+    <button data-action="next">
+      次のページ
     </button>
 
-
-    <button
-      id="last"
-      type="button"
-      class="toolbar-button">
-
-      最後
-
+    <button data-action="last">
+      最後のページ
     </button>
 
-  </div>
-
-
-  <div class="viewer-tools">
-
-    <button
-      id="move"
-      type="button"
-      class="toolbar-button active">
-
+    <button data-action="move">
       移動
-
     </button>
 
-
-    <button
-      id="pen"
-      type="button"
-      class="toolbar-button">
-
-      ペン OFF
-
+    <button data-action="pen">
+      ペン
     </button>
 
-
-    <button
-      id="eraser"
-      type="button"
-      class="toolbar-button">
-
+    <button data-action="eraser">
       消しゴム
-
     </button>
 
-
-    <button
-      id="favorite"
-      type="button"
-      class="toolbar-button">
-
+    <button data-action="favorite">
       お気に入り
-
     </button>
 
-
-    <button
-      id="zoomOut"
-      type="button"
-      class="toolbar-button">
-
-      −
-
+    <button data-action="zoomOut">
+      縮小
     </button>
 
-
-    <button
-      id="zoomIn"
-      type="button"
-      class="toolbar-button">
-
-      ＋
-
+    <button data-action="zoomIn">
+      拡大
     </button>
 
-
-    <button
-      id="fitWidth"
-      type="button"
-      class="toolbar-button">
-
-      横幅
-
+    <button data-action="fitWidth">
+      横幅に合わせる
     </button>
 
-
-    <button
-      id="fitHeight"
-      type="button"
-      class="toolbar-button">
-
-      縦幅
-
+    <button data-action="fitHeight">
+      縦幅に合わせる
     </button>
 
-
-    <button
-      id="fullscreen"
-      type="button"
-      class="toolbar-button">
-
+    <button data-action="fullscreen">
       全画面
-
     </button>
 
-  </div>
+  </nav>
 
 
-  <button
-    id="menuButton"
-    type="button"
-    class="menu-button"
-    aria-label="メニュー"
-    aria-expanded="false">
+  <!-- ===================================================
+       Stage
+       =================================================== -->
 
-    <span></span>
-    <span></span>
-    <span></span>
+  <main
+    id="stage"
+    class="viewer-stage">
 
-  </button>
+    <div
+      id="slideViewport"
+      class="slide-viewport">
 
+      <!--
+        通常時は current だけ表示。
+        swipe開始時だけ incoming を生成。
+      -->
 
-</header>
+      <div
+        id="currentSlide"
+        class="page-slide current-slide">
 
+        <canvas
+          id="currentPdfCanvas">
+        </canvas>
 
-<nav
-  id="mobileMenu"
-  class="mobile-menu"
-  aria-hidden="true">
+        <img
+          id="currentImage"
+          alt=""
+          draggable="false">
 
-  <button data-action="first">
-    最初のページ
-  </button>
+        <canvas
+          id="currentAnnotation"
+          class="annotation-canvas">
+        </canvas>
 
-  <button data-action="previous">
-    前のページ
-  </button>
-
-  <button data-action="next">
-    次のページ
-  </button>
-
-  <button data-action="last">
-    最後のページ
-  </button>
-
-  <button data-action="move">
-    移動モード
-  </button>
-
-  <button data-action="pen">
-    ペン
-  </button>
-
-  <button data-action="eraser">
-    消しゴム
-  </button>
-
-  <button data-action="favorite">
-    お気に入り
-  </button>
-
-  <button data-action="zoomOut">
-    縮小
-  </button>
-
-  <button data-action="zoomIn">
-    拡大
-  </button>
-
-  <button data-action="fitWidth">
-    横幅に合わせる
-  </button>
-
-  <button data-action="fitHeight">
-    縦幅に合わせる
-  </button>
-
-  <button data-action="fullscreen">
-    全画面
-  </button>
-
-</nav>
+      </div>
 
 
-<main
-  id="stage"
-  class="viewer-stage">
+      <div
+        id="incomingSlide"
+        class="page-slide incoming-slide">
+
+        <canvas
+          id="incomingPdfCanvas">
+        </canvas>
+
+        <img
+          id="incomingImage"
+          alt=""
+          draggable="false">
+
+      </div>
+
+    </div>
+
+  </main>
 
 
   <div
-    id="pageContainer"
-    class="page-container">
-
-
-    <!-- PDF -->
-
-    <canvas
-      id="pdfCanvas">
-    </canvas>
-
-
-    <!-- 画像Book -->
-
-    <img
-      id="imagePage"
-      alt=""
-      draggable="false">
-
-
-    <!-- 書き込み -->
-
-    <canvas
-      id="annotationCanvas">
-    </canvas>
-
-
+    id="viewerMessage"
+    class="viewer-message hidden">
   </div>
-
-
-</main>
-
-
-<div
-  id="viewerMessage"
-  class="viewer-message hidden">
-</div>
-
 
 </div>
 
 
 <script
   type="module"
-  src="app.js?v=viewer-pdf-image-final">
+  src="app.js?v=book-turn-final">
 </script>
 
 </body>
