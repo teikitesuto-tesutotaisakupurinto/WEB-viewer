@@ -10,17 +10,31 @@ import {
 } from "../../assets/js/supabase.js";
 
 
+/* =========================================================
+   Config
+   ========================================================= */
+
 const CREATE_STUDENT_URL =
   "https://wcddlfjtkrbpperhrxkk.supabase.co/functions/v1/bright-worker";
 
 
-let formCard;
-let message;
-let students;
-let showFormButton;
-let cancelButton;
-let createButton;
-let logoutButton;
+/* =========================================================
+   DOM
+   ========================================================= */
+
+let formCard = null;
+
+let message = null;
+
+let students = null;
+
+let showFormButton = null;
+
+let cancelButton = null;
+
+let createButton = null;
+
+let logoutButton = null;
 
 
 /* =========================================================
@@ -29,12 +43,29 @@ let logoutButton;
 
 function escapeHtml(value) {
 
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 
 }
 
@@ -43,14 +74,19 @@ function escapeHtml(value) {
    Message
    ========================================================= */
 
-function setMessage(text, type = "") {
+function setMessage(
+  text,
+  type = ""
+) {
 
   if (!message) {
     return;
   }
 
+
   message.textContent =
     text;
+
 
   message.className =
     type
@@ -61,179 +97,335 @@ function setMessage(text, type = "") {
 
 
 /* =========================================================
+   Student list message
+   ========================================================= */
+
+function setStudentListMessage(
+  html
+) {
+
+  if (!students) {
+    return;
+  }
+
+
+  students.innerHTML =
+    html;
+
+}
+
+
+/* =========================================================
    Form
    ========================================================= */
 
 function clearForm() {
 
-  document.getElementById(
-    "displayName"
-  ).value = "";
+  const displayName =
+    document.getElementById(
+      "displayName"
+    );
 
-  document.getElementById(
-    "email"
-  ).value = "";
+  const email =
+    document.getElementById(
+      "email"
+    );
 
-  document.getElementById(
-    "password"
-  ).value = "";
+  const password =
+    document.getElementById(
+      "password"
+    );
+
+
+  if (displayName) {
+    displayName.value =
+      "";
+  }
+
+
+  if (email) {
+    email.value =
+      "";
+  }
+
+
+  if (password) {
+    password.value =
+      "";
+  }
 
 }
 
 
 function showStudentForm() {
 
+  if (!formCard) {
+    return;
+  }
+
+
   formCard.classList.remove(
     "hidden"
   );
 
-  setMessage("");
 
-  document.getElementById(
-    "displayName"
-  )?.focus();
+  setMessage(
+    ""
+  );
+
+
+  document
+    .getElementById(
+      "displayName"
+    )
+    ?.focus();
 
 }
 
 
 function hideStudentForm() {
 
+  if (!formCard) {
+    return;
+  }
+
+
   formCard.classList.add(
     "hidden"
   );
 
+
   clearForm();
 
-  setMessage("");
+
+  setMessage(
+    ""
+  );
 
 }
 
 
 /* =========================================================
-   Students
+   Load students
    ========================================================= */
 
 async function loadStudents() {
 
-  students.innerHTML = `
+  if (!students) {
+
+    throw new Error(
+      "students要素が見つかりません。"
+    );
+
+  }
+
+
+  setStudentListMessage(`
     <div class="list-row">
       生徒を読み込んでいます。
     </div>
-  `;
+  `);
 
 
-  const {
-    data,
-    error
-  } =
-    await supabase
-      .from("users")
-      .select(
-        "id,display_name"
-      )
-      .eq(
-        "role",
-        "student"
-      )
-      .order(
-        "display_name",
-        {
-          ascending: true
-        }
+  try {
+
+    console.log(
+      "[ADMIN STUDENTS] users SELECT start"
+    );
+
+
+    const {
+      data,
+      error,
+      count
+    } =
+      await supabase
+        .from("users")
+        .select(
+          "id,display_name",
+          {
+            count:
+              "exact"
+          }
+        )
+        .eq(
+          "role",
+          "student"
+        )
+        .order(
+          "display_name",
+          {
+            ascending:
+              true
+          }
+        );
+
+
+    console.log(
+      "[ADMIN STUDENTS] users SELECT result:",
+      {
+        data,
+        error,
+        count
+      }
+    );
+
+
+    if (error) {
+
+      throw new Error(
+        `生徒一覧取得エラー: ${
+          error.message ||
+          error.code ||
+          "Unknown error"
+        }`
       );
 
+    }
 
-  if (error) {
+
+    if (
+      !Array.isArray(data) ||
+      data.length === 0
+    ) {
+
+      setStudentListMessage(`
+        <div class="list-row">
+          登録されている生徒はいません。
+        </div>
+      `);
+
+      return;
+
+    }
+
+
+    setStudentListMessage(
+
+      data
+        .map(
+          student => `
+
+            <div
+              class="list-row"
+              data-student-id="${escapeHtml(
+                student.id
+              )}">
+
+              ${escapeHtml(
+                student.display_name ||
+                "名前未設定"
+              )}
+
+            </div>
+
+          `
+        )
+        .join("")
+
+    );
+
+  }
+  catch (error) {
 
     console.error(
-      "STUDENT LOAD ERROR:",
+      "[ADMIN STUDENTS] LOAD ERROR:",
       error
     );
 
-    students.innerHTML = `
+
+    setStudentListMessage(`
       <div class="list-row">
-        生徒一覧を取得できませんでした。
+
+        <strong>
+          生徒一覧を読み込めませんでした。
+        </strong>
+
         <br>
+
         <small>
           ${escapeHtml(
-            error.message
+            error?.message ||
+            "データ取得に失敗しました。"
           )}
         </small>
+
+        <br><br>
+
+        <button
+          type="button"
+          id="retryStudents"
+          class="secondary-button">
+
+          再読み込み
+
+        </button>
+
       </div>
-    `;
-
-    return;
-
-  }
+    `);
 
 
-  if (
-    !data ||
-    data.length === 0
-  ) {
-
-    students.innerHTML = `
-      <div class="list-row">
-        登録されている生徒はいません。
-      </div>
-    `;
-
-    return;
-
-  }
-
-
-  students.innerHTML =
-    data
-      .map(
-        student => `
-          <div
-            class="list-row"
-            data-student-id="${escapeHtml(
-              student.id
-            )}">
-
-            ${escapeHtml(
-              student.display_name ||
-              "名前未設定"
-            )}
-
-          </div>
-        `
+    document
+      .getElementById(
+        "retryStudents"
       )
-      .join("");
+      ?.addEventListener(
+        "click",
+        () => {
+
+          loadStudents()
+            .catch(
+              retryError => {
+
+                console.error(
+                  retryError
+                );
+
+              }
+            );
+
+        }
+      );
+
+  }
 
 }
 
 
 /* =========================================================
-   Validation
+   Input
    ========================================================= */
 
 function getStudentInput() {
 
   const displayName =
-    document.getElementById(
-      "displayName"
-    )
+    document
+      .getElementById(
+        "displayName"
+      )
       ?.value
-      .trim() || "";
+      .trim() ||
+    "";
 
 
   const email =
-    document.getElementById(
-      "email"
-    )
+    document
+      .getElementById(
+        "email"
+      )
       ?.value
       .trim()
-      .toLowerCase() || "";
+      .toLowerCase() ||
+    "";
 
 
   const password =
-    document.getElementById(
-      "password"
-    )
-      ?.value || "";
+    document
+      .getElementById(
+        "password"
+      )
+      ?.value ||
+    "";
 
 
   if (!displayName) {
@@ -246,7 +438,8 @@ function getStudentInput() {
 
 
   if (
-    displayName.length > 100
+    displayName.length >
+    100
   ) {
 
     throw new Error(
@@ -278,7 +471,8 @@ function getStudentInput() {
 
 
   if (
-    password.length < 8
+    password.length <
+    8
   ) {
 
     throw new Error(
@@ -289,7 +483,8 @@ function getStudentInput() {
 
 
   if (
-    password.length > 128
+    password.length >
+    128
   ) {
 
     throw new Error(
@@ -300,22 +495,24 @@ function getStudentInput() {
 
 
   return {
+
     displayName,
     email,
     password
+
   };
 
 }
 
 
 /* =========================================================
-   Create
+   Create student
    ========================================================= */
 
 async function createStudent() {
 
   if (
-    createButton.disabled
+    createButton?.disabled
   ) {
 
     return;
@@ -347,20 +544,28 @@ async function createStudent() {
   try {
 
     const {
-      data,
-      error
+      data:
+        sessionData,
+      error:
+        sessionError
     } =
       await supabase.auth
         .getSession();
 
 
-    if (error) {
-      throw error;
+    if (sessionError) {
+
+      throw new Error(
+        `セッション取得エラー: ${
+          sessionError.message
+        }`
+      );
+
     }
 
 
     const session =
-      data?.session;
+      sessionData?.session;
 
 
     if (!session) {
@@ -375,6 +580,7 @@ async function createStudent() {
     createButton.disabled =
       true;
 
+
     createButton.textContent =
       "登録中...";
 
@@ -388,6 +594,7 @@ async function createStudent() {
       await fetch(
         CREATE_STUDENT_URL,
         {
+
           method:
             "POST",
 
@@ -424,7 +631,7 @@ async function createStudent() {
       );
 
 
-    const text =
+    const responseText =
       await response.text();
 
 
@@ -434,8 +641,10 @@ async function createStudent() {
     try {
 
       result =
-        text
-          ? JSON.parse(text)
+        responseText
+          ? JSON.parse(
+              responseText
+            )
           : {};
 
     }
@@ -443,7 +652,7 @@ async function createStudent() {
 
       result = {
         error:
-          text
+          responseText
       };
 
     }
@@ -467,7 +676,8 @@ async function createStudent() {
 
     clearForm();
 
-    formCard.classList.add(
+
+    formCard?.classList.add(
       "hidden"
     );
 
@@ -484,14 +694,14 @@ async function createStudent() {
   catch (error) {
 
     console.error(
-      "CREATE STUDENT ERROR:",
+      "[ADMIN STUDENTS] CREATE ERROR:",
       error
     );
 
 
     setMessage(
       `登録エラー: ${
-        error.message ||
+        error?.message ||
         "生徒登録に失敗しました。"
       }`,
       "error"
@@ -500,11 +710,15 @@ async function createStudent() {
   }
   finally {
 
-    createButton.disabled =
-      false;
+    if (createButton) {
 
-    createButton.textContent =
-      "登録";
+      createButton.disabled =
+        false;
+
+      createButton.textContent =
+        "登録";
+
+    }
 
   }
 
@@ -512,10 +726,10 @@ async function createStudent() {
 
 
 /* =========================================================
-   Start
+   DOM initialization
    ========================================================= */
 
-async function start() {
+function initializeDom() {
 
   formCard =
     document.getElementById(
@@ -553,55 +767,124 @@ async function start() {
     );
 
 
-  if (
-    !formCard ||
-    !message ||
-    !students ||
-    !showFormButton ||
-    !cancelButton ||
-    !createButton ||
-    !logoutButton
-  ) {
+  const missing = [];
+
+
+  if (!formCard) {
+    missing.push(
+      "formCard"
+    );
+  }
+
+
+  if (!message) {
+    missing.push(
+      "message"
+    );
+  }
+
+
+  if (!students) {
+    missing.push(
+      "students"
+    );
+  }
+
+
+  if (!showFormButton) {
+    missing.push(
+      "showForm"
+    );
+  }
+
+
+  if (!cancelButton) {
+    missing.push(
+      "cancel"
+    );
+  }
+
+
+  if (!createButton) {
+    missing.push(
+      "create"
+    );
+  }
+
+
+  if (!logoutButton) {
+    missing.push(
+      "logout"
+    );
+  }
+
+
+  if (missing.length) {
 
     throw new Error(
-      "生徒管理画面のHTMLが正しく構成されていません。"
+      `HTML要素がありません: ${
+        missing.join(", ")
+      }`
     );
 
   }
 
+}
 
-  /*
-   * イベントを先に設定。
-   */
+
+/* =========================================================
+   Events
+   ========================================================= */
+
+function initializeEvents() {
 
   showFormButton.addEventListener(
     "click",
-    showStudentForm
+    event => {
+
+      event.preventDefault();
+
+      showStudentForm();
+
+    }
   );
 
 
   cancelButton.addEventListener(
     "click",
-    hideStudentForm
+    event => {
+
+      event.preventDefault();
+
+      hideStudentForm();
+
+    }
   );
 
 
   createButton.addEventListener(
     "click",
-    createStudent
+    event => {
+
+      event.preventDefault();
+
+      createStudent();
+
+    }
   );
 
 
   logoutButton.addEventListener(
     "click",
-    () =>
-      logout()
+    event => {
+
+      event.preventDefault();
+
+      logout();
+
+    }
   );
 
-
-  /*
-   * Enter登録。
-   */
 
   [
     "displayName",
@@ -634,19 +917,90 @@ async function start() {
       }
     );
 
+}
+
+
+/* =========================================================
+   Start
+   ========================================================= */
+
+async function start() {
+
+  initializeDom();
+
+  initializeEvents();
+
+
+  /*
+   * 最初に一覧を読み込み状態にする。
+   */
+
+  setStudentListMessage(`
+    <div class="list-row">
+      管理者権限を確認しています。
+    </div>
+  `);
+
 
   /*
    * 管理者確認。
    */
 
-  const admin =
-    await requireAdmin();
+  let admin;
+
+
+  try {
+
+    admin =
+      await requireAdmin();
+
+  }
+  catch (error) {
+
+    console.error(
+      "[ADMIN STUDENTS] ADMIN AUTH ERROR:",
+      error
+    );
+
+
+    setStudentListMessage(`
+      <div class="list-row">
+
+        管理者認証に失敗しました。
+
+        <br>
+
+        <small>
+          ${escapeHtml(
+            error?.message ||
+            "認証エラー"
+          )}
+        </small>
+
+      </div>
+    `);
+
+    return;
+
+  }
 
 
   if (!admin) {
+
+    setStudentListMessage(`
+      <div class="list-row">
+        管理者としてログインしてください。
+      </div>
+    `);
+
     return;
+
   }
 
+
+  /*
+   * 一覧取得。
+   */
 
   await loadStudents();
 
@@ -671,30 +1025,16 @@ if (
           error => {
 
             console.error(
-              "ADMIN STUDENTS ERROR:",
+              "[ADMIN STUDENTS] FATAL ERROR:",
               error
             );
-
-            if (students) {
-
-              students.innerHTML = `
-                <div class="list-row">
-                  生徒管理を読み込めませんでした。
-                  <br>
-                  <small>
-                    ${escapeHtml(
-                      error.message ||
-                      "エラーが発生しました。"
-                    )}
-                  </small>
-                </div>
-              `;
-
-            }
 
           }
         );
 
+    },
+    {
+      once: true
     }
   );
 
@@ -706,7 +1046,7 @@ else {
       error => {
 
         console.error(
-          "ADMIN STUDENTS ERROR:",
+          "[ADMIN STUDENTS] FATAL ERROR:",
           error
         );
 
