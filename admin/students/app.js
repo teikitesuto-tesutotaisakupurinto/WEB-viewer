@@ -17,28 +17,26 @@ import {
 const CREATE_STUDENT_URL =
   "https://wcddlfjtkrbpperhrxkk.supabase.co/functions/v1/bright-worker";
 
+const REQUEST_TIMEOUT =
+  10000;
+
 
 /* =========================================================
    DOM
    ========================================================= */
 
 let formCard = null;
-
 let message = null;
-
 let students = null;
 
 let showFormButton = null;
-
 let cancelButton = null;
-
 let createButton = null;
-
 let logoutButton = null;
 
 
 /* =========================================================
-   Escape
+   Utility
    ========================================================= */
 
 function escapeHtml(value) {
@@ -70,6 +68,39 @@ function escapeHtml(value) {
 }
 
 
+function withTimeout(
+  promise,
+  ms = REQUEST_TIMEOUT
+) {
+
+  return Promise.race([
+
+    promise,
+
+    new Promise(
+      (_, reject) => {
+
+        setTimeout(
+          () => {
+
+            reject(
+              new Error(
+                "通信がタイムアウトしました。ページを再読み込みしてください。"
+              )
+            );
+
+          },
+          ms
+        );
+
+      }
+    )
+
+  ]);
+
+}
+
+
 /* =========================================================
    Message
    ========================================================= */
@@ -97,11 +128,11 @@ function setMessage(
 
 
 /* =========================================================
-   Student list message
+   Student list state
    ========================================================= */
 
-function setStudentListMessage(
-  html
+function showStudentLoading(
+  text = "生徒を読み込んでいます。"
 ) {
 
   if (!students) {
@@ -109,8 +140,79 @@ function setStudentListMessage(
   }
 
 
-  students.innerHTML =
-    html;
+  students.setAttribute(
+    "aria-busy",
+    "true"
+  );
+
+
+  students.innerHTML = `
+    <div class="list-row">
+      ${escapeHtml(text)}
+    </div>
+  `;
+
+}
+
+
+function showStudentError(
+  error
+) {
+
+  if (!students) {
+    return;
+  }
+
+
+  students.setAttribute(
+    "aria-busy",
+    "false"
+  );
+
+
+  students.innerHTML = `
+    <div class="list-row">
+
+      <strong>
+        生徒一覧を読み込めませんでした。
+      </strong>
+
+      <br><br>
+
+      <small>
+        ${escapeHtml(
+          error?.message ||
+          "不明なエラーが発生しました。"
+        )}
+      </small>
+
+      <br><br>
+
+      <button
+        id="retryStudents"
+        type="button"
+        class="secondary-button">
+
+        再読み込み
+
+      </button>
+
+    </div>
+  `;
+
+
+  document
+    .getElementById(
+      "retryStudents"
+    )
+    ?.addEventListener(
+      "click",
+      () => {
+
+        loadStudents();
+
+      }
+    );
 
 }
 
@@ -138,20 +240,17 @@ function clearForm() {
 
 
   if (displayName) {
-    displayName.value =
-      "";
+    displayName.value = "";
   }
 
 
   if (email) {
-    email.value =
-      "";
+    email.value = "";
   }
 
 
   if (password) {
-    password.value =
-      "";
+    password.value = "";
   }
 
 }
@@ -213,60 +312,104 @@ async function loadStudents() {
 
   if (!students) {
 
-    throw new Error(
-      "students要素が見つかりません。"
+    console.error(
+      "students element is missing."
     );
+
+    return;
 
   }
 
 
-  setStudentListMessage(`
-    <div class="list-row">
-      生徒を読み込んでいます。
-    </div>
-  `);
+  showStudentLoading();
 
 
   try {
 
     console.log(
-      "[ADMIN STUDENTS] users SELECT start"
+      "[ADMIN STUDENTS] loadStudents start"
     );
 
 
+    /*
+     * 現在のセッションを明示的に確認。
+     */
+
     const {
-      data,
-      error,
-      count
+      data:
+        sessionData,
+      error:
+        sessionError
     } =
-      await supabase
-        .from("users")
-        .select(
-          "id,display_name",
-          {
-            count:
-              "exact"
-          }
-        )
-        .eq(
-          "role",
-          "student"
-        )
-        .order(
-          "display_name",
-          {
-            ascending:
-              true
-          }
-        );
+      await withTimeout(
+        supabase.auth.getSession()
+      );
+
+
+    if (sessionError) {
+
+      throw new Error(
+        `セッション取得エラー: ${
+          sessionError.message
+        }`
+      );
+
+    }
+
+
+    const session =
+      sessionData?.session;
+
+
+    if (!session) {
+
+      throw new Error(
+        "管理者のログインセッションがありません。"
+      );
+
+    }
 
 
     console.log(
-      "[ADMIN STUDENTS] users SELECT result:",
+      "[ADMIN STUDENTS] session exists"
+    );
+
+
+    /*
+     * users取得。
+     */
+
+    const {
+      data,
+      error
+    } =
+      await withTimeout(
+
+        supabase
+          .from("users")
+          .select(
+            "id,display_name"
+          )
+          .eq(
+            "role",
+            "student"
+          )
+          .order(
+            "display_name",
+            {
+              ascending:
+                true
+            }
+          )
+
+      );
+
+
+    console.log(
+      "[ADMIN STUDENTS] users result",
       {
         data,
-        error,
-        count
+        error
       }
     );
 
@@ -284,24 +427,33 @@ async function loadStudents() {
     }
 
 
+    students.setAttribute(
+      "aria-busy",
+      "false"
+    );
+
+
     if (
       !Array.isArray(data) ||
       data.length === 0
     ) {
 
-      setStudentListMessage(`
+      students.innerHTML = `
         <div class="list-row">
           登録されている生徒はいません。
         </div>
-      `);
+      `;
 
       return;
 
     }
 
 
-    setStudentListMessage(
+    /*
+     * 一覧表示。
+     */
 
+    students.innerHTML =
       data
         .map(
           student => `
@@ -321,71 +473,21 @@ async function loadStudents() {
 
           `
         )
-        .join("")
+        .join("");
 
-    );
 
   }
   catch (error) {
 
     console.error(
-      "[ADMIN STUDENTS] LOAD ERROR:",
+      "[ADMIN STUDENTS] loadStudents error",
       error
     );
 
 
-    setStudentListMessage(`
-      <div class="list-row">
-
-        <strong>
-          生徒一覧を読み込めませんでした。
-        </strong>
-
-        <br>
-
-        <small>
-          ${escapeHtml(
-            error?.message ||
-            "データ取得に失敗しました。"
-          )}
-        </small>
-
-        <br><br>
-
-        <button
-          type="button"
-          id="retryStudents"
-          class="secondary-button">
-
-          再読み込み
-
-        </button>
-
-      </div>
-    `);
-
-
-    document
-      .getElementById(
-        "retryStudents"
-      )
-      ?.addEventListener(
-        "click",
-        () => {
-
-          loadStudents()
-            .catch(
-              retryError => {
-
-                console.error(
-                  retryError
-                );
-
-              }
-            );
-
-        }
-      );
+    showStudentError(
+      error
+    );
 
   }
 
@@ -393,7 +495,7 @@ async function loadStudents() {
 
 
 /* =========================================================
-   Input
+   Input validation
    ========================================================= */
 
 function getStudentInput() {
@@ -476,7 +578,7 @@ function getStudentInput() {
   ) {
 
     throw new Error(
-      "パスワードは8文字以上にしてください。"
+      "パスワードは8文字以上で入力してください。"
     );
 
   }
@@ -488,18 +590,16 @@ function getStudentInput() {
   ) {
 
     throw new Error(
-      "パスワードは128文字以内にしてください。"
+      "パスワードは128文字以内で入力してください。"
     );
 
   }
 
 
   return {
-
     displayName,
     email,
     password
-
   };
 
 }
@@ -549,8 +649,9 @@ async function createStudent() {
       error:
         sessionError
     } =
-      await supabase.auth
-        .getSession();
+      await withTimeout(
+        supabase.auth.getSession()
+      );
 
 
     if (sessionError) {
@@ -591,59 +692,63 @@ async function createStudent() {
 
 
     const response =
-      await fetch(
-        CREATE_STUDENT_URL,
-        {
+      await withTimeout(
 
-          method:
-            "POST",
+        fetch(
+          CREATE_STUDENT_URL,
+          {
+            method:
+              "POST",
 
-          headers: {
+            headers: {
 
-            Authorization:
-              `Bearer ${
-                session.access_token
-              }`,
+              Authorization:
+                `Bearer ${
+                  session.access_token
+                }`,
 
-            apikey:
-              SUPABASE_KEY,
+              apikey:
+                SUPABASE_KEY,
 
-            "Content-Type":
-              "application/json"
+              "Content-Type":
+                "application/json"
 
-          },
+            },
 
-          body:
-            JSON.stringify({
+            body:
+              JSON.stringify({
 
-              display_name:
-                input.displayName,
+                display_name:
+                  input.displayName,
 
-              email:
-                input.email,
+                email:
+                  input.email,
 
-              password:
-                input.password
+                password:
+                  input.password
 
-            })
+              })
 
-        }
+          }
+        )
+
       );
 
 
-    const responseText =
+    const text =
       await response.text();
 
 
-    let result = {};
+    let result =
+      {};
 
 
     try {
 
       result =
-        responseText
+        text
           ? JSON.parse(
-              responseText
+              text
             )
           : {};
 
@@ -652,15 +757,14 @@ async function createStudent() {
 
       result = {
         error:
-          responseText
+          text
       };
 
     }
 
 
     if (
-      !response.ok ||
-      result.success !== true
+      !response.ok
     ) {
 
       throw new Error(
@@ -668,6 +772,21 @@ async function createStudent() {
         result.error ||
         result.message ||
         `生徒登録に失敗しました。HTTP ${response.status}`
+
+      );
+
+    }
+
+
+    if (
+      result.success !== true
+    ) {
+
+      throw new Error(
+
+        result.error ||
+        result.message ||
+        "生徒登録に失敗しました。"
 
       );
 
@@ -694,7 +813,7 @@ async function createStudent() {
   catch (error) {
 
     console.error(
-      "[ADMIN STUDENTS] CREATE ERROR:",
+      "[ADMIN STUDENTS] createStudent error",
       error
     );
 
@@ -726,7 +845,7 @@ async function createStudent() {
 
 
 /* =========================================================
-   DOM initialization
+   Initialize DOM
    ========================================================= */
 
 function initializeDom() {
@@ -767,7 +886,8 @@ function initializeDom() {
     );
 
 
-  const missing = [];
+  const missing =
+    [];
 
 
   if (!formCard) {
@@ -819,10 +939,12 @@ function initializeDom() {
   }
 
 
-  if (missing.length) {
+  if (
+    missing.length
+  ) {
 
     throw new Error(
-      `HTML要素がありません: ${
+      `必要なHTML要素がありません: ${
         missing.join(", ")
       }`
     );
@@ -833,7 +955,7 @@ function initializeDom() {
 
 
 /* =========================================================
-   Events
+   Initialize events
    ========================================================= */
 
 function initializeEvents() {
@@ -926,25 +1048,24 @@ function initializeEvents() {
 
 async function start() {
 
+  console.log(
+    "[ADMIN STUDENTS] start"
+  );
+
+
   initializeDom();
 
   initializeEvents();
 
 
   /*
-   * 最初に一覧を読み込み状態にする。
-   */
-
-  setStudentListMessage(`
-    <div class="list-row">
-      管理者権限を確認しています。
-    </div>
-  `);
-
-
-  /*
    * 管理者確認。
    */
+
+  showStudentLoading(
+    "管理者権限を確認しています。"
+  );
+
 
   let admin;
 
@@ -952,46 +1073,43 @@ async function start() {
   try {
 
     admin =
-      await requireAdmin();
+      await withTimeout(
+        requireAdmin()
+      );
 
   }
   catch (error) {
 
     console.error(
-      "[ADMIN STUDENTS] ADMIN AUTH ERROR:",
+      "[ADMIN STUDENTS] requireAdmin error",
       error
     );
 
 
-    setStudentListMessage(`
-      <div class="list-row">
+    showStudentError(
+      error
+    );
 
-        管理者認証に失敗しました。
-
-        <br>
-
-        <small>
-          ${escapeHtml(
-            error?.message ||
-            "認証エラー"
-          )}
-        </small>
-
-      </div>
-    `);
 
     return;
 
   }
 
 
+  console.log(
+    "[ADMIN STUDENTS] requireAdmin result",
+    admin
+  );
+
+
   if (!admin) {
 
-    setStudentListMessage(`
-      <div class="list-row">
-        管理者としてログインしてください。
-      </div>
-    `);
+    showStudentError(
+      new Error(
+        "管理者としてログインしてください。"
+      )
+    );
+
 
     return;
 
@@ -999,7 +1117,7 @@ async function start() {
 
 
   /*
-   * 一覧取得。
+   * 生徒一覧。
    */
 
   await loadStudents();
@@ -1025,7 +1143,12 @@ if (
           error => {
 
             console.error(
-              "[ADMIN STUDENTS] FATAL ERROR:",
+              "[ADMIN STUDENTS] fatal",
+              error
+            );
+
+
+            showStudentError(
               error
             );
 
@@ -1046,7 +1169,12 @@ else {
       error => {
 
         console.error(
-          "[ADMIN STUDENTS] FATAL ERROR:",
+          "[ADMIN STUDENTS] fatal",
+          error
+        );
+
+
+        showStudentError(
           error
         );
 
