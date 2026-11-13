@@ -8,25 +8,30 @@
 
 <meta
   name="viewport"
-  content="width=device-width, initial-scale=1, viewport-fit=cover">
+  content="width=device-width,initial-scale=1,viewport-fit=cover">
 
 <title>WEB-viewer</title>
 
 <link
   rel="stylesheet"
-  href="style.css">
+  href="style.css?v=viewer-20261113-5">
 
 </head>
+
 
 <body>
 
 <div class="viewer">
+
 
   <!-- =====================================================
        Toolbar
        ===================================================== -->
 
   <header class="viewer-toolbar">
+
+
+    <!-- Back / title -->
 
     <div class="toolbar-brand">
 
@@ -36,8 +41,13 @@
         type="button"
         aria-label="戻る">
 
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M15 18 9 12l6-6"/>
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true">
+
+          <path
+            d="m15 18-6-6 6-6"/>
+
         </svg>
 
       </button>
@@ -52,7 +62,9 @@
         <div
           id="title"
           class="book-title">
+
           読み込み中
+
         </div>
 
       </div>
@@ -60,9 +72,12 @@
     </div>
 
 
-    <!-- Page navigation -->
+    <!-- ===================================================
+         Page navigation
+         =================================================== -->
 
     <div class="page-navigation">
+
 
       <button
         id="first"
@@ -71,8 +86,13 @@
         aria-label="最初のページ">
 
         <svg viewBox="0 0 24 24">
-          <path d="M18 6 12 12l6 6"/>
-          <path d="M12 6 6 12l6 6"/>
+
+          <path
+            d="m17 6-6 6 6 6"/>
+
+          <path
+            d="m11 6-6 6 6 6"/>
+
         </svg>
 
       </button>
@@ -85,7 +105,10 @@
         aria-label="前のページ">
 
         <svg viewBox="0 0 24 24">
-          <path d="m15 18-6-6 6-6"/>
+
+          <path
+            d="m15 18-6-6 6-6"/>
+
         </svg>
 
       </button>
@@ -94,7 +117,9 @@
       <div
         id="page"
         class="page-counter">
+
         - / -
+
       </div>
 
 
@@ -105,7 +130,10 @@
         aria-label="次のページ">
 
         <svg viewBox="0 0 24 24">
-          <path d="m9 18 6-6-6-6"/>
+
+          <path
+            d="m9 18 6-6-6-6"/>
+
         </svg>
 
       </button>
@@ -118,8 +146,13 @@
         aria-label="最後のページ">
 
         <svg viewBox="0 0 24 24">
-          <path d="m6 6 6 6-6 6"/>
-          <path d="m12 6 6 6-6 6"/>
+
+          <path
+            d="m7 6 6 6-6 6"/>
+
+          <path
+            d="m13 6 6 6-6 6"/>
+
         </svg>
 
       </button>
@@ -127,9 +160,14 @@
     </div>
 
 
-    <!-- Main tools -->
+    <!-- ===================================================
+         Tools
+         =================================================== -->
 
     <div class="toolbar-tools">
+
+
+      <!-- Move -->
 
       <button
         id="move"
@@ -137,18 +175,35 @@
         type="button">
 
         <svg viewBox="0 0 24 24">
-          <path d="M12 3v18"/>
-          <path d="m8 7 4-4 4 4"/>
-          <path d="m8 17 4 4 4-4"/>
-          <path d="M3 12h18"/>
-          <path d="m7 8-4 4 4 4"/>
-          <path d="m17 8 4 4-4 4"/>
+
+          <path
+            d="M12 3v18"/>
+
+          <path
+            d="m8 7 4-4 4 4"/>
+
+          <path
+            d="m8 17 4 4 4-4"/>
+
+          <path
+            d="M3 12h18"/>
+
+          <path
+            d="m7 8-4 4 4 4"/>
+
+          <path
+            d="m17 8 4 4-4 4"/>
+
         </svg>
 
-        <span>移動</span>
+        <span>
+          移動
+        </span>
 
       </button>
 
+
+      <!-- Pen -->
 
       <button
         id="pen"
@@ -156,14 +211,23 @@
         type="button">
 
         <svg viewBox="0 0 24 24">
-          <path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/>
-          <path d="m14 7 3 3"/>
+
+          <path
+            d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/>
+
+          <path
+            d="m14 7 3 3"/>
+
         </svg>
 
-        <span>ペン OFF</span>
+        <span>
+          ペン
+        </span>
 
       </button>
 
+
+      <!-- Eraser -->
 
       <button
         id="eraser"
@@ -171,17 +235,26 @@
         type="button">
 
         <svg viewBox="0 0 24 24">
-          <path d="m4 15 8-8 7 7-8 8H7l-3-3a2.8 2.8 0 0 1 0-4Z"/>
-          <path d="m13 18 5 0"/>
+
+          <path
+            d="m4 15 8-8 7 7-8 8H7l-3-3a2.8 2.8 0 0 1 0-4Z"/>
+
+          <path
+            d="M13 18h6"/>
+
         </svg>
 
-        <span>消しゴム</span>
+        <span>
+          消しゴム
+        </span>
 
       </button>
 
 
       <div class="tool-divider"></div>
 
+
+      <!-- Zoom out -->
 
       <button
         id="zoomOut"
@@ -190,11 +263,16 @@
         aria-label="縮小">
 
         <svg viewBox="0 0 24 24">
-          <path d="M5 12h14"/>
+
+          <path
+            d="M5 12h14"/>
+
         </svg>
 
       </button>
 
+
+      <!-- Zoom in -->
 
       <button
         id="zoomIn"
@@ -203,14 +281,27 @@
         aria-label="拡大">
 
         <svg viewBox="0 0 24 24">
-          <circle cx="11" cy="11" r="6"/>
-          <path d="M20 20l-4.5-4.5"/>
-          <path d="M11 8v6"/>
-          <path d="M8 11h6"/>
+
+          <circle
+            cx="11"
+            cy="11"
+            r="6"/>
+
+          <path
+            d="m20 20-4.5-4.5"/>
+
+          <path
+            d="M11 8v6"/>
+
+          <path
+            d="M8 11h6"/>
+
         </svg>
 
       </button>
 
+
+      <!-- Fit width -->
 
       <button
         id="fitWidth"
@@ -218,17 +309,32 @@
         type="button">
 
         <svg viewBox="0 0 24 24">
-          <path d="M4 8V5a1 1 0 0 1 1-1h3"/>
-          <path d="M20 8V5a1 1 0 0 0-1-1h-3"/>
-          <path d="M4 16v3a1 1 0 0 0 1 1h3"/>
-          <path d="M20 16v3a1 1 0 0 1-1 1h-3"/>
-          <path d="M8 12h8"/>
+
+          <path
+            d="M4 8V5a1 1 0 0 1 1-1h3"/>
+
+          <path
+            d="M20 8V5a1 1 0 0 0-1-1h-3"/>
+
+          <path
+            d="M4 16v3a1 1 0 0 0 1 1h3"/>
+
+          <path
+            d="M20 16v3a1 1 0 0 1-1 1h-3"/>
+
+          <path
+            d="M8 12h8"/>
+
         </svg>
 
-        <span>横幅</span>
+        <span>
+          横幅
+        </span>
 
       </button>
 
+
+      <!-- Fit height -->
 
       <button
         id="fitHeight"
@@ -236,14 +342,27 @@
         type="button">
 
         <svg viewBox="0 0 24 24">
-          <path d="M8 4H5a1 1 0 0 0-1 1v3"/>
-          <path d="M16 4h3a1 1 0 0 1 1 1v3"/>
-          <path d="M8 20H5a1 1 0 0 1-1-1v-3"/>
-          <path d="M16 20h3a1 1 0 0 0 1-1v-3"/>
-          <path d="M12 8v8"/>
+
+          <path
+            d="M8 4H5a1 1 0 0 0-1 1v3"/>
+
+          <path
+            d="M16 4h3a1 1 0 0 1 1 1v3"/>
+
+          <path
+            d="M8 20H5a1 1 0 0 1-1-1v-3"/>
+
+          <path
+            d="M16 20h3a1 1 0 0 0 1-1v-3"/>
+
+          <path
+            d="M12 8v8"/>
+
         </svg>
 
-        <span>縦幅</span>
+        <span>
+          縦幅
+        </span>
 
       </button>
 
@@ -251,21 +370,34 @@
       <div class="tool-divider"></div>
 
 
+      <!-- Print -->
+
       <button
         id="print"
         class="tool-button tool-with-label"
         type="button">
 
         <svg viewBox="0 0 24 24">
-          <path d="M6 9V4h12v5"/>
-          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-          <path d="M6 14h12v6H6z"/>
+
+          <path
+            d="M6 9V4h12v5"/>
+
+          <path
+            d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+
+          <path
+            d="M6 14h12v6H6z"/>
+
         </svg>
 
-        <span>印刷</span>
+        <span>
+          印刷
+        </span>
 
       </button>
 
+
+      <!-- Fullscreen -->
 
       <button
         id="fullscreen"
@@ -273,16 +405,29 @@
         type="button">
 
         <svg viewBox="0 0 24 24">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
-          <path d="M16 3h3a2 2 0 0 1 2 2v3"/>
-          <path d="M8 21H5a2 2 0 0 1-2-2v-3"/>
-          <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+
+          <path
+            d="M8 3H5a2 2 0 0 0-2 2v3"/>
+
+          <path
+            d="M16 3h3a2 2 0 0 1 2 2v3"/>
+
+          <path
+            d="M8 21H5a2 2 0 0 1-2-2v-3"/>
+
+          <path
+            d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+
         </svg>
 
-        <span>全画面</span>
+        <span>
+          全画面
+        </span>
 
       </button>
 
+
+      <!-- Favorite -->
 
       <button
         id="favorite"
@@ -291,13 +436,19 @@
         aria-label="お気に入り">
 
         <svg viewBox="0 0 24 24">
-          <path d="m12 4 2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 4Z"/>
+
+          <path
+            d="m12 4 2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 4Z"/>
+
         </svg>
 
       </button>
 
+
     </div>
 
+
+    <!-- Mobile menu -->
 
     <button
       id="menuButton"
@@ -324,111 +475,192 @@
     class="mobile-menu"
     aria-hidden="true">
 
-    <button data-action="first">
+
+    <button
+      type="button"
+      data-action="first">
+
       最初のページ
+
     </button>
 
-    <button data-action="previous">
+
+    <button
+      type="button"
+      data-action="previous">
+
       前のページ
+
     </button>
 
-    <button data-action="next">
+
+    <button
+      type="button"
+      data-action="next">
+
       次のページ
+
     </button>
 
-    <button data-action="last">
+
+    <button
+      type="button"
+      data-action="last">
+
       最後のページ
+
     </button>
+
 
     <div class="mobile-menu-divider"></div>
 
-    <button data-action="move">
+
+    <button
+      type="button"
+      data-action="move">
+
       移動
+
     </button>
 
-    <button data-action="pen">
+
+    <button
+      type="button"
+      data-action="pen">
+
       ペン
+
     </button>
 
-    <button data-action="eraser">
+
+    <button
+      type="button"
+      data-action="eraser">
+
       消しゴム
+
     </button>
 
-    <button data-action="zoomOut">
+
+    <button
+      type="button"
+      data-action="zoomOut">
+
       縮小
+
     </button>
 
-    <button data-action="zoomIn">
+
+    <button
+      type="button"
+      data-action="zoomIn">
+
       拡大
+
     </button>
 
-    <button data-action="fitWidth">
+
+    <button
+      type="button"
+      data-action="fitWidth">
+
       横幅に合わせる
+
     </button>
 
-    <button data-action="fitHeight">
+
+    <button
+      type="button"
+      data-action="fitHeight">
+
       縦幅に合わせる
+
     </button>
 
-    <button data-action="print">
+
+    <button
+      type="button"
+      data-action="print">
+
       印刷
+
     </button>
 
-    <button data-action="fullscreen">
+
+    <button
+      type="button"
+      data-action="fullscreen">
+
       全画面
+
     </button>
+
 
   </nav>
 
 
   <!-- =====================================================
-       Viewer
+       Viewer stage
        ===================================================== -->
 
   <main
     id="stage"
     class="viewer-stage">
 
-    <div
-      class="slide-viewport">
+
+    <div class="slide-viewport">
+
+
+      <!-- Current -->
 
       <div
         id="currentSlide"
         class="page-slide current-slide">
 
+
         <canvas
           id="currentPdfCanvas">
         </canvas>
+
 
         <img
           id="currentImage"
           alt=""
           draggable="false">
 
+
         <canvas
           id="currentAnnotation"
           class="annotation-canvas">
         </canvas>
 
+
       </div>
 
+
+      <!-- Incoming -->
 
       <div
         id="incomingSlide"
         class="page-slide incoming-slide">
 
+
         <canvas
           id="incomingPdfCanvas">
         </canvas>
+
 
         <img
           id="incomingImage"
           alt=""
           draggable="false">
 
+
       </div>
 
+
     </div>
+
 
   </main>
 
@@ -442,8 +674,8 @@
     class="loading-overlay hidden"
     aria-hidden="true">
 
-    <div
-      class="loading-spinner">
+
+    <div class="loading-spinner">
 
       <span></span>
       <span></span>
@@ -456,21 +688,30 @@
 
     </div>
 
+
   </div>
 
+
+  <!-- =====================================================
+       Message
+       ===================================================== -->
 
   <div
     id="viewerMessage"
-    class="viewer-message hidden">
+    class="viewer-message hidden"
+    role="status">
   </div>
 
-</div>
 
+  <!-- =====================================================
+       App
+       ===================================================== -->
 
-<script
-  type="module"
-  src="app.js?v=viewer-hq-20261113">
-</script>
+  <script
+    type="module"
+    src="app.js?v=viewer-final-20261113-6">
+  </script>
+
 
 </body>
 </html>
