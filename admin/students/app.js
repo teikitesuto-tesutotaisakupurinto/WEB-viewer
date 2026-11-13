@@ -9,76 +9,48 @@ import {
   SUPABASE_KEY
 } from "../../assets/js/supabase.js";
 
-import {
-  escapeHtml
-} from "../../assets/js/common.js";
-
-
-/* =========================================================
-   DOM
-   ========================================================= */
-
-const formCard =
-  document.getElementById(
-    "formCard"
-  );
-
-const message =
-  document.getElementById(
-    "message"
-  );
-
-const students =
-  document.getElementById(
-    "students"
-  );
-
-const showFormButton =
-  document.getElementById(
-    "showForm"
-  );
-
-const cancelButton =
-  document.getElementById(
-    "cancel"
-  );
-
-const createButton =
-  document.getElementById(
-    "create"
-  );
-
-const logoutButton =
-  document.getElementById(
-    "logout"
-  );
-
-
-/* =========================================================
-   Config
-   ========================================================= */
 
 const CREATE_STUDENT_URL =
   "https://wcddlfjtkrbpperhrxkk.supabase.co/functions/v1/bright-worker";
 
 
+let formCard;
+let message;
+let students;
+let showFormButton;
+let cancelButton;
+let createButton;
+let logoutButton;
+
+
 /* =========================================================
-   Utility
+   Escape
    ========================================================= */
 
-function setMessage(
-  text,
-  type = ""
-) {
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+
+/* =========================================================
+   Message
+   ========================================================= */
+
+function setMessage(text, type = "") {
 
   if (!message) {
     return;
   }
 
-
   message.textContent =
     text;
-
 
   message.className =
     type
@@ -88,158 +60,66 @@ function setMessage(
 }
 
 
+/* =========================================================
+   Form
+   ========================================================= */
+
 function clearForm() {
 
-  const displayName =
-    document.getElementById(
-      "displayName"
-    );
+  document.getElementById(
+    "displayName"
+  ).value = "";
 
-  const email =
-    document.getElementById(
-      "email"
-    );
+  document.getElementById(
+    "email"
+  ).value = "";
 
-  const password =
-    document.getElementById(
-      "password"
-    );
+  document.getElementById(
+    "password"
+  ).value = "";
 
-
-  if (displayName) {
-    displayName.value =
-      "";
-  }
+}
 
 
-  if (email) {
-    email.value =
-      "";
-  }
+function showStudentForm() {
+
+  formCard.classList.remove(
+    "hidden"
+  );
+
+  setMessage("");
+
+  document.getElementById(
+    "displayName"
+  )?.focus();
+
+}
 
 
-  if (password) {
-    password.value =
-      "";
-  }
+function hideStudentForm() {
+
+  formCard.classList.add(
+    "hidden"
+  );
+
+  clearForm();
+
+  setMessage("");
 
 }
 
 
 /* =========================================================
-   Form
-   ========================================================= */
-
-showFormButton?.addEventListener(
-  "click",
-  () => {
-
-    formCard?.classList.remove(
-      "hidden"
-    );
-
-
-    setMessage(
-      ""
-    );
-
-
-    document
-      .getElementById(
-        "displayName"
-      )
-      ?.focus();
-
-  }
-);
-
-
-cancelButton?.addEventListener(
-  "click",
-  () => {
-
-    formCard?.classList.add(
-      "hidden"
-    );
-
-
-    clearForm();
-
-
-    setMessage(
-      ""
-    );
-
-  }
-);
-
-
-logoutButton?.addEventListener(
-  "click",
-  () =>
-    logout()
-);
-
-
-createButton?.addEventListener(
-  "click",
-  createStudent
-);
-
-
-/* =========================================================
-   Enter key
-   ========================================================= */
-
-[
-  "displayName",
-  "email",
-  "password"
-]
-.forEach(
-  id => {
-
-    document
-      .getElementById(id)
-      ?.addEventListener(
-        "keydown",
-        event => {
-
-          if (
-            event.key ===
-            "Enter"
-          ) {
-
-            event.preventDefault();
-
-            createStudent();
-
-          }
-
-        }
-      );
-
-  }
-);
-
-
-/* =========================================================
-   Load students
+   Students
    ========================================================= */
 
 async function loadStudents() {
 
-  if (!students) {
-    return;
-  }
-
-
-  students.innerHTML =
-    `
-      <div class="list-row">
-        生徒を読み込んでいます。
-      </div>
-    `;
+  students.innerHTML = `
+    <div class="list-row">
+      生徒を読み込んでいます。
+    </div>
+  `;
 
 
   const {
@@ -258,8 +138,7 @@ async function loadStudents() {
       .order(
         "display_name",
         {
-          ascending:
-            true
+          ascending: true
         }
       );
 
@@ -267,11 +146,23 @@ async function loadStudents() {
   if (error) {
 
     console.error(
-      "STUDENT LIST ERROR:",
+      "STUDENT LOAD ERROR:",
       error
     );
 
-    throw error;
+    students.innerHTML = `
+      <div class="list-row">
+        生徒一覧を取得できませんでした。
+        <br>
+        <small>
+          ${escapeHtml(
+            error.message
+          )}
+        </small>
+      </div>
+    `;
+
+    return;
 
   }
 
@@ -281,12 +172,11 @@ async function loadStudents() {
     data.length === 0
   ) {
 
-    students.innerHTML =
-      `
-        <div class="list-row">
-          登録されている生徒はいません。
-        </div>
-      `;
+    students.innerHTML = `
+      <div class="list-row">
+        登録されている生徒はいません。
+      </div>
+    `;
 
     return;
 
@@ -297,24 +187,18 @@ async function loadStudents() {
     data
       .map(
         student => `
-
           <div
             class="list-row"
             data-student-id="${escapeHtml(
               student.id
             )}">
 
-            <div class="student-name">
-
-              ${escapeHtml(
-                student.display_name ||
-                "名前未設定"
-              )}
-
-            </div>
+            ${escapeHtml(
+              student.display_name ||
+              "名前未設定"
+            )}
 
           </div>
-
         `
       )
       .join("");
@@ -323,37 +207,33 @@ async function loadStudents() {
 
 
 /* =========================================================
-   Validate
+   Validation
    ========================================================= */
 
-function validateStudentInput() {
+function getStudentInput() {
 
   const displayName =
-    document
-      .getElementById(
-        "displayName"
-      )
+    document.getElementById(
+      "displayName"
+    )
       ?.value
-      .trim();
+      .trim() || "";
 
 
   const email =
-    document
-      .getElementById(
-        "email"
-      )
+    document.getElementById(
+      "email"
+    )
       ?.value
       .trim()
-      .toLowerCase();
+      .toLowerCase() || "";
 
 
   const password =
-    document
-      .getElementById(
-        "password"
-      )
-      ?.value ||
-      "";
+    document.getElementById(
+      "password"
+    )
+      ?.value || "";
 
 
   if (!displayName) {
@@ -366,8 +246,7 @@ function validateStudentInput() {
 
 
   if (
-    displayName.length >
-    100
+    displayName.length > 100
   ) {
 
     throw new Error(
@@ -386,11 +265,6 @@ function validateStudentInput() {
   }
 
 
-  /*
-   * 完全なRFC検証ではなく、
-   * 通常の入力ミスを防ぐための確認。
-   */
-
   if (
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
       .test(email)
@@ -404,8 +278,7 @@ function validateStudentInput() {
 
 
   if (
-    password.length <
-    8
+    password.length < 8
   ) {
 
     throw new Error(
@@ -415,25 +288,34 @@ function validateStudentInput() {
   }
 
 
-  return {
+  if (
+    password.length > 128
+  ) {
 
+    throw new Error(
+      "パスワードは128文字以内にしてください。"
+    );
+
+  }
+
+
+  return {
     displayName,
     email,
     password
-
   };
 
 }
 
 
 /* =========================================================
-   Create student
+   Create
    ========================================================= */
 
 async function createStudent() {
 
   if (
-    createButton?.disabled
+    createButton.disabled
   ) {
 
     return;
@@ -447,7 +329,7 @@ async function createStudent() {
   try {
 
     input =
-      validateStudentInput();
+      getStudentInput();
 
   }
   catch (error) {
@@ -464,36 +346,21 @@ async function createStudent() {
 
   try {
 
-    /*
-     * 管理者セッションを確認。
-     */
-
     const {
-      data:
-        sessionData,
-      error:
-        sessionError
+      data,
+      error
     } =
       await supabase.auth
         .getSession();
 
 
-    if (sessionError) {
-
-      console.error(
-        "SESSION ERROR:",
-        sessionError
-      );
-
-      throw new Error(
-        "管理者セッションを確認できませんでした。"
-      );
-
+    if (error) {
+      throw error;
     }
 
 
     const session =
-      sessionData?.session;
+      data?.session;
 
 
     if (!session) {
@@ -505,19 +372,11 @@ async function createStudent() {
     }
 
 
-    /*
-     * 登録中は二重送信を防止。
-     */
+    createButton.disabled =
+      true;
 
-    if (createButton) {
-
-      createButton.disabled =
-        true;
-
-      createButton.textContent =
-        "登録中...";
-
-    }
+    createButton.textContent =
+      "登録中...";
 
 
     setMessage(
@@ -525,18 +384,10 @@ async function createStudent() {
     );
 
 
-    /*
-     * Edge Functionへ送信。
-     *
-     * Supabase Authの管理者APIを
-     * ブラウザから直接実行しない。
-     */
-
     const response =
       await fetch(
         CREATE_STUDENT_URL,
         {
-
           method:
             "POST",
 
@@ -573,89 +424,57 @@ async function createStudent() {
       );
 
 
-    const responseText =
+    const text =
       await response.text();
 
 
-    let result =
-      null;
+    let result = {};
 
 
-    if (
-      responseText
-    ) {
+    try {
 
-      try {
+      result =
+        text
+          ? JSON.parse(text)
+          : {};
 
-        result =
-          JSON.parse(
-            responseText
-          );
+    }
+    catch {
 
-      }
-      catch {
-
-        result = {
-
-          error:
-            responseText
-
-        };
-
-      }
+      result = {
+        error:
+          text
+      };
 
     }
 
 
     if (
-      !response.ok
+      !response.ok ||
+      result.success !== true
     ) {
 
       throw new Error(
 
-        result?.error ||
-
-        result?.message ||
-
-        `生徒登録に失敗しました。(${response.status})`
+        result.error ||
+        result.message ||
+        `生徒登録に失敗しました。HTTP ${response.status}`
 
       );
 
     }
-
-
-    if (
-      result?.success !== true
-    ) {
-
-      throw new Error(
-
-        result?.error ||
-
-        result?.message ||
-
-        "生徒登録に失敗しました。"
-
-      );
-
-    }
-
-
-    /*
-     * 成功。
-     */
-
-    setMessage(
-      "生徒を登録しました。",
-      "success"
-    );
 
 
     clearForm();
 
-
-    formCard?.classList.add(
+    formCard.classList.add(
       "hidden"
+    );
+
+
+    setMessage(
+      "生徒を登録しました。",
+      "success"
     );
 
 
@@ -672,7 +491,7 @@ async function createStudent() {
 
     setMessage(
       `登録エラー: ${
-        error?.message ||
+        error.message ||
         "生徒登録に失敗しました。"
       }`,
       "error"
@@ -681,15 +500,11 @@ async function createStudent() {
   }
   finally {
 
-    if (createButton) {
+    createButton.disabled =
+      false;
 
-      createButton.disabled =
-        false;
-
-      createButton.textContent =
-        "登録";
-
-    }
+    createButton.textContent =
+      "登録";
 
   }
 
@@ -702,8 +517,126 @@ async function createStudent() {
 
 async function start() {
 
+  formCard =
+    document.getElementById(
+      "formCard"
+    );
+
+  message =
+    document.getElementById(
+      "message"
+    );
+
+  students =
+    document.getElementById(
+      "students"
+    );
+
+  showFormButton =
+    document.getElementById(
+      "showForm"
+    );
+
+  cancelButton =
+    document.getElementById(
+      "cancel"
+    );
+
+  createButton =
+    document.getElementById(
+      "create"
+    );
+
+  logoutButton =
+    document.getElementById(
+      "logout"
+    );
+
+
+  if (
+    !formCard ||
+    !message ||
+    !students ||
+    !showFormButton ||
+    !cancelButton ||
+    !createButton ||
+    !logoutButton
+  ) {
+
+    throw new Error(
+      "生徒管理画面のHTMLが正しく構成されていません。"
+    );
+
+  }
+
+
   /*
-   * 管理者権限確認。
+   * イベントを先に設定。
+   */
+
+  showFormButton.addEventListener(
+    "click",
+    showStudentForm
+  );
+
+
+  cancelButton.addEventListener(
+    "click",
+    hideStudentForm
+  );
+
+
+  createButton.addEventListener(
+    "click",
+    createStudent
+  );
+
+
+  logoutButton.addEventListener(
+    "click",
+    () =>
+      logout()
+  );
+
+
+  /*
+   * Enter登録。
+   */
+
+  [
+    "displayName",
+    "email",
+    "password"
+  ]
+    .forEach(
+      id => {
+
+        document
+          .getElementById(id)
+          ?.addEventListener(
+            "keydown",
+            event => {
+
+              if (
+                event.key ===
+                "Enter"
+              ) {
+
+                event.preventDefault();
+
+                createStudent();
+
+              }
+
+            }
+          );
+
+      }
+    );
+
+
+  /*
+   * 管理者確認。
    */
 
   const admin =
@@ -711,15 +644,9 @@ async function start() {
 
 
   if (!admin) {
-
     return;
-
   }
 
-
-  /*
-   * 生徒一覧。
-   */
 
   await loadStudents();
 
@@ -730,49 +657,60 @@ async function start() {
    Boot
    ========================================================= */
 
-start()
-  .catch(
-    error => {
+if (
+  document.readyState ===
+  "loading"
+) {
 
-      console.error(
-        "ADMIN STUDENTS ERROR:",
-        error
-      );
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
+      start()
+        .catch(
+          error => {
 
-      if (!students) {
-        return;
-      }
+            console.error(
+              "ADMIN STUDENTS ERROR:",
+              error
+            );
 
+            if (students) {
 
-      students.innerHTML =
-        `
-          <div class="page-error">
+              students.innerHTML = `
+                <div class="list-row">
+                  生徒管理を読み込めませんでした。
+                  <br>
+                  <small>
+                    ${escapeHtml(
+                      error.message ||
+                      "エラーが発生しました。"
+                    )}
+                  </small>
+                </div>
+              `;
 
-            <h2>
-              生徒一覧を読み込めませんでした
-            </h2>
+            }
 
-            <p>
-              ${
-                escapeHtml(
-                  error?.message ||
-                  "データの取得に失敗しました。"
-                )
-              }
-            </p>
-
-            <button
-              class="primary-button"
-              type="button"
-              onclick="location.reload()">
-
-              再読み込み
-
-            </button>
-
-          </div>
-        `;
+          }
+        );
 
     }
   );
+
+}
+else {
+
+  start()
+    .catch(
+      error => {
+
+        console.error(
+          "ADMIN STUDENTS ERROR:",
+          error
+        );
+
+      }
+    );
+
+}
