@@ -14,31 +14,20 @@
   name="viewport"
   content="width=device-width,initial-scale=1">
 
-<meta
-  http-equiv="X-UA-Compatible"
-  content="IE=edge">
-
 <title>生徒管理</title>
 
+<link
+  rel="stylesheet"
+  href="../../assets/css/common.css?v=students-final-1">
 
 <link
   rel="stylesheet"
-  href="../../assets/css/common.css?v=admin-students-utf8-1">
-
-
-<link
-  rel="stylesheet"
-  href="../style.css?v=admin-students-utf8-1">
+  href="../style.css?v=students-final-1">
 
 </head>
 
 
 <body>
-
-
-<!-- =======================================================
-     Sidebar
-     ======================================================= -->
 
 <aside class="admin-side">
 
@@ -61,16 +50,13 @@
       ダッシュボード
     </a>
 
-
     <a href="../books/">
       Book管理
     </a>
 
-
     <a href="../serials/">
       シリアル管理
     </a>
-
 
     <a
       class="active"
@@ -80,21 +66,17 @@
 
     </a>
 
-
     <a href="../materials/">
       資料配信
     </a>
-
 
     <a href="../b4/">
       B4資料
     </a>
 
-
     <a href="../system/">
       システム管理
     </a>
-
 
     <button
       id="logout"
@@ -109,16 +91,7 @@
 </aside>
 
 
-<!-- =======================================================
-     Main
-     ======================================================= -->
-
 <main class="admin-main">
-
-
-  <!-- =====================================================
-       Notice
-       ===================================================== -->
 
   <header class="admin-notice">
 
@@ -133,16 +106,12 @@
   </header>
 
 
-  <!-- =====================================================
-       Content
-       ===================================================== -->
-
   <section class="admin-content">
 
 
-    <!-- ===================================================
+    <!-- =================================================
          Heading
-         =================================================== -->
+         ================================================= -->
 
     <div class="page-heading">
 
@@ -159,26 +128,76 @@
       </div>
 
 
-      <button
-        id="showForm"
-        type="button"
-        class="primary-button">
+      <div class="page-heading-actions">
 
-        生徒を追加
+        <button
+          id="exportCsv"
+          type="button"
+          class="secondary-button">
 
-      </button>
+          CSV出力
+
+        </button>
+
+
+        <button
+          id="showForm"
+          type="button"
+          class="primary-button">
+
+          生徒を追加
+
+        </button>
+
+      </div>
 
     </div>
 
 
-    <!-- ===================================================
-         Student form
-         =================================================== -->
+    <!-- =================================================
+         Search
+         ================================================= -->
+
+    <section class="admin-card student-search-card">
+
+      <div class="student-search">
+
+        <input
+          id="studentSearch"
+          type="search"
+          autocomplete="off"
+          placeholder="氏名・生徒番号・メールアドレスで検索">
+
+        <button
+          id="clearSearch"
+          type="button"
+          class="secondary-button">
+
+          クリア
+
+        </button>
+
+      </div>
+
+
+      <div
+        id="studentCount"
+        class="student-count">
+
+        -
+
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         Create
+         ================================================= -->
 
     <section
       id="formCard"
       class="admin-card hidden">
-
 
       <h2>
         生徒を追加
@@ -196,11 +215,26 @@
 
           <input
             id="displayName"
-            name="displayName"
             type="text"
             autocomplete="name"
             maxlength="100"
             placeholder="生徒氏名">
+
+        </label>
+
+
+        <label>
+
+          <span>
+            生徒番号
+          </span>
+
+          <input
+            id="studentNumber"
+            type="text"
+            autocomplete="off"
+            maxlength="50"
+            placeholder="生徒番号">
 
         </label>
 
@@ -213,11 +247,40 @@
 
           <input
             id="email"
-            name="email"
             type="email"
             autocomplete="email"
             maxlength="254"
             placeholder="student@example.com">
+
+        </label>
+
+
+        <label>
+
+          <span>
+            学年
+          </span>
+
+          <input
+            id="grade"
+            type="text"
+            maxlength="30"
+            placeholder="例：中2">
+
+        </label>
+
+
+        <label>
+
+          <span>
+            クラス
+          </span>
+
+          <input
+            id="className"
+            type="text"
+            maxlength="50"
+            placeholder="例：A">
 
         </label>
 
@@ -230,7 +293,6 @@
 
           <input
             id="password"
-            name="password"
             type="password"
             autocomplete="new-password"
             minlength="8"
@@ -244,7 +306,6 @@
 
 
       <div class="toolbar">
-
 
         <button
           id="create"
@@ -265,7 +326,6 @@
 
         </button>
 
-
       </div>
 
 
@@ -275,16 +335,14 @@
         aria-live="polite">
       </p>
 
-
     </section>
 
 
-    <!-- ===================================================
-         Student list
-         =================================================== -->
+    <!-- =================================================
+         List
+         ================================================= -->
 
     <section class="admin-card">
-
 
       <div class="card-heading">
 
@@ -295,7 +353,7 @@
           </h2>
 
           <p class="card-description">
-            現在登録されている生徒を表示します。
+            生徒を選択すると詳細を表示できます。
           </p>
 
         </div>
@@ -307,128 +365,84 @@
         id="students"
         class="student-list"
         aria-live="polite"
-        aria-busy="true">
-
+        aria-busy="false">
 
         <div class="list-row">
-
           生徒を読み込んでいます。
-
         </div>
-
 
       </div>
 
-
     </section>
 
-
   </section>
-
 
 </main>
 
 
-<!-- =======================================================
-     App
-     ======================================================= -->
-
 <script type="module">
 
-  const students =
+try {
+
+  await import(
+    "./app.js?v=students-final-20261114-1"
+  );
+
+}
+catch (error) {
+
+  console.error(
+    "STUDENT ADMIN APP ERROR:",
+    error
+  );
+
+
+  const element =
     document.getElementById(
       "students"
     );
 
 
-  /*
-   * app.js自体の読み込みエラーを
-   * 画面に表示する。
-   */
+  if (element) {
 
-  try {
+    element.innerHTML = `
 
-    await import(
-      "./app.js?v=admin-students-debug-20261114-1"
-    );
+      <div class="list-row">
 
+        <strong>
+          生徒管理を読み込めませんでした。
+        </strong>
+
+        <br><br>
+
+        <small>
+          ${String(
+            error?.message ||
+            error
+          )
+            .replace(
+              /&/g,
+              "&amp;"
+            )
+            .replace(
+              /</g,
+              "&lt;"
+            )
+            .replace(
+              />/g,
+              "&gt;"
+            )}
+        </small>
+
+      </div>
+
+    `;
 
   }
-  catch (error) {
 
-    console.error(
-      "ADMIN STUDENTS APP LOAD ERROR:",
-      error
-    );
-
-
-    if (students) {
-
-      students.setAttribute(
-        "aria-busy",
-        "false"
-      );
-
-
-      const safeMessage =
-        String(
-          error?.message ||
-          error ||
-          "JavaScriptの読み込みに失敗しました。"
-        )
-          .replace(
-            /&/g,
-            "&amp;"
-          )
-          .replace(
-            /</g,
-            "&lt;"
-          )
-          .replace(
-            />/g,
-            "&gt;"
-          )
-          .replace(
-            /"/g,
-            "&quot;"
-          );
-
-
-      students.innerHTML = `
-
-        <div class="list-row">
-
-          <strong>
-            生徒管理を読み込めませんでした。
-          </strong>
-
-          <br><br>
-
-          <small>
-            ${safeMessage}
-          </small>
-
-          <br><br>
-
-          <button
-            type="button"
-            class="secondary-button"
-            onclick="location.reload()">
-
-            再読み込み
-
-          </button>
-
-        </div>
-
-      `;
-
-    }
-
-  }
+}
 
 </script>
-
 
 </body>
 </html>
