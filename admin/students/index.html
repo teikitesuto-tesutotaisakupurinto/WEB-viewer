@@ -22,206 +22,267 @@
 
 </head>
 
+
 <body>
 
 <aside class="admin-side">
 
-<div class="admin-brand">
+  <div class="admin-brand">
 
-<div>WEB-viewer</div>
+    <div>
+      WEB-viewer
+    </div>
 
-<small>管理システム</small>
+    <small>
+      管理システム
+    </small>
 
-</div>
+  </div>
 
 
-<nav>
+  <nav>
 
-<a href="../">
-ダッシュボード
-</a>
+    <a href="../">
+      ダッシュボード
+    </a>
 
-<a href="../books/">
-Book管理
-</a>
+    <a href="../books/">
+      Book管理
+    </a>
 
-<a href="../serials/">
-シリアル管理
-</a>
+    <a href="../serials/">
+      シリアル管理
+    </a>
 
-<a
-  class="active"
-  href="./">
-生徒管理
-</a>
+    <a
+      class="active"
+      href="./">
 
-<a href="../materials/">
-資料配信
-</a>
+      生徒管理
 
-<a href="../b4/">
-B4資料
-</a>
+    </a>
 
-<a href="../system/">
-システム管理
-</a>
+    <a href="../materials/">
+      資料配信
+    </a>
 
-<button
-  id="logout"
-  type="button">
-ログアウト
-</button>
+    <a href="../b4/">
+      B4資料
+    </a>
 
-</nav>
+    <a href="../system/">
+      システム管理
+    </a>
+
+    <button
+      id="logout"
+      type="button">
+
+      ログアウト
+
+    </button>
+
+  </nav>
 
 </aside>
 
 
 <main class="admin-main">
 
-<header class="admin-notice">
+  <header class="admin-notice">
 
-<div>お知らせ</div>
+    <div>
+      お知らせ
+    </div>
 
-<span>生徒管理</span>
+    <span>
+      生徒管理
+    </span>
 
-</header>
-
-
-<section class="admin-content">
-
-<div class="page-heading">
-
-<div>
-
-<h1>
-生徒管理
-</h1>
-
-<p>
-生徒の登録と管理
-</p>
-
-</div>
+  </header>
 
 
-<button
-  id="showForm"
-  type="button"
-  class="primary-button">
-
-生徒を追加
-
-</button>
-
-</div>
+  <section class="admin-content">
 
 
-<section
-  id="formCard"
-  class="admin-card hidden">
+    <!-- ===================================================
+         Heading
+         =================================================== -->
 
-<h2>
-生徒を追加
-</h2>
+    <div class="page-heading">
 
+      <div>
 
-<label>
+        <h1>
+          生徒管理
+        </h1>
 
-氏名
+        <p>
+          生徒の登録と管理
+        </p>
 
-<input
-  id="displayName"
-  type="text"
-  autocomplete="name">
-
-</label>
+      </div>
 
 
-<label>
+      <button
+        id="showForm"
+        type="button"
+        class="primary-button">
 
-メールアドレス
+        生徒を追加
 
-<input
-  id="email"
-  type="email"
-  autocomplete="email">
+      </button>
 
-</label>
-
-
-<label>
-
-初期パスワード
-
-<input
-  id="password"
-  type="password"
-  autocomplete="new-password">
-
-</label>
+    </div>
 
 
-<div class="toolbar">
+    <!-- ===================================================
+         Create student
+         =================================================== -->
 
-<button
-  id="create"
-  type="button"
-  class="primary-button">
+    <section
+      id="formCard"
+      class="admin-card hidden">
 
-登録
-
-</button>
-
-
-<button
-  id="cancel"
-  type="button"
-  class="secondary-button">
-
-キャンセル
-
-</button>
-
-</div>
+      <h2>
+        生徒を追加
+      </h2>
 
 
-<p
-  id="message"
-  class="message">
-</p>
-
-</section>
+      <div class="form-grid">
 
 
-<section class="admin-card">
+        <label>
 
-<h2>
-登録済み生徒
-</h2>
+          <span>
+            氏名
+          </span>
+
+          <input
+            id="displayName"
+            type="text"
+            autocomplete="name"
+            maxlength="100"
+            placeholder="生徒氏名">
+
+        </label>
 
 
-<div
-  id="students"
-  class="student-list">
+        <label>
 
-<div class="list-row">
-読み込んでいます。
-</div>
+          <span>
+            メールアドレス
+          </span>
 
-</div>
+          <input
+            id="email"
+            type="email"
+            autocomplete="email"
+            maxlength="254"
+            placeholder="student@example.com">
 
-</section>
+        </label>
 
-</section>
+
+        <label>
+
+          <span>
+            初期パスワード
+          </span>
+
+          <input
+            id="password"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            maxlength="128"
+            placeholder="8文字以上">
+
+        </label>
+
+
+      </div>
+
+
+      <div class="toolbar">
+
+        <button
+          id="create"
+          type="button"
+          class="primary-button">
+
+          登録
+
+        </button>
+
+
+        <button
+          id="cancel"
+          type="button"
+          class="secondary-button">
+
+          キャンセル
+
+        </button>
+
+      </div>
+
+
+      <p
+        id="message"
+        class="message"
+        aria-live="polite">
+      </p>
+
+    </section>
+
+
+    <!-- ===================================================
+         Student list
+         =================================================== -->
+
+    <section class="admin-card">
+
+      <div class="card-heading">
+
+        <div>
+
+          <h2>
+            登録済み生徒
+          </h2>
+
+          <p class="card-description">
+            現在登録されている生徒を表示します。
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="students"
+        class="student-list">
+
+        <div class="list-row">
+
+          生徒を読み込んでいます。
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </section>
 
 </main>
 
 
 <script
   type="module"
-  src="app.js?v=admin-students-final">
+  src="app.js?v=admin-students-20261113">
+
 </script>
 
 </body>
