@@ -5,8 +5,7 @@ import {
 } from "../../assets/js/auth.js";
 
 import {
-  supabase,
-  SUPABASE_KEY
+  supabase
 } from "../../assets/js/supabase.js";
 
 
@@ -26,12 +25,17 @@ const REQUEST_TIMEOUT =
    ========================================================= */
 
 let formCard = null;
+
 let message = null;
+
 let students = null;
 
 let showFormButton = null;
+
 let cancelButton = null;
+
 let createButton = null;
+
 let logoutButton = null;
 
 
@@ -73,30 +77,44 @@ function withTimeout(
   ms = REQUEST_TIMEOUT
 ) {
 
-  return Promise.race([
+  let timer = null;
 
-    promise,
 
+  const timeout =
     new Promise(
       (_, reject) => {
 
-        setTimeout(
-          () => {
+        timer =
+          setTimeout(
+            () => {
 
-            reject(
-              new Error(
-                "通信がタイムアウトしました。ページを再読み込みしてください。"
-              )
-            );
+              reject(
+                new Error(
+                  "通信がタイムアウトしました。"
+                )
+              );
 
-          },
-          ms
-        );
+            },
+            ms
+          );
 
       }
-    )
+    );
 
-  ]);
+
+  return Promise.race([
+    promise,
+    timeout
+  ])
+    .finally(
+      () => {
+
+        if (timer) {
+          clearTimeout(timer);
+        }
+
+      }
+    );
 
 }
 
@@ -128,11 +146,12 @@ function setMessage(
 
 
 /* =========================================================
-   Student list state
+   Student list UI
    ========================================================= */
 
 function showStudentLoading(
-  text = "生徒を読み込んでいます。"
+  text =
+    "生徒を読み込んでいます。"
 ) {
 
   if (!students) {
@@ -174,7 +193,7 @@ function showStudentError(
     <div class="list-row">
 
       <strong>
-        生徒一覧を読み込めませんでした。
+        生徒管理を読み込めませんでした。
       </strong>
 
       <br><br>
@@ -240,17 +259,20 @@ function clearForm() {
 
 
   if (displayName) {
-    displayName.value = "";
+    displayName.value =
+      "";
   }
 
 
   if (email) {
-    email.value = "";
+    email.value =
+      "";
   }
 
 
   if (password) {
-    password.value = "";
+    password.value =
+      "";
   }
 
 }
@@ -312,11 +334,9 @@ async function loadStudents() {
 
   if (!students) {
 
-    console.error(
-      "students element is missing."
+    throw new Error(
+      "students要素が見つかりません。"
     );
-
-    return;
 
   }
 
@@ -332,7 +352,7 @@ async function loadStudents() {
 
 
     /*
-     * 現在のセッションを明示的に確認。
+     * 現在のセッションを確認。
      */
 
     const {
@@ -371,7 +391,7 @@ async function loadStudents() {
 
 
     console.log(
-      "[ADMIN STUDENTS] session exists"
+      "[ADMIN STUDENTS] session OK"
     );
 
 
@@ -448,10 +468,6 @@ async function loadStudents() {
 
     }
 
-
-    /*
-     * 一覧表示。
-     */
 
     students.innerHTML =
       data
@@ -691,12 +707,20 @@ async function createStudent() {
     );
 
 
+    /*
+     * Edge Functionへ送信。
+     *
+     * SUPABASE_KEYは使用しない。
+     * Authorizationだけで認証する。
+     */
+
     const response =
       await withTimeout(
 
         fetch(
           CREATE_STUDENT_URL,
           {
+
             method:
               "POST",
 
@@ -706,9 +730,6 @@ async function createStudent() {
                 `Bearer ${
                   session.access_token
                 }`,
-
-              apikey:
-                SUPABASE_KEY,
 
               "Content-Type":
                 "application/json"
@@ -735,7 +756,7 @@ async function createStudent() {
       );
 
 
-    const text =
+    const responseText =
       await response.text();
 
 
@@ -746,9 +767,9 @@ async function createStudent() {
     try {
 
       result =
-        text
+        responseText
           ? JSON.parse(
-              text
+              responseText
             )
           : {};
 
@@ -756,8 +777,10 @@ async function createStudent() {
     catch {
 
       result = {
+
         error:
-          text
+          responseText
+
       };
 
     }
@@ -845,7 +868,7 @@ async function createStudent() {
 
 
 /* =========================================================
-   Initialize DOM
+   DOM initialization
    ========================================================= */
 
 function initializeDom() {
@@ -955,7 +978,7 @@ function initializeDom() {
 
 
 /* =========================================================
-   Initialize events
+   Events
    ========================================================= */
 
 function initializeEvents() {
@@ -1055,12 +1078,9 @@ async function start() {
 
   initializeDom();
 
+
   initializeEvents();
 
-
-  /*
-   * 管理者確認。
-   */
 
   showStudentLoading(
     "管理者権限を確認しています。"
@@ -1115,10 +1135,6 @@ async function start() {
 
   }
 
-
-  /*
-   * 生徒一覧。
-   */
 
   await loadStudents();
 
