@@ -7,10 +7,6 @@
 <meta charset="UTF-8">
 
 <meta
-  http-equiv="Content-Type"
-  content="text/html; charset=UTF-8">
-
-<meta
   name="viewport"
   content="width=device-width,initial-scale=1">
 
@@ -25,6 +21,7 @@
 html,
 body {
   margin: 0;
+
   min-height: 100%;
 }
 
@@ -32,7 +29,9 @@ body {
   min-height: 100vh;
 
   display: flex;
+
   align-items: center;
+
   justify-content: center;
 
   padding: 24px;
@@ -42,6 +41,7 @@ body {
   color: #222;
 
   font-family:
+    system-ui,
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
@@ -52,7 +52,10 @@ body {
 }
 
 .password-card {
-  width: min(440px, 100%);
+  width: min(
+    440px,
+    100%
+  );
 
   padding: 34px;
 
@@ -63,7 +66,12 @@ body {
   border-radius: 12px;
 
   box-shadow:
-    0 12px 40px rgba(0,0,0,.07);
+    0 12px 40px rgba(
+      0,
+      0,
+      0,
+      .07
+    );
 }
 
 .brand {
@@ -130,7 +138,12 @@ h1 {
   border-color: #8d96a0;
 
   box-shadow:
-    0 0 0 3px rgba(80,90,100,.08);
+    0 0 0 3px rgba(
+      80,
+      90,
+      100,
+      .08
+    );
 }
 
 .password-help {
@@ -161,6 +174,10 @@ h1 {
   font-weight: 600;
 
   cursor: pointer;
+}
+
+.submit:hover {
+  background: #11151a;
 }
 
 .submit:disabled {
@@ -200,9 +217,11 @@ h1 {
     WEB-viewer
   </div>
 
+
   <h1>
     パスワード再設定
   </h1>
+
 
   <p class="description">
     管理者から発行された一時パスワードでログインしました。<br>
@@ -268,7 +287,7 @@ h1 {
 
 <script
   type="module"
-  src="app.js?v=password-reset-20261114-1">
+  src="app.js?v=password-reset-final-20261114-1">
 </script>
 
 </body>
