@@ -4,42 +4,68 @@ import {
 } from "./supabase.js";
 
 
-const AUTH_TIMEOUT = 8000;
+const AUTH_TIMEOUT =
+  8000;
 
 
 /* =========================================================
-   共通
+   Timeout
    ========================================================= */
 
 function timeout(
   promise,
-  message = "処理がタイムアウトしました。"
+  message =
+    "処理がタイムアウトしました。"
 ) {
 
-  return Promise.race([
+  let timer = null;
 
-    promise,
 
+  const timeoutPromise =
     new Promise(
       (_, reject) => {
 
-        setTimeout(
-          () => reject(
-            new Error(message)
-          ),
-          AUTH_TIMEOUT
-        );
+        timer =
+          setTimeout(
+            () => {
+
+              reject(
+                new Error(
+                  message
+                )
+              );
+
+            },
+            AUTH_TIMEOUT
+          );
 
       }
-    )
+    );
 
-  ]);
+
+  return Promise.race([
+    promise,
+    timeoutPromise
+  ])
+    .finally(
+      () => {
+
+        if (timer) {
+
+          clearTimeout(
+            timer
+          );
+
+        }
+
+      }
+    );
 
 }
 
 
 /* =========================================================
-   ログインユーザー
+   User
    ========================================================= */
 
 export async function getUser() {
@@ -49,17 +75,23 @@ export async function getUser() {
     error
   } =
     await timeout(
+
       supabase.auth.getUser(),
+
       "ログイン情報を取得できませんでした。"
+
     );
 
 
   if (error) {
+
     throw error;
+
   }
 
 
-  return data?.user || null;
+  return data?.user ||
+    null;
 
 }
 
@@ -75,7 +107,9 @@ export async function getProfile() {
 
 
   if (!user) {
+
     return null;
+
   }
 
 
@@ -87,26 +121,55 @@ export async function getProfile() {
 
       supabase
         .from("users")
-        .select(
-          "id,display_name,role"
-        )
+        .select(`
+          id,
+          display_name,
+          role,
+          status,
+          must_change_password
+        `)
         .eq(
           "id",
           user.id
         )
         .maybeSingle(),
 
-      "ユーザー情報を取得できませんでした。"
+      "ユーザー情報を取得できませんでした."
 
     );
 
 
   if (error) {
+
     throw error;
+
   }
 
 
-  return data || null;
+  return data ||
+    null;
+
+}
+
+
+/* =========================================================
+   Account guard
+   ========================================================= */
+
+async function getAccountState() {
+
+  const profile =
+    await getProfile();
+
+
+  if (!profile) {
+
+    return null;
+
+  }
+
+
+  return profile;
 
 }
 
@@ -133,12 +196,37 @@ export async function requireAdmin() {
 
 
   const profile =
-    await getProfile();
+    await getAccountState();
+
+
+  if (!profile) {
+
+    await logout();
+
+    return null;
+
+  }
+
+
+  /*
+   * 管理者自身が停止された場合。
+   */
+
+  if (
+    profile.status ===
+    "suspended"
+  ) {
+
+    await logout();
+
+    return null;
+
+  }
 
 
   if (
-    !profile ||
-    profile.role !== "admin"
+    profile.role !==
+    "admin"
   ) {
 
     location.replace(
@@ -177,17 +265,75 @@ export async function requireStudent() {
 
 
   const profile =
-    await getProfile();
+    await getAccountState();
+
+
+  if (!profile) {
+
+    await logout();
+
+    return null;
+
+  }
 
 
   if (
-    !profile ||
-    profile.role !== "student"
+    profile.role !==
+    "student"
   ) {
 
     location.replace(
       "/errors/?type=403"
     );
+
+    return null;
+
+  }
+
+
+  /*
+   * 停止中ならログイン画面へ戻す。
+   *
+   * 停止モーダルはlogin/app.jsで表示する。
+   */
+
+  if (
+    profile.status ===
+    "suspended"
+  ) {
+
+    await logout();
+
+    return null;
+
+  }
+
+
+  /*
+   * パスワード変更必須なら
+   * パスワード再設定へ。
+   */
+
+  if (
+    profile.must_change_password ===
+    true
+  ) {
+
+    const currentUrl =
+      window.location.pathname +
+      window.location.search;
+
+
+    const target =
+      `/student/password-reset/?return=${encodeURIComponent(
+        currentUrl
+      )}`;
+
+
+    location.replace(
+      target
+    );
+
 
     return null;
 
@@ -200,19 +346,27 @@ export async function requireStudent() {
 
 
 /* =========================================================
-   Book利用権限
+   Book access
    ========================================================= */
 
 export async function requireBookAccess(
   bookId
 ) {
 
+  /*
+   * requireStudent側で
+   * status / must_change_passwordを
+   * 必ずチェック。
+   */
+
   const student =
     await requireStudent();
 
 
   if (!student) {
+
     return null;
+
   }
 
 
@@ -258,7 +412,9 @@ export async function requireBookAccess(
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -279,14 +435,17 @@ export async function requireBookAccess(
 
 
 /* =========================================================
-   ログアウト
+   Logout storage
    ========================================================= */
 
 function clearAuthStorage() {
 
   const storageList = [
+
     localStorage,
+
     sessionStorage
+
   ];
 
 
@@ -306,29 +465,35 @@ function clearAuthStorage() {
       ) {
 
         const key =
-          storage.key(i);
+          storage.key(
+            i
+          );
 
 
         if (!key) {
+
           continue;
+
         }
 
 
         if (
-          key.startsWith("sb-")
-          &&
+          key.startsWith(
+            "sb-"
+          ) &&
           (
             key.includes(
               "auth-token"
-            )
-            ||
+            ) ||
             key.includes(
               "auth"
             )
           )
         ) {
 
-          keys.push(key);
+          keys.push(
+            key
+          );
 
         }
 
@@ -338,7 +503,9 @@ function clearAuthStorage() {
           "supabase.auth.token"
         ) {
 
-          keys.push(key);
+          keys.push(
+            key
+          );
 
         }
 
@@ -349,7 +516,11 @@ function clearAuthStorage() {
         key => {
 
           try {
-            storage.removeItem(key);
+
+            storage.removeItem(
+              key
+            );
+
           }
           catch {}
 
@@ -363,6 +534,10 @@ function clearAuthStorage() {
 
 }
 
+
+/* =========================================================
+   Logout
+   ========================================================= */
 
 export async function logout() {
 
@@ -401,7 +576,8 @@ export async function logout() {
     await Promise.race([
 
       supabase.auth.signOut({
-        scope: "local"
+        scope:
+          "local"
       }),
 
       new Promise(
@@ -441,7 +617,7 @@ export async function logout() {
 
 
 /* =========================================================
-   Logoutボタン自動接続
+   Logout binding
    ========================================================= */
 
 export function bindLogout() {
@@ -492,7 +668,8 @@ if (
     "DOMContentLoaded",
     bindLogout,
     {
-      once: true
+      once:
+        true
     }
   );
 
