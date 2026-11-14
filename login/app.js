@@ -4,17 +4,62 @@ import {
 } from "../assets/js/supabase.js";
 
 
+/* =========================================================
+   DOM
+   ========================================================= */
+
 const form =
-  document.getElementById("loginForm");
+  document.getElementById(
+    "loginForm"
+  );
 
 const button =
-  document.getElementById("loginButton");
+  document.getElementById(
+    "loginButton"
+  );
+
+const emailInput =
+  document.getElementById(
+    "email"
+  );
+
+const passwordInput =
+  document.getElementById(
+    "password"
+  );
 
 const message =
-  document.getElementById("message");
+  document.getElementById(
+    "message"
+  );
 
 
-async function getProfile(userId) {
+/* =========================================================
+   Message
+   ========================================================= */
+
+function setMessage(
+  text
+) {
+
+  if (!message) {
+    return;
+  }
+
+
+  message.textContent =
+    text;
+
+}
+
+
+/* =========================================================
+   Profile
+   ========================================================= */
+
+async function getProfile(
+  userId
+) {
 
   const {
     data,
@@ -22,9 +67,13 @@ async function getProfile(userId) {
   } =
     await supabase
       .from("users")
-      .select(
-        "id,display_name,role"
-      )
+      .select(`
+        id,
+        display_name,
+        role,
+        status,
+        must_change_password
+      `)
       .eq(
         "id",
         userId
@@ -33,6 +82,12 @@ async function getProfile(userId) {
 
 
   if (error) {
+
+    console.error(
+      "PROFILE ERROR:",
+      error
+    );
+
 
     throw new Error(
       "ユーザー情報を取得できませんでした。"
@@ -54,6 +109,10 @@ async function getProfile(userId) {
 
 }
 
+
+/* =========================================================
+   Maintenance
+   ========================================================= */
 
 async function getMaintenance() {
 
@@ -90,22 +149,122 @@ async function getMaintenance() {
       ),
 
     message:
-      data?.message || ""
+      data?.message ||
+      ""
 
   };
 
 }
 
 
-form.addEventListener(
-  "submit",
-  async event => {
+/* =========================================================
+   Suspended modal
+   ========================================================= */
 
-    event.preventDefault();
+function showSuspendedModal() {
 
+  document
+    .getElementById(
+      "accountSuspendedModal"
+    )
+    ?.remove();
+
+
+  const overlay =
+    document.createElement(
+      "div"
+    );
+
+
+  overlay.id =
+    "accountSuspendedModal";
+
+
+  overlay.className =
+    "account-suspended-overlay";
+
+
+  overlay.innerHTML = `
+
+    <div
+      class="account-suspended-card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="accountSuspendedTitle">
+
+
+      <div
+        class="account-suspended-icon">
+
+        !
+
+      </div>
+
+
+      <h2
+        id="accountSuspendedTitle">
+
+        アカウントが停止中です
+
+      </h2>
+
+
+      <p>
+
+        アカウントが停止中です。<br>
+        管理者に問い合わせてください。
+
+      </p>
+
+
+      <button
+        id="accountSuspendedClose"
+        type="button">
+
+        閉じる
+
+      </button>
+
+
+    </div>
+
+  `;
+
+
+  document.body.appendChild(
+    overlay
+  );
+
+
+  const close =
+    document.getElementById(
+      "accountSuspendedClose"
+    );
+
+
+  close?.addEventListener(
+    "click",
+    () => {
+
+      overlay.remove();
+
+      emailInput?.focus();
+
+    }
+  );
+
+
+  /*
+   * ESCで閉じる。
+   */
+
+  function onKeyDown(
+    event
+  ) {
 
     if (
-      button.disabled
+      event.key !==
+      "Escape"
     ) {
 
       return;
@@ -113,149 +272,452 @@ form.addEventListener(
     }
 
 
-    button.disabled =
-      true;
+    overlay.remove();
 
-    message.textContent =
-      "";
+    document.removeEventListener(
+      "keydown",
+      onKeyDown
+    );
 
+    emailInput?.focus();
 
-    try {
-
-      const email =
-        document
-          .getElementById("email")
-          .value
-          .trim()
-          .toLowerCase();
+  }
 
 
-      const password =
-        document
-          .getElementById("password")
-          .value;
+  document.addEventListener(
+    "keydown",
+    onKeyDown
+  );
+
+}
 
 
-      if (
-        !email ||
-        !password
-      ) {
+/* =========================================================
+   Redirect
+   ========================================================= */
 
-        throw new Error(
-          "メールアドレスとパスワードを入力してください。"
-        );
+function redirectAfterLogin(
+  profile,
+  maintenance
+) {
 
-      }
+  /*
+   * 一時パスワード後の強制変更。
+   *
+   * roleより先に確認する。
+   */
 
+  if (
+    profile.must_change_password ===
+    true
+  ) {
 
-      const {
-        data,
-        error
-      } =
-        await supabase.auth
-          .signInWithPassword({
+    window.location.replace(
+      "/student/password-reset/"
+    );
 
-            email,
+    return;
 
-            password
-
-          });
-
-
-      if (
-        error ||
-        !data?.user
-      ) {
-
-        throw new Error(
-          "メールアドレスまたはパスワードが正しくありません。"
-        );
-
-      }
+  }
 
 
-      const profile =
-        await getProfile(
-          data.user.id
-        );
+  /*
+   * Admin
+   */
+
+  if (
+    profile.role ===
+    "admin"
+  ) {
+
+    window.location.replace(
+
+      maintenance.enabled
+        ? "/admin/?maintenance=1"
+        : "/admin/"
+
+    );
+
+    return;
+
+  }
 
 
-      const maintenance =
-        await getMaintenance();
+  /*
+   * Student
+   */
+
+  if (
+    profile.role ===
+    "student"
+  ) {
+
+    window.location.replace(
+
+      maintenance.enabled
+        ? "/student/?maintenance=1"
+        : "/student/books/"
+
+    );
+
+    return;
+
+  }
 
 
-      /*
-       * Admin
-       *
-       * 通常メンテナンス中も
-       * Adminは通常管理画面へ。
-       */
+  throw new Error(
+    "アカウントの権限を確認できません。"
+  );
 
-      if (
-        profile.role === "admin"
-      ) {
-
-        window.location.replace(
-          maintenance.enabled
-            ? "../admin/?maintenance=1"
-            : "../admin/"
-        );
-
-        return;
-
-      }
+}
 
 
-      /*
-       * Student
-       */
+/* =========================================================
+   Login
+   ========================================================= */
 
-      if (
-        profile.role === "student"
-      ) {
+async function login() {
 
-        window.location.replace(
-          maintenance.enabled
-            ? "../student/?maintenance=1"
-            : "../student/books/"
-        );
+  if (
+    button.disabled
+  ) {
 
-        return;
+    return;
 
-      }
+  }
 
 
-      /*
-       * 不明な権限
-       */
-
-      await supabase.auth.signOut({
-        scope: "local"
-      });
+  const email =
+    emailInput.value
+      .trim()
+      .toLowerCase();
 
 
-      window.location.replace(
-        "../errors/?type=403"
+  const password =
+    passwordInput.value;
+
+
+  if (!email) {
+
+    setMessage(
+      "メールアドレスを入力してください。"
+    );
+
+
+    emailInput.focus();
+
+    return;
+
+  }
+
+
+  if (!password) {
+
+    setMessage(
+      "パスワードを入力してください。"
+    );
+
+
+    passwordInput.focus();
+
+    return;
+
+  }
+
+
+  button.disabled =
+    true;
+
+
+  button.textContent =
+    "ログイン中...";
+
+
+  setMessage(
+    ""
+  );
+
+
+  try {
+
+    /*
+     * Authログイン。
+     */
+
+    const {
+      data,
+      error
+    } =
+      await supabase.auth
+        .signInWithPassword({
+
+          email,
+
+          password
+
+        });
+
+
+    if (
+      error ||
+      !data?.user
+    ) {
+
+      throw new Error(
+        "メールアドレスまたはパスワードが正しくありません。"
       );
 
     }
-    catch (error) {
 
-      console.error(
-        "LOGIN ERROR:",
-        error
+
+    /*
+     * usersを取得。
+     */
+
+    const profile =
+      await getProfile(
+        data.user.id
       );
 
 
-      message.textContent =
-        error.message ||
-        "ログインに失敗しました。";
+    /*
+     * 停止中なら、
+     * セッションを破棄して
+     * ログイン画面に中央モーダル。
+     */
+
+    if (
+      profile.status ===
+      "suspended"
+    ) {
+
+      await supabase.auth
+        .signOut({
+          scope:
+            "local"
+        });
 
 
-      button.disabled =
-        false;
+      passwordInput.value =
+        "";
+
+
+      showSuspendedModal();
+
+
+      return;
+
+    }
+
+
+    /*
+     * メンテナンス状態。
+     */
+
+    const maintenance =
+      await getMaintenance();
+
+
+    /*
+     * 通常遷移。
+     */
+
+    redirectAfterLogin(
+      profile,
+      maintenance
+    );
+
+  }
+  catch (error) {
+
+    console.error(
+      "LOGIN ERROR:",
+      error
+    );
+
+
+    /*
+     * DB確認などで失敗した場合、
+     * ログインセッションを残さない。
+     */
+
+    try {
+
+      await supabase.auth
+        .signOut({
+          scope:
+            "local"
+        });
+
+    }
+    catch {}
+
+
+    setMessage(
+      error?.message ||
+      "ログインに失敗しました。"
+    );
+
+  }
+  finally {
+
+    button.disabled =
+      false;
+
+
+    button.textContent =
+      "ログイン";
+
+  }
+
+}
+
+
+/* =========================================================
+   Existing session
+   ========================================================= */
+
+async function checkExistingSession() {
+
+  try {
+
+    const {
+      data,
+      error
+    } =
+      await supabase.auth
+        .getSession();
+
+
+    if (error) {
+
+      return;
+
+    }
+
+
+    const session =
+      data?.session;
+
+
+    if (
+      !session?.user?.id
+    ) {
+
+      return;
+
+    }
+
+
+    const profile =
+      await getProfile(
+        session.user.id
+      );
+
+
+    /*
+     * 既存セッションでも
+     * 停止状態を確認。
+     */
+
+    if (
+      profile.status ===
+      "suspended"
+    ) {
+
+      await supabase.auth
+        .signOut({
+          scope:
+            "local"
+        });
+
+
+      showSuspendedModal();
+
+
+      return;
+
+    }
+
+
+    const maintenance =
+      await getMaintenance();
+
+
+    redirectAfterLogin(
+      profile,
+      maintenance
+    );
+
+  }
+  catch (error) {
+
+    console.warn(
+      "EXISTING SESSION ERROR:",
+      error
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   Events
+   ========================================================= */
+
+form?.addEventListener(
+  "submit",
+  event => {
+
+    event.preventDefault();
+
+    login();
+
+  }
+);
+
+
+emailInput?.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.key ===
+      "Enter"
+    ) {
+
+      event.preventDefault();
+
+      passwordInput?.focus();
 
     }
 
   }
 );
+
+
+passwordInput?.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.key ===
+      "Enter"
+    ) {
+
+      event.preventDefault();
+
+      login();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   Boot
+   ========================================================= */
+
+checkExistingSession();
