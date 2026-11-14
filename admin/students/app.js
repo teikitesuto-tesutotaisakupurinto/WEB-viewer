@@ -13,11 +13,11 @@ import {
    Config
    ========================================================= */
 
-const STUDENT_ADMIN_FUNCTION_URL =
-  "https://wcddlfjtkrbpperhrxkk.supabase.co/functions/v1/create-student";
+const FUNCTION_NAME =
+  "create-student";
 
 const REQUEST_TIMEOUT =
-  10000;
+  15000;
 
 
 /* =========================================================
@@ -162,6 +162,7 @@ function formatDate(
     {
       dateStyle:
         "medium",
+
       timeStyle:
         "short"
     }
@@ -172,6 +173,10 @@ function formatDate(
 
 }
 
+
+/* =========================================================
+   Session
+   ========================================================= */
 
 async function getAccessToken() {
 
@@ -211,110 +216,157 @@ async function getAccessToken() {
 }
 
 
-function parseResponse(
-  text
-) {
-
-  if (!text) {
-
-    return {};
-
-  }
-
-
-  try {
-
-    return JSON.parse(
-      text
-    );
-
-  }
-  catch {
-
-    return {
-
-      error:
-        text
-
-    };
-
-  }
-
-}
-
-
 /* =========================================================
    Edge Function
    ========================================================= */
+
+/*
+ * 重要:
+ *
+ * fetch("https://.../functions/v1/...")
+ * は使わない。
+ *
+ * supabase.functions.invoke()を使うことで
+ * Supabaseクライアントが認証ヘッダーを
+ * 付けてくれる。
+ */
 
 async function callStudentFunction(
   payload
 ) {
 
-  const token =
-    await getAccessToken();
+  /*
+   * セッションがない場合は
+   * invokeする前に明示的にエラー。
+   */
+
+  await getAccessToken();
 
 
-  const response =
-    await withTimeout(
+  let result;
 
-      fetch(
-        STUDENT_ADMIN_FUNCTION_URL,
-        {
 
-          method:
-            "POST",
+  try {
 
-          headers: {
+    result =
+      await withTimeout(
 
-            Authorization:
-              `Bearer ${token}`,
-
-            "Content-Type":
-              "application/json"
-
-          },
-
-          body:
-            JSON.stringify(
+        supabase.functions.invoke(
+          FUNCTION_NAME,
+          {
+            body:
               payload
-            )
+          }
+        )
 
-        }
+      );
 
-      )
+  }
+  catch (error) {
 
+    console.error(
+      "FUNCTION INVOKE ERROR:",
+      error
     );
 
 
-  const text =
-    await response.text();
+    throw new Error(
+      "サーバーに接続できませんでした。Edge Functionのデプロイ状態を確認してください。"
+    );
+
+  }
 
 
-  const result =
-    parseResponse(
-      text
+  const {
+    data,
+    error
+  } =
+    result;
+
+
+  if (error) {
+
+    console.error(
+      "FUNCTION ERROR:",
+      error
     );
 
 
-  if (
-    !response.ok ||
-    result.success !==
-      true
-  ) {
+    /*
+     * FunctionsHttpErrorの場合、
+     * response bodyを取得できる場合がある。
+     */
+
+    let serverMessage =
+      "";
+
+
+    try {
+
+      const context =
+        error.context;
+
+
+      if (
+        context &&
+        typeof context.json ===
+          "function"
+      ) {
+
+        const body =
+          await context.json();
+
+
+        serverMessage =
+          body?.error ||
+          body?.message ||
+          "";
+
+      }
+
+    }
+    catch {}
+
 
     throw new Error(
 
-      result.error ||
-      result.message ||
-      `処理に失敗しました。HTTP ${response.status}`
+      serverMessage ||
+      error.message ||
+      "サーバー処理に失敗しました。"
 
     );
 
   }
 
 
-  return result;
+  if (
+    !data
+  ) {
+
+    throw new Error(
+      "サーバーから応答がありませんでした。"
+    );
+
+  }
+
+
+  if (
+    data.success !==
+      true
+  ) {
+
+    throw new Error(
+
+      data.error ||
+      data.message ||
+      "処理に失敗しました。"
+
+    );
+
+  }
+
+
+  return data;
 
 }
 
@@ -470,14 +522,14 @@ async function loadStudents() {
   try {
 
     /*
-     * セッション確認。
+     * 管理者セッション確認。
      */
 
     await getAccessToken();
 
 
     /*
-     * 管理者側のRLSで取得。
+     * usersはRLSで管理者だけ取得可能。
      */
 
     const {
@@ -578,8 +630,8 @@ async function loadStudents() {
         <br><br>
 
         <button
-          id="retryStudents"
           type="button"
+          id="retryStudents"
           class="secondary-button">
 
           再読み込み
@@ -819,9 +871,6 @@ function renderStudents() {
 
   /*
    * イベント委譲。
-   *
-   * innerHTMLで一覧を再描画しても
-   * このイベントは残る。
    */
 
   studentsElement.onclick =
@@ -840,13 +889,13 @@ function renderStudents() {
       }
 
 
-      const detailButton =
+      const button =
         target.closest(
           "[data-student-detail]"
         );
 
 
-      if (!detailButton) {
+      if (!button) {
 
         return;
 
@@ -860,7 +909,7 @@ function renderStudents() {
 
 
       const id =
-        detailButton.getAttribute(
+        button.getAttribute(
           "data-student-detail"
         );
 
@@ -965,7 +1014,7 @@ function openStudentDetail(
         "0",
 
       width:
-        "min(540px, 100vw)",
+        "min(540px,100vw)",
 
       maxWidth:
         "100vw",
@@ -1207,10 +1256,7 @@ function openStudentDetail(
     </section>
 
 
-    <section
-      style="
-        margin-bottom:30px;
-      ">
+    <section>
 
       <h3
         style="
@@ -1287,8 +1333,8 @@ function openStudentDetail(
       id="studentDetailMessage"
       style="
         display:none;
-        margin-top:18px;
-        padding:11px 13px;
+        margin-top:20px;
+        padding:12px 14px;
         border-radius:7px;
         background:#eef5ff;
         color:#315d87;
@@ -1353,9 +1399,7 @@ function openStudentDetail(
 
       student.status ===
         "suspended"
-
         ? "停止解除"
-
         : "アカウント停止",
 
       student.status !==
@@ -1425,10 +1469,6 @@ function openStudentDetail(
     panel
   );
 
-
-  /*
-   * 背景クリック。
-   */
 
   overlay.addEventListener(
     "click",
@@ -1918,10 +1958,6 @@ function editInput(
 }
 
 
-/* =========================================================
-   Save edit
-   ========================================================= */
-
 async function saveStudentEdit(
   student
 ) {
@@ -2000,7 +2036,9 @@ async function saveStudentEdit(
   if (
     email &&
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      .test(email)
+      .test(
+        email
+      )
   ) {
 
     errorElement.textContent =
@@ -2110,7 +2148,7 @@ async function changeStudentStatus(
     "suspended";
 
 
-  const nextAction =
+  const action =
     suspended
       ? "unsuspend_student"
       : "suspend_student";
@@ -2139,8 +2177,7 @@ async function changeStudentStatus(
 
     await callStudentFunction({
 
-      action:
-        nextAction,
+      action,
 
       student_id:
         student.id
@@ -2195,7 +2232,7 @@ async function resetStudentPassword(
   const confirmed =
     window.confirm(
 
-      `${student.display_name || "この生徒"}のパスワードを再発行しますか？\n\n新しいパスワードはシステムが自動生成し、今回だけ表示します。`
+      `${student.display_name || "この生徒"}のパスワードを再発行しますか？\n\n新しい一時パスワードをシステムが自動生成します。\n発行後はこの画面で一度だけ表示されます。`
 
     );
 
@@ -2221,13 +2258,11 @@ async function resetStudentPassword(
       });
 
 
-    const temporaryPassword =
+    const password =
       result.temporary_password;
 
 
-    if (
-      !temporaryPassword
-    ) {
+    if (!password) {
 
       throw new Error(
         "一時パスワードを取得できませんでした。"
@@ -2237,7 +2272,7 @@ async function resetStudentPassword(
 
 
     showTemporaryPassword(
-      temporaryPassword
+      password
     );
 
   }
@@ -2261,16 +2296,12 @@ async function resetStudentPassword(
 
 
 /* =========================================================
-   Temporary password modal
+   Temporary password
    ========================================================= */
 
 function showTemporaryPassword(
   password
 ) {
-
-  /*
-   * 既存表示を消す。
-   */
 
   document
     .getElementById(
@@ -2366,8 +2397,8 @@ function showTemporaryPassword(
         ">
 
         このパスワードは今回だけ表示されます。<br>
-        必要ならコピーして本人へ伝えてください。<br>
-        生徒は次回ログイン時に変更します。
+        コピーまたはメモして本人へ伝えてください。<br>
+        次回ログイン時に新しいパスワードへ変更します。
 
       </p>
 
@@ -2501,9 +2532,9 @@ function showTemporaryPassword(
       }
       catch {
 
-        passwordInput.focus();
+        passwordInput?.focus();
 
-        passwordInput.select();
+        passwordInput?.select();
 
 
         copyMessage.textContent =
@@ -2514,13 +2545,6 @@ function showTemporaryPassword(
     }
   );
 
-
-  /*
-   * 閉じたらDOMから完全削除。
-   *
-   * password変数はこの関数の
-   * スコープ終了とともに参照されなくなる。
-   */
 
   document
     .getElementById(
@@ -2535,6 +2559,10 @@ function showTemporaryPassword(
       }
     );
 
+
+  /*
+   * 自動選択。
+   */
 
   passwordInput?.focus();
 
@@ -2639,7 +2667,9 @@ async function createStudent() {
 
   if (
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      .test(email)
+      .test(
+        email
+      )
   ) {
 
     setMessage(
@@ -2654,9 +2684,9 @@ async function createStudent() {
 
   if (
     password.length <
-    8 ||
+      8 ||
     password.length >
-    128
+      128
   ) {
 
     setMessage(
@@ -2669,20 +2699,20 @@ async function createStudent() {
   }
 
 
+  createButton.disabled =
+    true;
+
+
+  createButton.textContent =
+    "登録中...";
+
+
+  setMessage(
+    "生徒を登録しています。"
+  );
+
+
   try {
-
-    createButton.disabled =
-      true;
-
-
-    createButton.textContent =
-      "登録中...";
-
-
-    setMessage(
-      "生徒を登録しています。"
-    );
-
 
     await callStudentFunction({
 
@@ -2739,7 +2769,7 @@ async function createStudent() {
     setMessage(
 
       `登録エラー: ${
-        error.message ||
+        error?.message ||
         "生徒登録に失敗しました。"
       }`,
 
@@ -2958,20 +2988,24 @@ function initializeDom() {
       "showForm"
     );
 
+
   const cancelButton =
     document.getElementById(
       "cancel"
     );
+
 
   const logoutButton =
     document.getElementById(
       "logout"
     );
 
+
   const clearSearchButton =
     document.getElementById(
       "clearSearch"
     );
+
 
   const exportButton =
     document.getElementById(
@@ -3138,7 +3172,7 @@ function initializeDom() {
 
 
   /*
-   * Escapeで詳細を閉じる。
+   * Escape
    */
 
   document.addEventListener(
@@ -3146,28 +3180,33 @@ function initializeDom() {
     event => {
 
       if (
-        event.key ===
+        event.key !==
         "Escape"
       ) {
 
-        const temporary =
-          document.getElementById(
-            "temporaryPasswordDialog"
-          );
-
-
-        if (temporary) {
-
-          temporary.remove();
-
-          return;
-
-        }
-
-
-        closeStudentDetail();
+        return;
 
       }
+
+
+      const passwordDialog =
+        document.getElementById(
+          "temporaryPasswordDialog"
+        );
+
+
+      if (
+        passwordDialog
+      ) {
+
+        passwordDialog.remove();
+
+        return;
+
+      }
+
+
+      closeStudentDetail();
 
     }
   );
@@ -3247,11 +3286,7 @@ if (
 
   document.addEventListener(
     "DOMContentLoaded",
-    () => {
-
-      start();
-
-    },
+    start,
     {
       once:
         true
