@@ -16,18 +16,31 @@
 
 <title>生徒管理</title>
 
-<link
-  rel="stylesheet"
-  href="../../assets/css/common.css?v=students-final-1">
 
 <link
   rel="stylesheet"
-  href="../style.css?v=students-final-1">
+  href="../../assets/css/common.css?v=students-common-20261114-1">
+
+
+<link
+  rel="stylesheet"
+  href="../style.css?v=students-admin-20261114-1">
+
+
+<link
+  rel="stylesheet"
+  href="style.css?v=students-detail-20261114-3">
+
 
 </head>
 
 
 <body>
+
+
+<!-- =====================================================
+     Sidebar
+     ===================================================== -->
 
 <aside class="admin-side">
 
@@ -50,13 +63,16 @@
       ダッシュボード
     </a>
 
+
     <a href="../books/">
       Book管理
     </a>
 
+
     <a href="../serials/">
       シリアル管理
     </a>
+
 
     <a
       class="active"
@@ -66,17 +82,21 @@
 
     </a>
 
+
     <a href="../materials/">
       資料配信
     </a>
+
 
     <a href="../b4/">
       B4資料
     </a>
 
+
     <a href="../system/">
       システム管理
     </a>
+
 
     <button
       id="logout"
@@ -91,7 +111,12 @@
 </aside>
 
 
+<!-- =====================================================
+     Main
+     ===================================================== -->
+
 <main class="admin-main">
+
 
   <header class="admin-notice">
 
@@ -128,67 +153,16 @@
       </div>
 
 
-      <div class="page-heading-actions">
+      <button
+        id="showForm"
+        type="button"
+        class="primary-button">
 
-        <button
-          id="exportCsv"
-          type="button"
-          class="secondary-button">
+        生徒を追加
 
-          CSV出力
-
-        </button>
-
-
-        <button
-          id="showForm"
-          type="button"
-          class="primary-button">
-
-          生徒を追加
-
-        </button>
-
-      </div>
+      </button>
 
     </div>
-
-
-    <!-- =================================================
-         Search
-         ================================================= -->
-
-    <section class="admin-card student-search-card">
-
-      <div class="student-search">
-
-        <input
-          id="studentSearch"
-          type="search"
-          autocomplete="off"
-          placeholder="氏名・生徒番号・メールアドレスで検索">
-
-        <button
-          id="clearSearch"
-          type="button"
-          class="secondary-button">
-
-          クリア
-
-        </button>
-
-      </div>
-
-
-      <div
-        id="studentCount"
-        class="student-count">
-
-        -
-
-      </div>
-
-    </section>
 
 
     <!-- =================================================
@@ -199,113 +173,53 @@
       id="formCard"
       class="admin-card hidden">
 
+
       <h2>
         生徒を追加
       </h2>
 
 
-      <div class="form-grid">
+      <label>
+
+        氏名
+
+        <input
+          id="displayName"
+          type="text"
+          autocomplete="name"
+          maxlength="100">
+
+      </label>
 
 
-        <label>
+      <label>
 
-          <span>
-            氏名
-          </span>
+        メールアドレス
 
-          <input
-            id="displayName"
-            type="text"
-            autocomplete="name"
-            maxlength="100"
-            placeholder="生徒氏名">
+        <input
+          id="email"
+          type="email"
+          autocomplete="email">
 
-        </label>
+      </label>
 
 
-        <label>
+      <label>
 
-          <span>
-            生徒番号
-          </span>
+        初期パスワード
 
-          <input
-            id="studentNumber"
-            type="text"
-            autocomplete="off"
-            maxlength="50"
-            placeholder="生徒番号">
+        <input
+          id="password"
+          type="password"
+          autocomplete="new-password"
+          minlength="8"
+          maxlength="128">
 
-        </label>
-
-
-        <label>
-
-          <span>
-            メールアドレス
-          </span>
-
-          <input
-            id="email"
-            type="email"
-            autocomplete="email"
-            maxlength="254"
-            placeholder="student@example.com">
-
-        </label>
-
-
-        <label>
-
-          <span>
-            学年
-          </span>
-
-          <input
-            id="grade"
-            type="text"
-            maxlength="30"
-            placeholder="例：中2">
-
-        </label>
-
-
-        <label>
-
-          <span>
-            クラス
-          </span>
-
-          <input
-            id="className"
-            type="text"
-            maxlength="50"
-            placeholder="例：A">
-
-        </label>
-
-
-        <label>
-
-          <span>
-            初期パスワード
-          </span>
-
-          <input
-            id="password"
-            type="password"
-            autocomplete="new-password"
-            minlength="8"
-            maxlength="128"
-            placeholder="8文字以上">
-
-        </label>
-
-
-      </div>
+      </label>
 
 
       <div class="toolbar">
+
 
         <button
           id="create"
@@ -326,6 +240,7 @@
 
         </button>
 
+
       </div>
 
 
@@ -335,28 +250,52 @@
         aria-live="polite">
       </p>
 
+
     </section>
 
 
     <!-- =================================================
-         List
+         Student list
          ================================================= -->
 
     <section class="admin-card">
 
-      <div class="card-heading">
+
+      <div
+        style="
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:20px;
+          margin-bottom:18px;
+        ">
+
 
         <div>
 
-          <h2>
+          <h2
+            style="
+              margin:0;
+            ">
+
             登録済み生徒
+
           </h2>
 
-          <p class="card-description">
-            生徒を選択すると詳細を表示できます。
+
+          <p
+            style="
+              margin:6px 0 0;
+              color:#777;
+              font-size:12px;
+            ">
+
+            現在登録されている生徒を表示します。
+
           </p>
 
         </div>
+
 
       </div>
 
@@ -365,84 +304,38 @@
         id="students"
         class="student-list"
         aria-live="polite"
-        aria-busy="false">
+        aria-busy="true">
+
 
         <div class="list-row">
+
           生徒を読み込んでいます。
+
         </div>
+
 
       </div>
 
+
     </section>
 
+
   </section>
+
 
 </main>
 
 
-<script type="module">
+<!-- =====================================================
+     Script
+     ===================================================== -->
 
-try {
-
-  await import(
-    "./app.js?v=students-final-20261114-1"
-  );
-
-}
-catch (error) {
-
-  console.error(
-    "STUDENT ADMIN APP ERROR:",
-    error
-  );
-
-
-  const element =
-    document.getElementById(
-      "students"
-    );
-
-
-  if (element) {
-
-    element.innerHTML = `
-
-      <div class="list-row">
-
-        <strong>
-          生徒管理を読み込めませんでした。
-        </strong>
-
-        <br><br>
-
-        <small>
-          ${String(
-            error?.message ||
-            error
-          )
-            .replace(
-              /&/g,
-              "&amp;"
-            )
-            .replace(
-              /</g,
-              "&lt;"
-            )
-            .replace(
-              />/g,
-              "&gt;"
-            )}
-        </small>
-
-      </div>
-
-    `;
-
-  }
-
-}
-
+<script
+  type="module"
+  src="app.js?v=student-detail-final-20261114-3">
 </script>
 
+
 </body>
+
 </html>
