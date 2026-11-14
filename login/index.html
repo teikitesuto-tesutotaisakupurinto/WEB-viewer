@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 
@@ -13,64 +14,86 @@
 
 <link
   rel="stylesheet"
-  href="style.css">
+  href="style.css?v=login-final-1">
 
 </head>
+
 
 <body>
 
 <main class="login-page">
 
-<section class="login-card">
+  <section class="login-card">
 
-<h1>WEB-viewer</h1>
+    <h1>
+      WEB-viewer
+    </h1>
 
-<p class="login-subtitle">
-教材閲覧システム
-</p>
+    <p class="login-subtitle">
+      教材閲覧システム
+    </p>
 
-<form id="loginForm">
 
-<label>
-メールアドレス
+    <form
+      id="loginForm"
+      novalidate>
 
-<input
-  id="email"
-  type="email"
-  autocomplete="username"
-  required>
-</label>
 
-<label>
-パスワード
+      <label>
 
-<input
-  id="password"
-  type="password"
-  autocomplete="current-password"
-  required>
-</label>
+        メールアドレス
 
-<button
-  id="loginButton"
-  class="login-button"
-  type="submit">
-ログイン
-</button>
+        <input
+          id="email"
+          type="email"
+          autocomplete="username"
+          inputmode="email"
+          required>
 
-<p id="message"></p>
+      </label>
 
-</form>
 
-</section>
+      <label>
+
+        パスワード
+
+        <input
+          id="password"
+          type="password"
+          autocomplete="current-password"
+          required>
+
+      </label>
+
+
+      <button
+        id="loginButton"
+        class="login-button"
+        type="submit">
+
+        ログイン
+
+      </button>
+
+
+      <p
+        id="message"
+        class="login-message"
+        aria-live="polite">
+      </p>
+
+
+    </form>
+
+  </section>
 
 </main>
 
+
 <script
   type="module"
-  src="app.js?v=final">
+  src="app.js?v=login-final-20261114-1">
 </script>
 
 </body>
-
 </html>
