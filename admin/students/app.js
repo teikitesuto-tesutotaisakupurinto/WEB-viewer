@@ -178,7 +178,7 @@ function formatDate(
    Session
    ========================================================= */
 
-async function getAccessToken() {
+async function getSession() {
 
   const {
     data,
@@ -192,17 +192,21 @@ async function getAccessToken() {
   if (error) {
 
     throw new Error(
-      "ログイン状態を確認できませんでした。"
+      `ログイン状態を確認できませんでした。${
+        error.message
+          ? ` ${error.message}`
+          : ""
+      }`
     );
 
   }
 
 
-  const token =
-    data?.session?.access_token;
+  const session =
+    data?.session;
 
 
-  if (!token) {
+  if (!session?.access_token) {
 
     throw new Error(
       "管理者のログインセッションがありません。"
@@ -211,7 +215,7 @@ async function getAccessToken() {
   }
 
 
-  return token;
+  return session;
 
 }
 
@@ -220,27 +224,15 @@ async function getAccessToken() {
    Edge Function
    ========================================================= */
 
-/*
- * 重要:
- *
- * fetch("https://.../functions/v1/...")
- * は使わない。
- *
- * supabase.functions.invoke()を使うことで
- * Supabaseクライアントが認証ヘッダーを
- * 付けてくれる。
- */
-
 async function callStudentFunction(
   payload
 ) {
 
   /*
-   * セッションがない場合は
-   * invokeする前に明示的にエラー。
+   * 先にセッションを確認。
    */
 
-  await getAccessToken();
+  await getSession();
 
 
   let result;
@@ -265,13 +257,67 @@ async function callStudentFunction(
   catch (error) {
 
     console.error(
-      "FUNCTION INVOKE ERROR:",
+      "EDGE FUNCTION INVOKE ERROR:",
       error
     );
 
 
+    /*
+     * Supabase Functionsの通信エラー。
+     */
+
+    let detail =
+      "";
+
+
+    try {
+
+      const context =
+        error?.context;
+
+
+      if (
+        context &&
+        typeof context.text ===
+          "function"
+      ) {
+
+        detail =
+          await context.text();
+
+      }
+
+    }
+    catch {}
+
+
+    if (detail) {
+
+      try {
+
+        const parsed =
+          JSON.parse(
+            detail
+          );
+
+
+        detail =
+          parsed?.error ||
+          parsed?.message ||
+          detail;
+
+      }
+      catch {}
+
+    }
+
+
     throw new Error(
-      "サーバーに接続できませんでした。Edge Functionのデプロイ状態を確認してください。"
+
+      detail ||
+      error?.message ||
+      "Edge Functionに接続できませんでした。"
+
     );
 
   }
@@ -287,40 +333,29 @@ async function callStudentFunction(
   if (error) {
 
     console.error(
-      "FUNCTION ERROR:",
+      "EDGE FUNCTION ERROR:",
       error
     );
 
 
-    /*
-     * FunctionsHttpErrorの場合、
-     * response bodyを取得できる場合がある。
-     */
-
-    let serverMessage =
+    let detail =
       "";
 
 
     try {
 
       const context =
-        error.context;
+        error?.context;
 
 
       if (
         context &&
-        typeof context.json ===
+        typeof context.text ===
           "function"
       ) {
 
-        const body =
-          await context.json();
-
-
-        serverMessage =
-          body?.error ||
-          body?.message ||
-          "";
+        detail =
+          await context.text();
 
       }
 
@@ -328,23 +363,42 @@ async function callStudentFunction(
     catch {}
 
 
+    if (detail) {
+
+      try {
+
+        const parsed =
+          JSON.parse(
+            detail
+          );
+
+
+        detail =
+          parsed?.error ||
+          parsed?.message ||
+          detail;
+
+      }
+      catch {}
+
+    }
+
+
     throw new Error(
 
-      serverMessage ||
-      error.message ||
-      "サーバー処理に失敗しました。"
+      detail ||
+      error?.message ||
+      "Edge Functionでエラーが発生しました。"
 
     );
 
   }
 
 
-  if (
-    !data
-  ) {
+  if (!data) {
 
     throw new Error(
-      "サーバーから応答がありませんでした。"
+      "Edge Functionから応答がありません。"
     );
 
   }
@@ -352,7 +406,7 @@ async function callStudentFunction(
 
   if (
     data.success !==
-      true
+    true
   ) {
 
     throw new Error(
@@ -437,14 +491,7 @@ function clearCreateForm() {
 
 function showCreateForm() {
 
-  if (!formCard) {
-
-    return;
-
-  }
-
-
-  formCard.classList.remove(
+  formCard?.classList.remove(
     "hidden"
   );
 
@@ -465,14 +512,7 @@ function showCreateForm() {
 
 function hideCreateForm() {
 
-  if (!formCard) {
-
-    return;
-
-  }
-
-
-  formCard.classList.add(
+  formCard?.classList.add(
     "hidden"
   );
 
@@ -493,21 +533,6 @@ function hideCreateForm() {
 
 async function loadStudents() {
 
-  if (!studentsElement) {
-
-    throw new Error(
-      "生徒一覧表示領域が見つかりません。"
-    );
-
-  }
-
-
-  studentsElement.setAttribute(
-    "aria-busy",
-    "true"
-  );
-
-
   studentsElement.innerHTML = `
 
     <div class="list-row">
@@ -521,16 +546,8 @@ async function loadStudents() {
 
   try {
 
-    /*
-     * 管理者セッション確認。
-     */
+    await getSession();
 
-    await getAccessToken();
-
-
-    /*
-     * usersはRLSで管理者だけ取得可能。
-     */
 
     const {
       data,
@@ -574,8 +591,7 @@ async function loadStudents() {
     if (error) {
 
       throw new Error(
-        error.message ||
-        "生徒一覧を取得できませんでした。"
+        error.message
       );
 
     }
@@ -587,12 +603,6 @@ async function loadStudents() {
         : [];
 
 
-    studentsElement.setAttribute(
-      "aria-busy",
-      "false"
-    );
-
-
     applySearch();
 
   }
@@ -601,12 +611,6 @@ async function loadStudents() {
     console.error(
       "LOAD STUDENTS ERROR:",
       error
-    );
-
-
-    studentsElement.setAttribute(
-      "aria-busy",
-      "false"
     );
 
 
@@ -623,15 +627,15 @@ async function loadStudents() {
         <small>
           ${escapeHtml(
             error?.message ||
-            "不明なエラーが発生しました。"
+            "不明なエラー"
           )}
         </small>
 
         <br><br>
 
         <button
-          type="button"
           id="retryStudents"
+          type="button"
           class="secondary-button">
 
           再読み込み
@@ -686,7 +690,7 @@ function applySearch() {
       allStudents.filter(
         student => {
 
-          const values = [
+          return [
 
             student.display_name,
 
@@ -700,19 +704,17 @@ function applySearch() {
 
             student.id
 
-          ];
-
-
-          return values.some(
-            value =>
-              String(
-                value ?? ""
-              )
-                .toLowerCase()
-                .includes(
-                  keyword
+          ]
+            .some(
+              value =>
+                String(
+                  value ?? ""
                 )
-          );
+                  .toLowerCase()
+                  .includes(
+                    keyword
+                  )
+            );
 
         }
       );
@@ -726,17 +728,10 @@ function applySearch() {
 
 
 /* =========================================================
-   Render students
+   Render
    ========================================================= */
 
 function renderStudents() {
-
-  if (!studentsElement) {
-
-    return;
-
-  }
-
 
   if (studentCount) {
 
@@ -828,25 +823,20 @@ function renderStudents() {
               </div>
 
 
-              <div
-                class="student-row-status">
+              <span
+                class="student-status ${
+                  suspended
+                    ? "suspended"
+                    : "active"
+                }">
 
-                <span
-                  class="student-status ${
-                    suspended
-                      ? "suspended"
-                      : "active"
-                  }">
+                ${
+                  suspended
+                    ? "停止"
+                    : "有効"
+                }
 
-                  ${
-                    suspended
-                      ? "停止"
-                      : "有効"
-                  }
-
-                </span>
-
-              </div>
+              </span>
 
 
               <button
@@ -870,7 +860,7 @@ function renderStudents() {
 
 
   /*
-   * イベント委譲。
+   * 詳細ボタン。
    */
 
   studentsElement.onclick =
@@ -902,16 +892,9 @@ function renderStudents() {
       }
 
 
-      event.preventDefault();
-
-
-      event.stopPropagation();
-
-
       const id =
-        button.getAttribute(
-          "data-student-detail"
-        );
+        button.dataset
+          .studentDetail;
 
 
       const student =
@@ -925,12 +908,6 @@ function renderStudents() {
 
 
       if (!student) {
-
-        console.error(
-          "STUDENT NOT FOUND:",
-          id
-        );
-
 
         return;
 
@@ -993,10 +970,6 @@ function openStudentDetail(
     );
 
 
-  panel.id =
-    "studentDetailPanel";
-
-
   Object.assign(
     panel.style,
     {
@@ -1016,9 +989,6 @@ function openStudentDetail(
       width:
         "min(540px,100vw)",
 
-      maxWidth:
-        "100vw",
-
       overflowY:
         "auto",
 
@@ -1029,184 +999,84 @@ function openStudentDetail(
         "#222",
 
       boxShadow:
-        "-12px 0 35px rgba(0,0,0,.15)",
-
-      fontFamily:
-        '-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Yu Gothic",Meiryo,sans-serif'
+        "-12px 0 35px rgba(0,0,0,.15)"
 
     }
   );
 
 
-  /* -------------------------------------------------------
-     Header
-     ------------------------------------------------------- */
+  panel.innerHTML = `
 
-  const header =
-    document.createElement(
-      "header"
-    );
-
-
-  Object.assign(
-    header.style,
-    {
-
-      display:
-        "flex",
-
-      alignItems:
-        "flex-start",
-
-      justifyContent:
-        "space-between",
-
-      gap:
-        "20px",
-
-      padding:
-        "28px",
-
-      borderBottom:
-        "1px solid #e5e7eb"
-
-    }
-  );
-
-
-  header.innerHTML = `
-
-    <div>
-
-      <div
-        style="
-          color:#888;
-          font-size:11px;
-          margin-bottom:7px;
-        ">
-
-        生徒詳細
-
-      </div>
-
-
-      <div
-        style="
-          font-size:21px;
-          font-weight:650;
-        ">
-
-        ${escapeHtml(
-          student.display_name ||
-          "名前未設定"
-        )}
-
-      </div>
-
-    </div>
-
-  `;
-
-
-  const closeButton =
-    document.createElement(
-      "button"
-    );
-
-
-  closeButton.type =
-    "button";
-
-
-  closeButton.textContent =
-    "×";
-
-
-  closeButton.setAttribute(
-    "aria-label",
-    "閉じる"
-  );
-
-
-  Object.assign(
-    closeButton.style,
-    {
-
-      width:
-        "36px",
-
-      height:
-        "36px",
-
-      flexShrink:
-        "0",
-
-      border:
-        "1px solid #ddd",
-
-      borderRadius:
-        "7px",
-
-      background:
-        "#fff",
-
-      color:
-        "#555",
-
-      fontSize:
-        "22px",
-
-      cursor:
-        "pointer"
-
-    }
-  );
-
-
-  closeButton.addEventListener(
-    "click",
-    closeStudentDetail
-  );
-
-
-  header.appendChild(
-    closeButton
-  );
-
-
-  /* -------------------------------------------------------
-     Body
-     ------------------------------------------------------- */
-
-  const body =
-    document.createElement(
-      "div"
-    );
-
-
-  Object.assign(
-    body.style,
-    {
-
-      padding:
-        "28px"
-
-    }
-  );
-
-
-  body.innerHTML = `
-
-    <section
+    <header
       style="
-        margin-bottom:30px;
+        display:flex;
+        justify-content:space-between;
+        gap:20px;
+        padding:28px;
+        border-bottom:1px solid #e5e7eb;
       ">
+
+      <div>
+
+        <div
+          style="
+            color:#888;
+            font-size:11px;
+            margin-bottom:7px;
+          ">
+
+          生徒詳細
+
+        </div>
+
+
+        <h2
+          style="
+            margin:0;
+            font-size:21px;
+          ">
+
+          ${escapeHtml(
+            student.display_name ||
+            "名前未設定"
+          )}
+
+        </h2>
+
+      </div>
+
+
+      <button
+        id="studentDetailClose"
+        type="button"
+        style="
+          width:36px;
+          height:36px;
+          border:1px solid #ddd;
+          border-radius:7px;
+          background:#fff;
+          font-size:20px;
+          cursor:pointer;
+        ">
+
+        ×
+
+      </button>
+
+    </header>
+
+
+    <div
+      style="
+        padding:28px;
+      ">
+
 
       <h3
         style="
           margin:0 0 14px;
-          color:#555;
           font-size:13px;
+          color:#555;
         ">
 
         基本情報
@@ -1253,16 +1123,12 @@ function openStudentDetail(
 
       </div>
 
-    </section>
-
-
-    <section>
 
       <h3
         style="
-          margin:0 0 14px;
-          color:#555;
+          margin:30px 0 14px;
           font-size:13px;
+          color:#555;
         ">
 
         アカウント
@@ -1313,161 +1179,133 @@ function openStudentDetail(
           )
         )}
 
-        ${
-          student.suspended_at
-            ? detailRow(
-                "停止日時",
-                formatDate(
-                  student.suspended_at
-                )
-              )
-            : ""
-        }
-
       </div>
 
-    </section>
 
+      <div
+        id="studentDetailMessage"
+        style="
+          display:none;
+          margin-top:20px;
+          padding:12px;
+          border-radius:7px;
+          font-size:12px;
+          line-height:1.7;
+        ">
+      </div>
 
-    <div
-      id="studentDetailMessage"
-      style="
-        display:none;
-        margin-top:20px;
-        padding:12px 14px;
-        border-radius:7px;
-        background:#eef5ff;
-        color:#315d87;
-        font-size:12px;
-        line-height:1.7;
-      ">
     </div>
+
+
+    <footer
+      style="
+        display:flex;
+        flex-wrap:wrap;
+        gap:9px;
+        padding:20px 28px;
+        border-top:1px solid #e5e7eb;
+      ">
+
+      <button
+        id="studentEditButton"
+        type="button"
+        class="secondary-button">
+
+        編集
+
+      </button>
+
+
+      <button
+        id="studentPasswordButton"
+        type="button"
+        class="secondary-button">
+
+        パスワード再設定
+
+      </button>
+
+
+      <button
+        id="studentStatusButton"
+        type="button"
+        class="${
+          student.status ===
+          "suspended"
+            ? "primary-button"
+            : "danger-button"
+        }">
+
+        ${
+          student.status ===
+          "suspended"
+            ? "停止解除"
+            : "アカウント停止"
+        }
+
+      </button>
+
+    </footer>
 
   `;
 
 
-  /* -------------------------------------------------------
-     Footer
-     ------------------------------------------------------- */
+  document.body.appendChild(
+    overlay
+  );
 
-  const footer =
-    document.createElement(
-      "footer"
+
+  document.body.style.overflow =
+    "hidden";
+
+
+  document
+    .getElementById(
+      "studentDetailClose"
+    )
+    ?.addEventListener(
+      "click",
+      closeStudentDetail
     );
 
 
-  Object.assign(
-    footer.style,
-    {
-
-      display:
-        "flex",
-
-      flexWrap:
-        "wrap",
-
-      gap:
-        "9px",
-
-      padding:
-        "20px 28px",
-
-      borderTop:
-        "1px solid #e5e7eb",
-
-      background:
-        "#fff"
-
-    }
-  );
-
-
-  const editButton =
-    createActionButton(
-      "編集"
+  document
+    .getElementById(
+      "studentEditButton"
+    )
+    ?.addEventListener(
+      "click",
+      () =>
+        openStudentEdit(
+          student
+        )
     );
 
 
-  const passwordButton =
-    createActionButton(
-      "パスワード再設定"
+  document
+    .getElementById(
+      "studentPasswordButton"
+    )
+    ?.addEventListener(
+      "click",
+      () =>
+        resetStudentPassword(
+          student
+        )
     );
 
 
-  const statusButton =
-    createActionButton(
-
-      student.status ===
-        "suspended"
-        ? "停止解除"
-        : "アカウント停止",
-
-      student.status !==
-        "suspended"
-
+  document
+    .getElementById(
+      "studentStatusButton"
+    )
+    ?.addEventListener(
+      "click",
+      () =>
+        changeStudentStatus(
+          student
+        )
     );
-
-
-  editButton.addEventListener(
-    "click",
-    () =>
-      openStudentEdit(
-        student
-      )
-  );
-
-
-  passwordButton.addEventListener(
-    "click",
-    () =>
-      resetStudentPassword(
-        student
-      )
-  );
-
-
-  statusButton.addEventListener(
-    "click",
-    () =>
-      changeStudentStatus(
-        student
-      )
-  );
-
-
-  footer.appendChild(
-    editButton
-  );
-
-
-  footer.appendChild(
-    passwordButton
-  );
-
-
-  footer.appendChild(
-    statusButton
-  );
-
-
-  panel.appendChild(
-    header
-  );
-
-
-  panel.appendChild(
-    body
-  );
-
-
-  panel.appendChild(
-    footer
-  );
-
-
-  overlay.appendChild(
-    panel
-  );
 
 
   overlay.addEventListener(
@@ -1485,15 +1323,6 @@ function openStudentDetail(
 
     }
   );
-
-
-  document.body.appendChild(
-    overlay
-  );
-
-
-  document.body.style.overflow =
-    "hidden";
 
 }
 
@@ -1548,71 +1377,6 @@ function detailRow(
 }
 
 
-function createActionButton(
-  text,
-  danger = false
-) {
-
-  const button =
-    document.createElement(
-      "button"
-    );
-
-
-  button.type =
-    "button";
-
-
-  button.textContent =
-    text;
-
-
-  Object.assign(
-    button.style,
-    {
-
-      minHeight:
-        "40px",
-
-      padding:
-        "0 16px",
-
-      borderRadius:
-        "7px",
-
-      border:
-        danger
-          ? "1px solid #c73535"
-          : "1px solid #d7dbe0",
-
-      background:
-        danger
-          ? "#c73535"
-          : "#fff",
-
-      color:
-        danger
-          ? "#fff"
-          : "#444",
-
-      cursor:
-        "pointer",
-
-      fontSize:
-        "13px",
-
-      fontWeight:
-        "600"
-
-    }
-  );
-
-
-  return button;
-
-}
-
-
 function closeStudentDetail() {
 
   document
@@ -1634,7 +1398,7 @@ function closeStudentDetail() {
 
 function showDetailMessage(
   text,
-  error = false
+  isError = false
 ) {
 
   const element =
@@ -1659,13 +1423,13 @@ function showDetailMessage(
 
 
   element.style.background =
-    error
+    isError
       ? "#f9eded"
       : "#eef5ff";
 
 
   element.style.color =
-    error
+    isError
       ? "#9d3030"
       : "#315d87";
 
@@ -1681,8 +1445,8 @@ function openStudentEdit(
 ) {
 
   const panel =
-    document.getElementById(
-      "studentDetailPanel"
+    document.querySelector(
+      "#studentDetailOverlay aside"
     );
 
 
@@ -1698,40 +1462,20 @@ function openStudentEdit(
     <header
       style="
         display:flex;
-        align-items:center;
         justify-content:space-between;
         padding:28px;
         border-bottom:1px solid #e5e7eb;
       ">
 
-      <div>
+      <h2
+        style="
+          margin:0;
+          font-size:20px;
+        ">
 
-        <div
-          style="
-            color:#888;
-            font-size:11px;
-            margin-bottom:7px;
-          ">
+        生徒情報を編集
 
-          生徒情報編集
-
-        </div>
-
-
-        <div
-          style="
-            font-size:21px;
-            font-weight:650;
-          ">
-
-          ${escapeHtml(
-            student.display_name ||
-            "名前未設定"
-          )}
-
-        </div>
-
-      </div>
+      </h2>
 
 
       <button
@@ -1759,36 +1503,32 @@ function openStudentEdit(
         padding:28px;
       ">
 
-      ${editInput(
+      ${editField(
         "氏名",
         "editDisplayName",
         student.display_name
       )}
 
-
-      ${editInput(
+      ${editField(
         "生徒番号",
         "editStudentNumber",
         student.student_number
       )}
 
-
-      ${editInput(
+      ${editField(
         "メールアドレス",
         "editEmail",
         student.email,
         "email"
       )}
 
-
-      ${editInput(
+      ${editField(
         "学年",
         "editGrade",
         student.grade
       )}
 
-
-      ${editInput(
+      ${editField(
         "クラス",
         "editClassName",
         student.class_name
@@ -1800,9 +1540,8 @@ function openStudentEdit(
         style="
           display:none;
           margin-top:15px;
-          color:#9d3030;
+          color:#a12929;
           font-size:12px;
-          line-height:1.7;
         ">
       </div>
 
@@ -1820,14 +1559,7 @@ function openStudentEdit(
       <button
         id="studentEditCancel"
         type="button"
-        style="
-          min-height:40px;
-          padding:0 16px;
-          border:1px solid #d7dbe0;
-          border-radius:7px;
-          background:#fff;
-          cursor:pointer;
-        ">
+        class="secondary-button">
 
         キャンセル
 
@@ -1837,15 +1569,7 @@ function openStudentEdit(
       <button
         id="studentEditSave"
         type="button"
-        style="
-          min-height:40px;
-          padding:0 16px;
-          border:0;
-          border-radius:7px;
-          background:#20252b;
-          color:#fff;
-          cursor:pointer;
-        ">
+        class="primary-button">
 
         保存
 
@@ -1897,7 +1621,7 @@ function openStudentEdit(
 }
 
 
-function editInput(
+function editField(
   label,
   id,
   value,
@@ -1909,7 +1633,7 @@ function editInput(
     <label
       style="
         display:block;
-        margin-bottom:19px;
+        margin-bottom:18px;
       ">
 
       <span
@@ -1947,7 +1671,6 @@ function editInput(
           border-radius:7px;
           outline:none;
           background:#fff;
-          color:#222;
           font:inherit;
         ">
 
@@ -1957,6 +1680,10 @@ function editInput(
 
 }
 
+
+/* =========================================================
+   Save edit
+   ========================================================= */
 
 async function saveStudentEdit(
   student
@@ -2107,14 +1834,14 @@ async function saveStudentEdit(
   catch (error) {
 
     console.error(
-      "UPDATE STUDENT ERROR:",
+      "UPDATE ERROR:",
       error
     );
 
 
     errorElement.textContent =
       error.message ||
-      "生徒情報の更新に失敗しました。";
+      "更新に失敗しました。";
 
 
     errorElement.style.display =
@@ -2125,7 +1852,6 @@ async function saveStudentEdit(
 
     saveButton.disabled =
       false;
-
 
     saveButton.textContent =
       "保存";
@@ -2148,25 +1874,19 @@ async function changeStudentStatus(
     "suspended";
 
 
-  const action =
-    suspended
-      ? "unsuspend_student"
-      : "suspend_student";
+  const confirmed =
+    window.confirm(
+
+      suspended
+
+        ? `${student.display_name || "この生徒"}の停止を解除しますか？`
+
+        : `${student.display_name || "この生徒"}のアカウントを停止しますか？`
+
+    );
 
 
-  const question =
-    suspended
-
-      ? `${student.display_name || "この生徒"}の停止を解除しますか？`
-
-      : `${student.display_name || "この生徒"}のアカウントを停止しますか？`;
-
-
-  if (
-    !window.confirm(
-      question
-    )
-  ) {
+  if (!confirmed) {
 
     return;
 
@@ -2177,7 +1897,10 @@ async function changeStudentStatus(
 
     await callStudentFunction({
 
-      action,
+      action:
+        suspended
+          ? "unsuspend_student"
+          : "suspend_student",
 
       student_id:
         student.id
@@ -2232,7 +1955,7 @@ async function resetStudentPassword(
   const confirmed =
     window.confirm(
 
-      `${student.display_name || "この生徒"}のパスワードを再発行しますか？\n\n新しい一時パスワードをシステムが自動生成します。\n発行後はこの画面で一度だけ表示されます。`
+      `${student.display_name || "この生徒"}のパスワードを再発行しますか？\n\n新しいパスワードはシステムが自動生成します。`
 
     );
 
@@ -2258,21 +1981,19 @@ async function resetStudentPassword(
       });
 
 
-    const password =
-      result.temporary_password;
-
-
-    if (!password) {
+    if (
+      !result.temporary_password
+    ) {
 
       throw new Error(
-        "一時パスワードを取得できませんでした。"
+        "一時パスワードが取得できませんでした。"
       );
 
     }
 
 
     showTemporaryPassword(
-      password
+      result.temporary_password
     );
 
   }
@@ -2296,7 +2017,7 @@ async function resetStudentPassword(
 
 
 /* =========================================================
-   Temporary password
+   Temporary password dialog
    ========================================================= */
 
 function showTemporaryPassword(
@@ -2380,7 +2101,6 @@ function showTemporaryPassword(
         style="
           margin:0;
           font-size:20px;
-          color:#222;
         ">
 
         一時パスワードを発行しました
@@ -2397,8 +2117,7 @@ function showTemporaryPassword(
         ">
 
         このパスワードは今回だけ表示されます。<br>
-        コピーまたはメモして本人へ伝えてください。<br>
-        次回ログイン時に新しいパスワードへ変更します。
+        コピーまたはメモして本人へ伝えてください。
 
       </p>
 
@@ -2407,7 +2126,6 @@ function showTemporaryPassword(
         style="
           display:flex;
           gap:8px;
-          align-items:center;
         ">
 
         <input
@@ -2425,10 +2143,8 @@ function showTemporaryPassword(
             border:1px solid #d5d9de;
             border-radius:7px;
             background:#f7f8f9;
-            color:#111;
             font-family:monospace;
             font-size:16px;
-            letter-spacing:.04em;
           ">
 
 
@@ -2438,12 +2154,11 @@ function showTemporaryPassword(
           style="
             height:46px;
             padding:0 15px;
-            border:1px solid #20252b;
+            border:0;
             border-radius:7px;
             background:#20252b;
             color:#fff;
             cursor:pointer;
-            white-space:nowrap;
           ">
 
           コピー
@@ -2474,9 +2189,7 @@ function showTemporaryPassword(
           border:1px solid #d5d9de;
           border-radius:7px;
           background:#fff;
-          color:#333;
           cursor:pointer;
-          font:inherit;
         ">
 
         閉じる
@@ -2493,13 +2206,13 @@ function showTemporaryPassword(
   );
 
 
-  const passwordInput =
+  const input =
     document.getElementById(
       "temporaryPasswordValue"
     );
 
 
-  const copyButton =
+  const copy =
     document.getElementById(
       "copyTemporaryPassword"
     );
@@ -2511,7 +2224,7 @@ function showTemporaryPassword(
     );
 
 
-  copyButton?.addEventListener(
+  copy?.addEventListener(
     "click",
     async () => {
 
@@ -2522,7 +2235,7 @@ function showTemporaryPassword(
         );
 
 
-        copyButton.textContent =
+        copy.textContent =
           "コピーしました";
 
 
@@ -2532,9 +2245,9 @@ function showTemporaryPassword(
       }
       catch {
 
-        passwordInput?.focus();
+        input.focus();
 
-        passwordInput?.select();
+        input.select();
 
 
         copyMessage.textContent =
@@ -2560,13 +2273,9 @@ function showTemporaryPassword(
     );
 
 
-  /*
-   * 自動選択。
-   */
+  input.focus();
 
-  passwordInput?.focus();
-
-  passwordInput?.select();
+  input.select();
 
 }
 
@@ -2767,14 +2476,11 @@ async function createStudent() {
 
 
     setMessage(
-
       `登録エラー: ${
-        error?.message ||
+        error.message ||
         "生徒登録に失敗しました。"
       }`,
-
       "error"
-
     );
 
   }
@@ -3013,61 +2719,66 @@ function initializeDom() {
     );
 
 
-  const missing = [];
+  const required = [
 
-
-  [
     [
       formCard,
       "formCard"
     ],
+
     [
       message,
       "message"
     ],
+
     [
       studentsElement,
       "students"
     ],
+
     [
       searchInput,
       "studentSearch"
     ],
+
     [
       studentCount,
       "studentCount"
     ],
+
     [
       createButton,
       "create"
     ],
+
     [
       showFormButton,
       "showForm"
     ],
+
     [
       cancelButton,
       "cancel"
     ],
+
     [
       logoutButton,
       "logout"
     ]
 
-  ]
-    .forEach(
-      pair => {
+  ];
 
-        if (!pair[0]) {
 
-          missing.push(
-            pair[1]
-          );
-
-        }
-
-      }
-    );
+  const missing =
+    required
+      .filter(
+        item =>
+          !item[0]
+      )
+      .map(
+        item =>
+          item[1]
+      );
 
 
   if (
@@ -3075,9 +2786,7 @@ function initializeDom() {
   ) {
 
     throw new Error(
-      `必要なHTML要素がありません: ${
-        missing.join(", ")
-      }`
+      `必要なHTML要素がありません: ${missing.join(", ")}`
     );
 
   }
@@ -3134,47 +2843,6 @@ function initializeDom() {
   );
 
 
-  [
-    "displayName",
-    "studentNumber",
-    "email",
-    "grade",
-    "className",
-    "password"
-  ]
-    .forEach(
-      id => {
-
-        document
-          .getElementById(
-            id
-          )
-          ?.addEventListener(
-            "keydown",
-            event => {
-
-              if (
-                event.key ===
-                "Enter"
-              ) {
-
-                event.preventDefault();
-
-                createStudent();
-
-              }
-
-            }
-          );
-
-      }
-    );
-
-
-  /*
-   * Escape
-   */
-
   document.addEventListener(
     "keydown",
     event => {
@@ -3189,21 +2857,11 @@ function initializeDom() {
       }
 
 
-      const passwordDialog =
-        document.getElementById(
+      document
+        .getElementById(
           "temporaryPasswordDialog"
-        );
-
-
-      if (
-        passwordDialog
-      ) {
-
-        passwordDialog.remove();
-
-        return;
-
-      }
+        )
+        ?.remove();
 
 
       closeStudentDetail();
@@ -3244,7 +2902,7 @@ async function start() {
   catch (error) {
 
     console.error(
-      "STUDENT ADMIN START ERROR:",
+      "STUDENT ADMIN ERROR:",
       error
     );
 
@@ -3262,7 +2920,7 @@ async function start() {
         <small>
           ${escapeHtml(
             error?.message ||
-            "不明なエラーが発生しました。"
+            "不明なエラー"
           )}
         </small>
 
