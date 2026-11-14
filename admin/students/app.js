@@ -14,31 +14,57 @@ import {
    ========================================================= */
 
 const FUNCTION_NAME =
-  "create-student";
+  "bright-worker";
 
-const REQUEST_TIMEOUT =
-  15000;
+const FUNCTION_URL =
+  "https://wcddlfjtkrbpperhrxkk.supabase.co/functions/v1/bright-worker";
+
+
+/* =========================================================
+   DOM
+   ========================================================= */
+
+const formCard =
+  document.getElementById(
+    "formCard"
+  );
+
+const message =
+  document.getElementById(
+    "message"
+  );
+
+const studentsElement =
+  document.getElementById(
+    "students"
+  );
+
+const showFormButton =
+  document.getElementById(
+    "showForm"
+  );
+
+const cancelButton =
+  document.getElementById(
+    "cancel"
+  );
+
+const createButton =
+  document.getElementById(
+    "create"
+  );
+
+const logoutButton =
+  document.getElementById(
+    "logout"
+  );
 
 
 /* =========================================================
    State
    ========================================================= */
 
-let allStudents = [];
-
-let filteredStudents = [];
-
-let formCard = null;
-
-let message = null;
-
-let studentsElement = null;
-
-let searchInput = null;
-
-let studentCount = null;
-
-let createButton = null;
+let studentsData = [];
 
 
 /* =========================================================
@@ -76,57 +102,6 @@ function escapeHtml(
 }
 
 
-function withTimeout(
-  promise,
-  ms = REQUEST_TIMEOUT
-) {
-
-  let timer = null;
-
-
-  const timeout =
-    new Promise(
-      (_, reject) => {
-
-        timer =
-          setTimeout(
-            () => {
-
-              reject(
-                new Error(
-                  "通信がタイムアウトしました。"
-                )
-              );
-
-            },
-            ms
-          );
-
-      }
-    );
-
-
-  return Promise.race([
-    promise,
-    timeout
-  ])
-    .finally(
-      () => {
-
-        if (timer) {
-
-          clearTimeout(
-            timer
-          );
-
-        }
-
-      }
-    );
-
-}
-
-
 function formatDate(
   value
 ) {
@@ -150,9 +125,7 @@ function formatDate(
     )
   ) {
 
-    return String(
-      value
-    );
+    return "未記録";
 
   }
 
@@ -170,257 +143,6 @@ function formatDate(
     .format(
       date
     );
-
-}
-
-
-/* =========================================================
-   Session
-   ========================================================= */
-
-async function getSession() {
-
-  const {
-    data,
-    error
-  } =
-    await withTimeout(
-      supabase.auth.getSession()
-    );
-
-
-  if (error) {
-
-    throw new Error(
-      `ログイン状態を確認できませんでした。${
-        error.message
-          ? ` ${error.message}`
-          : ""
-      }`
-    );
-
-  }
-
-
-  const session =
-    data?.session;
-
-
-  if (!session?.access_token) {
-
-    throw new Error(
-      "管理者のログインセッションがありません。"
-    );
-
-  }
-
-
-  return session;
-
-}
-
-
-/* =========================================================
-   Edge Function
-   ========================================================= */
-
-async function callStudentFunction(
-  payload
-) {
-
-  /*
-   * 先にセッションを確認。
-   */
-
-  await getSession();
-
-
-  let result;
-
-
-  try {
-
-    result =
-      await withTimeout(
-
-        supabase.functions.invoke(
-          FUNCTION_NAME,
-          {
-            body:
-              payload
-          }
-        )
-
-      );
-
-  }
-  catch (error) {
-
-    console.error(
-      "EDGE FUNCTION INVOKE ERROR:",
-      error
-    );
-
-
-    /*
-     * Supabase Functionsの通信エラー。
-     */
-
-    let detail =
-      "";
-
-
-    try {
-
-      const context =
-        error?.context;
-
-
-      if (
-        context &&
-        typeof context.text ===
-          "function"
-      ) {
-
-        detail =
-          await context.text();
-
-      }
-
-    }
-    catch {}
-
-
-    if (detail) {
-
-      try {
-
-        const parsed =
-          JSON.parse(
-            detail
-          );
-
-
-        detail =
-          parsed?.error ||
-          parsed?.message ||
-          detail;
-
-      }
-      catch {}
-
-    }
-
-
-    throw new Error(
-
-      detail ||
-      error?.message ||
-      "Edge Functionに接続できませんでした。"
-
-    );
-
-  }
-
-
-  const {
-    data,
-    error
-  } =
-    result;
-
-
-  if (error) {
-
-    console.error(
-      "EDGE FUNCTION ERROR:",
-      error
-    );
-
-
-    let detail =
-      "";
-
-
-    try {
-
-      const context =
-        error?.context;
-
-
-      if (
-        context &&
-        typeof context.text ===
-          "function"
-      ) {
-
-        detail =
-          await context.text();
-
-      }
-
-    }
-    catch {}
-
-
-    if (detail) {
-
-      try {
-
-        const parsed =
-          JSON.parse(
-            detail
-          );
-
-
-        detail =
-          parsed?.error ||
-          parsed?.message ||
-          detail;
-
-      }
-      catch {}
-
-    }
-
-
-    throw new Error(
-
-      detail ||
-      error?.message ||
-      "Edge Functionでエラーが発生しました。"
-
-    );
-
-  }
-
-
-  if (!data) {
-
-    throw new Error(
-      "Edge Functionから応答がありません。"
-    );
-
-  }
-
-
-  if (
-    data.success !==
-    true
-  ) {
-
-    throw new Error(
-
-      data.error ||
-      data.message ||
-      "処理に失敗しました。"
-
-    );
-
-  }
-
-
-  return data;
 
 }
 
@@ -454,40 +176,112 @@ function setMessage(
 
 
 /* =========================================================
-   Create form
+   Function call
    ========================================================= */
 
-function clearCreateForm() {
+async function callBrightWorker(
+  payload
+) {
 
-  [
-    "displayName",
-    "studentNumber",
-    "email",
-    "grade",
-    "className",
-    "password"
-  ]
-    .forEach(
-      id => {
-
-        const element =
-          document.getElementById(
-            id
-          );
+  const {
+    data:
+      sessionData,
+    error:
+      sessionError
+  } =
+  await supabase.auth
+    .getSession();
 
 
-        if (element) {
+  if (
+    sessionError ||
+    !sessionData?.session
+  ) {
 
-          element.value =
-            "";
+    throw new Error(
+      "管理者のログインセッションがありません。"
+    );
 
-        }
+  }
+
+
+  const response =
+    await fetch(
+      FUNCTION_URL,
+      {
+        method:
+          "POST",
+
+        headers: {
+
+          Authorization:
+            `Bearer ${sessionData.session.access_token}`,
+
+          "Content-Type":
+            "application/json"
+
+        },
+
+        body:
+          JSON.stringify(
+            payload
+          )
 
       }
     );
 
+
+  const text =
+    await response.text();
+
+
+  let result;
+
+
+  try {
+
+    result =
+      JSON.parse(
+        text
+      );
+
+  }
+  catch {
+
+    result = {
+
+      error:
+        text ||
+        "サーバーから正しい応答がありません。"
+
+    };
+
+  }
+
+
+  if (
+    !response.ok ||
+    !result.success
+  ) {
+
+    throw new Error(
+
+      result.error ||
+      `サーバーエラー (${response.status})`
+
+    );
+
+  }
+
+
+  return result;
+
 }
 
+
+/* =========================================================
+   Create form
+   ========================================================= */
 
 function showCreateForm() {
 
@@ -517,12 +311,34 @@ function hideCreateForm() {
   );
 
 
-  clearCreateForm();
-
-
   setMessage(
     ""
   );
+
+
+  [
+    "displayName",
+    "email",
+    "password"
+  ]
+    .forEach(
+      id => {
+
+        const element =
+          document.getElementById(
+            id
+          );
+
+
+        if (element) {
+
+          element.value =
+            "";
+
+        }
+
+      }
+    );
 
 }
 
@@ -532,6 +348,13 @@ function hideCreateForm() {
    ========================================================= */
 
 async function loadStudents() {
+
+  if (!studentsElement) {
+
+    return;
+
+  }
+
 
   studentsElement.innerHTML = `
 
@@ -546,64 +369,73 @@ async function loadStudents() {
 
   try {
 
-    await getSession();
+    const {
+      data:
+        sessionData,
+      error:
+        sessionError
+    } =
+    await supabase.auth
+      .getSession();
+
+
+    if (
+      sessionError ||
+      !sessionData?.session
+    ) {
+
+      throw new Error(
+        "ログインセッションがありません。"
+      );
+
+    }
 
 
     const {
       data,
       error
     } =
-      await withTimeout(
-
-        supabase
-          .from("users")
-          .select(`
-            id,
-            display_name,
-            role,
-            email,
-            grade,
-            class_name,
-            student_number,
-            status,
-            last_login_at,
-            suspended_at,
-            suspended_by,
-            must_change_password,
-            created_at,
-            updated_at
-          `)
-          .eq(
-            "role",
-            "student"
-          )
-          .order(
-            "display_name",
-            {
-              ascending:
-                true
-            }
-          )
-
+    await supabase
+      .from("users")
+      .select(`
+        id,
+        display_name,
+        role,
+        email,
+        status,
+        must_change_password,
+        created_at,
+        updated_at
+      `)
+      .eq(
+        "role",
+        "student"
+      )
+      .order(
+        "display_name",
+        {
+          ascending:
+            true
+        }
       );
 
 
     if (error) {
 
-      throw new Error(
-        error.message
-      );
+      throw error;
 
     }
 
 
-    allStudents =
-      Array.isArray(data)
+    studentsData =
+      Array.isArray(
+        data
+      )
         ? data
         : [];
 
 
-    applySearch();
+    renderStudents();
 
   }
   catch (error) {
@@ -619,24 +451,21 @@ async function loadStudents() {
       <div class="list-row">
 
         <strong>
-          生徒一覧を読み込めませんでした。
+          生徒管理を読み込めませんでした。
         </strong>
 
-        <br><br>
-
-        <small>
+        <p>
           ${escapeHtml(
             error?.message ||
-            "不明なエラー"
+            "データの取得に失敗しました。"
           )}
-        </small>
+        </p>
 
-        <br><br>
 
         <button
           id="retryStudents"
           type="button"
-          class="secondary-button">
+          class="primary-button">
 
           再読み込み
 
@@ -662,88 +491,13 @@ async function loadStudents() {
 
 
 /* =========================================================
-   Search
-   ========================================================= */
-
-function applySearch() {
-
-  const keyword =
-    String(
-      searchInput?.value ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  if (!keyword) {
-
-    filteredStudents =
-      [
-        ...allStudents
-      ];
-
-  }
-  else {
-
-    filteredStudents =
-      allStudents.filter(
-        student => {
-
-          return [
-
-            student.display_name,
-
-            student.student_number,
-
-            student.email,
-
-            student.grade,
-
-            student.class_name,
-
-            student.id
-
-          ]
-            .some(
-              value =>
-                String(
-                  value ?? ""
-                )
-                  .toLowerCase()
-                  .includes(
-                    keyword
-                  )
-            );
-
-        }
-      );
-
-  }
-
-
-  renderStudents();
-
-}
-
-
-/* =========================================================
-   Render
+   Render students
    ========================================================= */
 
 function renderStudents() {
 
-  if (studentCount) {
-
-    studentCount.textContent =
-      `${filteredStudents.length}人 / ${allStudents.length}人`;
-
-  }
-
-
   if (
-    filteredStudents.length ===
-    0
+    !studentsData.length
   ) {
 
     studentsElement.innerHTML = `
@@ -756,14 +510,13 @@ function renderStudents() {
 
     `;
 
-
     return;
 
   }
 
 
   studentsElement.innerHTML =
-    filteredStudents
+    studentsData
       .map(
         student => {
 
@@ -775,10 +528,14 @@ function renderStudents() {
           return `
 
             <div
-              class="list-row student-row">
+              class="list-row student-row"
+              data-student-id="${escapeHtml(
+                student.id
+              )}">
+
 
               <div
-                class="student-row-main">
+                class="student-row-info">
 
                 <div
                   class="student-row-name">
@@ -792,56 +549,45 @@ function renderStudents() {
 
 
                 <div
-                  class="student-row-meta">
+                  class="student-row-email">
 
-                  ${
-                    student.student_number
-                      ? escapeHtml(
-                          student.student_number
-                        )
-                      : "生徒番号未設定"
-                  }
-
-                  ${
-                    student.grade
-                      ? ` / ${escapeHtml(
-                          student.grade
-                        )}`
-                      : ""
-                  }
-
-                  ${
-                    student.class_name
-                      ? ` / ${escapeHtml(
-                          student.class_name
-                        )}`
-                      : ""
-                  }
+                  ${escapeHtml(
+                    student.email ||
+                    "メールアドレス未設定"
+                  )}
 
                 </div>
 
               </div>
 
 
-              <span
-                class="student-status ${
-                  suspended
-                    ? "suspended"
-                    : "active"
-                }">
+              <div
+                class="student-row-status">
 
-                ${
-                  suspended
-                    ? "停止"
-                    : "有効"
-                }
+                <span
+                  class="
+                    student-status
+                    ${
+                      suspended
+                        ? "suspended"
+                        : "active"
+                    }
+                  ">
 
-              </span>
+                  ${
+                    suspended
+                      ? "停止中"
+                      : "有効"
+                  }
+
+                </span>
+
+              </div>
 
 
               <button
                 type="button"
-                class="secondary-button"
+                class="secondary-button student-detail-button"
                 data-student-detail="${escapeHtml(
                   student.id
                 )}">
@@ -863,71 +609,63 @@ function renderStudents() {
    * 詳細ボタン。
    */
 
-  studentsElement.onclick =
-    event => {
+  studentsElement
+    .querySelectorAll(
+      "[data-student-detail]"
+    )
+    .forEach(
+      button => {
 
-      const target =
-        event.target;
+        button.addEventListener(
+          "click",
+          event => {
+
+            event.preventDefault();
+
+            event.stopPropagation();
 
 
-      if (
-        !(target instanceof Element)
-      ) {
-
-        return;
-
-      }
+            const id =
+              button.getAttribute(
+                "data-student-detail"
+              );
 
 
-      const button =
-        target.closest(
-          "[data-student-detail]"
+            const student =
+              studentsData.find(
+                item =>
+                  String(
+                    item.id
+                  ) ===
+                  String(id)
+              );
+
+
+            if (!student) {
+
+              return;
+
+            }
+
+
+            showStudentDetail(
+              student
+            );
+
+          }
         );
 
-
-      if (!button) {
-
-        return;
-
       }
-
-
-      const id =
-        button.dataset
-          .studentDetail;
-
-
-      const student =
-        allStudents.find(
-          item =>
-            String(
-              item.id
-            ) ===
-            String(id)
-        );
-
-
-      if (!student) {
-
-        return;
-
-      }
-
-
-      openStudentDetail(
-        student
-      );
-
-    };
+    );
 
 }
 
 
 /* =========================================================
-   Detail
+   Student detail modal
    ========================================================= */
 
-function openStudentDetail(
+function showStudentDetail(
   student
 ) {
 
@@ -941,311 +679,209 @@ function openStudentDetail(
 
 
   overlay.id =
-    "studentDetailOverlay";
+    "studentDetailModal";
 
 
-  Object.assign(
-    overlay.style,
-    {
-
-      position:
-        "fixed",
-
-      inset:
-        "0",
-
-      zIndex:
-        "99990",
-
-      background:
-        "rgba(0,0,0,.28)"
-
-    }
-  );
+  overlay.className =
+    "student-detail-overlay";
 
 
-  const panel =
-    document.createElement(
-      "aside"
-    );
+  overlay.innerHTML = `
+
+    <div
+      class="student-detail-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="studentDetailTitle">
 
 
-  Object.assign(
-    panel.style,
-    {
+      <header
+        class="student-detail-header">
 
-      position:
-        "absolute",
+        <div>
 
-      top:
-        "0",
+          <div
+            class="student-detail-label">
 
-      right:
-        "0",
+            生徒詳細
 
-      bottom:
-        "0",
-
-      width:
-        "min(540px,100vw)",
-
-      overflowY:
-        "auto",
-
-      background:
-        "#fff",
-
-      color:
-        "#222",
-
-      boxShadow:
-        "-12px 0 35px rgba(0,0,0,.15)"
-
-    }
-  );
+          </div>
 
 
-  panel.innerHTML = `
+          <h2
+            id="studentDetailTitle">
 
-    <header
-      style="
-        display:flex;
-        justify-content:space-between;
-        gap:20px;
-        padding:28px;
-        border-bottom:1px solid #e5e7eb;
-      ">
+            ${escapeHtml(
+              student.display_name ||
+              "名前未設定"
+            )}
 
-      <div>
-
-        <div
-          style="
-            color:#888;
-            font-size:11px;
-            margin-bottom:7px;
-          ">
-
-          生徒詳細
+          </h2>
 
         </div>
 
 
-        <h2
-          style="
-            margin:0;
-            font-size:21px;
-          ">
+        <button
+          id="studentDetailClose"
+          type="button"
+          class="student-detail-close"
+          aria-label="閉じる">
 
-          ${escapeHtml(
-            student.display_name ||
-            "名前未設定"
-          )}
+          ×
 
-        </h2>
+        </button>
 
-      </div>
-
-
-      <button
-        id="studentDetailClose"
-        type="button"
-        style="
-          width:36px;
-          height:36px;
-          border:1px solid #ddd;
-          border-radius:7px;
-          background:#fff;
-          font-size:20px;
-          cursor:pointer;
-        ">
-
-        ×
-
-      </button>
-
-    </header>
-
-
-    <div
-      style="
-        padding:28px;
-      ">
-
-
-      <h3
-        style="
-          margin:0 0 14px;
-          font-size:13px;
-          color:#555;
-        ">
-
-        基本情報
-
-      </h3>
+      </header>
 
 
       <div
-        style="
-          border:1px solid #e5e7eb;
-          border-radius:8px;
-          overflow:hidden;
-        ">
-
-        ${detailRow(
-          "氏名",
-          student.display_name
-        )}
-
-        ${detailRow(
-          "生徒番号",
-          student.student_number
-        )}
-
-        ${detailRow(
-          "メールアドレス",
-          student.email
-        )}
-
-        ${detailRow(
-          "学年",
-          student.grade
-        )}
-
-        ${detailRow(
-          "クラス",
-          student.class_name
-        )}
-
-        ${detailRow(
-          "ユーザーID",
-          student.id
-        )}
-
-      </div>
+        class="student-detail-body">
 
 
-      <h3
-        style="
-          margin:30px 0 14px;
-          font-size:13px;
-          color:#555;
-        ">
+        <section
+          class="student-detail-section">
 
-        アカウント
-
-      </h3>
+          <h3>
+            基本情報
+          </h3>
 
 
-      <div
-        style="
-          border:1px solid #e5e7eb;
-          border-radius:8px;
-          overflow:hidden;
-        ">
+          <div
+            class="student-detail-table">
 
-        ${detailRow(
-          "状態",
-          student.status ===
-            "suspended"
-            ? "停止"
-            : "有効"
-        )}
+            ${detailRow(
+              "氏名",
+              student.display_name
+            )}
 
-        ${detailRow(
-          "パスワード変更",
-          student.must_change_password
-            ? "次回ログイン時に必要"
-            : "不要"
-        )}
+            ${detailRow(
+              "メールアドレス",
+              student.email
+            )}
 
-        ${detailRow(
-          "最終ログイン",
-          formatDate(
-            student.last_login_at
-          )
-        )}
+            ${detailRow(
+              "ユーザーID",
+              student.id
+            )}
 
-        ${detailRow(
-          "登録日時",
-          formatDate(
-            student.created_at
-          )
-        )}
+            ${detailRow(
+              "登録日時",
+              formatDate(
+                student.created_at
+              )
+            )}
 
-        ${detailRow(
-          "更新日時",
-          formatDate(
-            student.updated_at
-          )
-        )}
+            ${detailRow(
+              "更新日時",
+              formatDate(
+                student.updated_at
+              )
+            )}
+
+          </div>
+
+        </section>
+
+
+        <section
+          class="student-detail-section">
+
+          <h3>
+            アカウント
+          </h3>
+
+
+          <div
+            class="student-detail-table">
+
+            ${detailRow(
+              "状態",
+              student.status ===
+                "suspended"
+                ? "停止中"
+                : "有効"
+            )}
+
+            ${detailRow(
+              "パスワード",
+              student.must_change_password
+                ? "次回ログイン時に変更"
+                : "通常"
+            )}
+
+          </div>
+
+        </section>
+
+
+        <div
+          id="studentDetailMessage"
+          class="student-detail-message"
+          hidden>
+        </div>
 
       </div>
 
 
-      <div
-        id="studentDetailMessage"
-        style="
-          display:none;
-          margin-top:20px;
-          padding:12px;
-          border-radius:7px;
-          font-size:12px;
-          line-height:1.7;
-        ">
-      </div>
-
-    </div>
+      <footer
+        class="student-detail-footer">
 
 
-    <footer
-      style="
-        display:flex;
-        flex-wrap:wrap;
-        gap:9px;
-        padding:20px 28px;
-        border-top:1px solid #e5e7eb;
-      ">
+        <button
+          id="studentPasswordReset"
+          type="button"
+          class="secondary-button">
 
-      <button
-        id="studentEditButton"
-        type="button"
-        class="secondary-button">
+          パスワード再設定
 
-        編集
+        </button>
 
-      </button>
-
-
-      <button
-        id="studentPasswordButton"
-        type="button"
-        class="secondary-button">
-
-        パスワード再設定
-
-      </button>
-
-
-      <button
-        id="studentStatusButton"
-        type="button"
-        class="${
-          student.status ===
-          "suspended"
-            ? "primary-button"
-            : "danger-button"
-        }">
 
         ${
           student.status ===
           "suspended"
-            ? "停止解除"
-            : "アカウント停止"
+
+            ? `
+
+              <button
+                id="studentUnsuspend"
+                type="button"
+                class="primary-button">
+
+                停止解除
+
+              </button>
+
+            `
+
+            : `
+
+              <button
+                id="studentSuspend"
+                type="button"
+                class="danger-button">
+
+                アカウント停止
+
+              </button>
+
+            `
         }
 
-      </button>
 
-    </footer>
+        <button
+          id="studentDetailCloseBottom"
+          type="button"
+          class="secondary-button">
+
+          閉じる
+
+        </button>
+
+
+      </footer>
+
+    </div>
 
   `;
 
@@ -1259,6 +895,10 @@ function openStudentDetail(
     "hidden";
 
 
+  /*
+   * 閉じる。
+   */
+
   document
     .getElementById(
       "studentDetailClose"
@@ -1271,20 +911,21 @@ function openStudentDetail(
 
   document
     .getElementById(
-      "studentEditButton"
+      "studentDetailCloseBottom"
     )
     ?.addEventListener(
       "click",
-      () =>
-        openStudentEdit(
-          student
-        )
+      closeStudentDetail
     );
 
 
+  /*
+   * パスワード再設定。
+   */
+
   document
     .getElementById(
-      "studentPasswordButton"
+      "studentPasswordReset"
     )
     ?.addEventListener(
       "click",
@@ -1295,18 +936,43 @@ function openStudentDetail(
     );
 
 
+  /*
+   * 停止。
+   */
+
   document
     .getElementById(
-      "studentStatusButton"
+      "studentSuspend"
     )
     ?.addEventListener(
       "click",
       () =>
-        changeStudentStatus(
+        suspendStudent(
           student
         )
     );
 
+
+  /*
+   * 停止解除。
+   */
+
+  document
+    .getElementById(
+      "studentUnsuspend"
+    )
+    ?.addEventListener(
+      "click",
+      () =>
+        unsuspendStudent(
+          student
+        )
+    );
+
+
+  /*
+   * 背景クリック。
+   */
 
   overlay.addEventListener(
     "click",
@@ -1324,6 +990,16 @@ function openStudentDetail(
     }
   );
 
+
+  /*
+   * ESC。
+   */
+
+  document.addEventListener(
+    "keydown",
+    handleDetailEscape
+  );
+
 }
 
 
@@ -1335,19 +1011,10 @@ function detailRow(
   return `
 
     <div
-      style="
-        display:grid;
-        grid-template-columns:130px minmax(0,1fr);
-        gap:15px;
-        padding:14px 15px;
-        border-bottom:1px solid #edf0f2;
-      ">
+      class="student-detail-row">
 
       <div
-        style="
-          color:#888;
-          font-size:11px;
-        ">
+        class="student-detail-key">
 
         ${escapeHtml(
           label
@@ -1357,11 +1024,7 @@ function detailRow(
 
 
       <div
-        style="
-          color:#222;
-          font-size:13px;
-          word-break:break-word;
-        ">
+        class="student-detail-value">
 
         ${escapeHtml(
           value ||
@@ -1381,13 +1044,35 @@ function closeStudentDetail() {
 
   document
     .getElementById(
-      "studentDetailOverlay"
+      "studentDetailModal"
     )
     ?.remove();
 
 
   document.body.style.overflow =
     "";
+
+
+  document.removeEventListener(
+    "keydown",
+    handleDetailEscape
+  );
+
+}
+
+
+function handleDetailEscape(
+  event
+) {
+
+  if (
+    event.key ===
+    "Escape"
+  ) {
+
+    closeStudentDetail();
+
+  }
 
 }
 
@@ -1396,9 +1081,9 @@ function closeStudentDetail() {
    Detail message
    ========================================================= */
 
-function showDetailMessage(
+function setDetailMessage(
   text,
-  isError = false
+  error = false
 ) {
 
   const element =
@@ -1414,532 +1099,18 @@ function showDetailMessage(
   }
 
 
+  element.hidden =
+    false;
+
+
   element.textContent =
     text;
 
 
-  element.style.display =
-    "block";
-
-
-  element.style.background =
-    isError
-      ? "#f9eded"
-      : "#eef5ff";
-
-
-  element.style.color =
-    isError
-      ? "#9d3030"
-      : "#315d87";
-
-}
-
-
-/* =========================================================
-   Edit
-   ========================================================= */
-
-function openStudentEdit(
-  student
-) {
-
-  const panel =
-    document.querySelector(
-      "#studentDetailOverlay aside"
-    );
-
-
-  if (!panel) {
-
-    return;
-
-  }
-
-
-  panel.innerHTML = `
-
-    <header
-      style="
-        display:flex;
-        justify-content:space-between;
-        padding:28px;
-        border-bottom:1px solid #e5e7eb;
-      ">
-
-      <h2
-        style="
-          margin:0;
-          font-size:20px;
-        ">
-
-        生徒情報を編集
-
-      </h2>
-
-
-      <button
-        id="studentEditClose"
-        type="button"
-        style="
-          width:36px;
-          height:36px;
-          border:1px solid #ddd;
-          border-radius:7px;
-          background:#fff;
-          font-size:20px;
-          cursor:pointer;
-        ">
-
-        ×
-
-      </button>
-
-    </header>
-
-
-    <div
-      style="
-        padding:28px;
-      ">
-
-      ${editField(
-        "氏名",
-        "editDisplayName",
-        student.display_name
-      )}
-
-      ${editField(
-        "生徒番号",
-        "editStudentNumber",
-        student.student_number
-      )}
-
-      ${editField(
-        "メールアドレス",
-        "editEmail",
-        student.email,
-        "email"
-      )}
-
-      ${editField(
-        "学年",
-        "editGrade",
-        student.grade
-      )}
-
-      ${editField(
-        "クラス",
-        "editClassName",
-        student.class_name
-      )}
-
-
-      <div
-        id="studentEditMessage"
-        style="
-          display:none;
-          margin-top:15px;
-          color:#a12929;
-          font-size:12px;
-        ">
-      </div>
-
-    </div>
-
-
-    <footer
-      style="
-        display:flex;
-        gap:9px;
-        padding:20px 28px;
-        border-top:1px solid #e5e7eb;
-      ">
-
-      <button
-        id="studentEditCancel"
-        type="button"
-        class="secondary-button">
-
-        キャンセル
-
-      </button>
-
-
-      <button
-        id="studentEditSave"
-        type="button"
-        class="primary-button">
-
-        保存
-
-      </button>
-
-    </footer>
-
-  `;
-
-
-  document
-    .getElementById(
-      "studentEditClose"
-    )
-    ?.addEventListener(
-      "click",
-      () =>
-        openStudentDetail(
-          student
-        )
-    );
-
-
-  document
-    .getElementById(
-      "studentEditCancel"
-    )
-    ?.addEventListener(
-      "click",
-      () =>
-        openStudentDetail(
-          student
-        )
-    );
-
-
-  document
-    .getElementById(
-      "studentEditSave"
-    )
-    ?.addEventListener(
-      "click",
-      () =>
-        saveStudentEdit(
-          student
-        )
-    );
-
-}
-
-
-function editField(
-  label,
-  id,
-  value,
-  type = "text"
-) {
-
-  return `
-
-    <label
-      style="
-        display:block;
-        margin-bottom:18px;
-      ">
-
-      <span
-        style="
-          display:block;
-          margin-bottom:7px;
-          color:#555;
-          font-size:12px;
-          font-weight:600;
-        ">
-
-        ${escapeHtml(
-          label
-        )}
-
-      </span>
-
-
-      <input
-        id="${escapeHtml(
-          id
-        )}"
-        type="${escapeHtml(
-          type
-        )}"
-        value="${escapeHtml(
-          value
-        )}"
-        maxlength="254"
-        style="
-          width:100%;
-          height:42px;
-          padding:0 12px;
-          border:1px solid #d7dbe0;
-          border-radius:7px;
-          outline:none;
-          background:#fff;
-          font:inherit;
-        ">
-
-    </label>
-
-  `;
-
-}
-
-
-/* =========================================================
-   Save edit
-   ========================================================= */
-
-async function saveStudentEdit(
-  student
-) {
-
-  const saveButton =
-    document.getElementById(
-      "studentEditSave"
-    );
-
-
-  const errorElement =
-    document.getElementById(
-      "studentEditMessage"
-    );
-
-
-  const displayName =
-    document
-      .getElementById(
-        "editDisplayName"
-      )
-      ?.value
-      .trim();
-
-
-  const studentNumber =
-    document
-      .getElementById(
-        "editStudentNumber"
-      )
-      ?.value
-      .trim();
-
-
-  const email =
-    document
-      .getElementById(
-        "editEmail"
-      )
-      ?.value
-      .trim()
-      .toLowerCase();
-
-
-  const grade =
-    document
-      .getElementById(
-        "editGrade"
-      )
-      ?.value
-      .trim();
-
-
-  const className =
-    document
-      .getElementById(
-        "editClassName"
-      )
-      ?.value
-      .trim();
-
-
-  if (!displayName) {
-
-    errorElement.textContent =
-      "氏名を入力してください。";
-
-    errorElement.style.display =
-      "block";
-
-    return;
-
-  }
-
-
-  if (
-    email &&
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      .test(
-        email
-      )
-  ) {
-
-    errorElement.textContent =
-      "メールアドレスの形式が正しくありません。";
-
-    errorElement.style.display =
-      "block";
-
-    return;
-
-  }
-
-
-  saveButton.disabled =
-    true;
-
-
-  saveButton.textContent =
-    "保存中...";
-
-
-  try {
-
-    await callStudentFunction({
-
-      action:
-        "update_student",
-
-      student_id:
-        student.id,
-
-      display_name:
-        displayName,
-
-      student_number:
-        studentNumber ||
-        null,
-
-      email:
-        email ||
-        null,
-
-      grade:
-        grade ||
-        null,
-
-      class_name:
-        className ||
-        null
-
-    });
-
-
-    closeStudentDetail();
-
-
-    setMessage(
-      "生徒情報を更新しました。",
-      "success"
-    );
-
-
-    await loadStudents();
-
-  }
-  catch (error) {
-
-    console.error(
-      "UPDATE ERROR:",
-      error
-    );
-
-
-    errorElement.textContent =
-      error.message ||
-      "更新に失敗しました。";
-
-
-    errorElement.style.display =
-      "block";
-
-  }
-  finally {
-
-    saveButton.disabled =
-      false;
-
-    saveButton.textContent =
-      "保存";
-
-  }
-
-}
-
-
-/* =========================================================
-   Status
-   ========================================================= */
-
-async function changeStudentStatus(
-  student
-) {
-
-  const suspended =
-    student.status ===
-    "suspended";
-
-
-  const confirmed =
-    window.confirm(
-
-      suspended
-
-        ? `${student.display_name || "この生徒"}の停止を解除しますか？`
-
-        : `${student.display_name || "この生徒"}のアカウントを停止しますか？`
-
-    );
-
-
-  if (!confirmed) {
-
-    return;
-
-  }
-
-
-  try {
-
-    await callStudentFunction({
-
-      action:
-        suspended
-          ? "unsuspend_student"
-          : "suspend_student",
-
-      student_id:
-        student.id
-
-    });
-
-
-    closeStudentDetail();
-
-
-    setMessage(
-
-      suspended
-        ? "アカウントの停止を解除しました。"
-        : "アカウントを停止しました。",
-
-      "success"
-
-    );
-
-
-    await loadStudents();
-
-  }
-  catch (error) {
-
-    console.error(
-      "STATUS ERROR:",
-      error
-    );
-
-
-    showDetailMessage(
-      error.message ||
-      "アカウント状態の変更に失敗しました。",
-      true
-    );
-
-  }
+  element.classList.toggle(
+    "error",
+    error
+  );
 
 }
 
@@ -1955,7 +1126,7 @@ async function resetStudentPassword(
   const confirmed =
     window.confirm(
 
-      `${student.display_name || "この生徒"}のパスワードを再発行しますか？\n\n新しいパスワードはシステムが自動生成します。`
+      `${student.display_name || "この生徒"}のパスワードを再発行しますか？\n\n新しいパスワードは自動生成され、今回だけ表示されます。`
 
     );
 
@@ -1967,10 +1138,32 @@ async function resetStudentPassword(
   }
 
 
+  const button =
+    document.getElementById(
+      "studentPasswordReset"
+    );
+
+
+  if (button) {
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "発行中...";
+
+  }
+
+
+  setDetailMessage(
+    "一時パスワードを発行しています。"
+  );
+
+
   try {
 
     const result =
-      await callStudentFunction({
+      await callBrightWorker({
 
         action:
           "reset_student_password",
@@ -1986,7 +1179,7 @@ async function resetStudentPassword(
     ) {
 
       throw new Error(
-        "一時パスワードが取得できませんでした。"
+        "一時パスワードを取得できませんでした。"
       );
 
     }
@@ -2005,11 +1198,24 @@ async function resetStudentPassword(
     );
 
 
-    showDetailMessage(
+    setDetailMessage(
       error.message ||
       "パスワード再発行に失敗しました。",
       true
     );
+
+  }
+  finally {
+
+    if (button) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "パスワード再設定";
+
+    }
 
   }
 
@@ -2017,7 +1223,7 @@ async function resetStudentPassword(
 
 
 /* =========================================================
-   Temporary password dialog
+   Temporary password
    ========================================================= */
 
 function showTemporaryPassword(
@@ -2026,7 +1232,7 @@ function showTemporaryPassword(
 
   document
     .getElementById(
-      "temporaryPasswordDialog"
+      "temporaryPasswordModal"
     )
     ?.remove();
 
@@ -2038,163 +1244,105 @@ function showTemporaryPassword(
 
 
   overlay.id =
-    "temporaryPasswordDialog";
+    "temporaryPasswordModal";
 
 
-  Object.assign(
-    overlay.style,
-    {
+  overlay.className =
+    "student-detail-overlay";
 
-      position:
-        "fixed",
 
-      inset:
-        "0",
-
-      zIndex:
-        "100000",
-
-      display:
-        "flex",
-
-      alignItems:
-        "center",
-
-      justifyContent:
-        "center",
-
-      padding:
-        "20px",
-
-      background:
-        "rgba(0,0,0,.45)"
-
-    }
-  );
+  overlay.style.zIndex =
+    "100001";
 
 
   overlay.innerHTML = `
 
     <div
-      style="
-        width:min(470px,100%);
-        padding:30px;
-        border-radius:12px;
-        background:#fff;
-        box-shadow:0 20px 60px rgba(0,0,0,.25);
-      ">
+      class="student-detail-modal password-modal"
+      role="dialog"
+      aria-modal="true">
+
+
+      <header
+        class="student-detail-header">
+
+        <div>
+
+          <div
+            class="student-detail-label">
+
+            パスワード再発行
+
+          </div>
+
+
+          <h2>
+            一時パスワード
+          </h2>
+
+        </div>
+
+      </header>
 
 
       <div
-        style="
-          color:#777;
-          font-size:11px;
-          margin-bottom:7px;
-        ">
+        class="student-detail-body">
 
-        パスワード再発行
+        <p>
+          一時パスワードを発行しました。
+        </p>
+
+        <p>
+          このパスワードは今回だけ表示されます。
+          必要ならコピーして本人へ伝えてください。
+        </p>
+
+
+        <div
+          class="temporary-password-box">
+
+          <input
+            id="temporaryPasswordInput"
+            type="text"
+            readonly
+            value="${escapeHtml(
+              password
+            )}">
+
+
+          <button
+            id="temporaryPasswordCopy"
+            type="button"
+            class="primary-button">
+
+            コピー
+
+          </button>
+
+        </div>
+
+
+        <p
+          id="temporaryPasswordCopyMessage"
+          class="temporary-password-message">
+        </p>
 
       </div>
 
 
-      <h2
-        style="
-          margin:0;
-          font-size:20px;
-        ">
-
-        一時パスワードを発行しました
-
-      </h2>
-
-
-      <p
-        style="
-          margin:14px 0 20px;
-          color:#666;
-          font-size:12px;
-          line-height:1.8;
-        ">
-
-        このパスワードは今回だけ表示されます。<br>
-        コピーまたはメモして本人へ伝えてください。
-
-      </p>
-
-
-      <div
-        style="
-          display:flex;
-          gap:8px;
-        ">
-
-        <input
-          id="temporaryPasswordValue"
-          type="text"
-          readonly
-          value="${escapeHtml(
-            password
-          )}"
-          style="
-            flex:1;
-            min-width:0;
-            height:46px;
-            padding:0 12px;
-            border:1px solid #d5d9de;
-            border-radius:7px;
-            background:#f7f8f9;
-            font-family:monospace;
-            font-size:16px;
-          ">
-
+      <footer
+        class="student-detail-footer">
 
         <button
-          id="copyTemporaryPassword"
+          id="temporaryPasswordClose"
           type="button"
-          style="
-            height:46px;
-            padding:0 15px;
-            border:0;
-            border-radius:7px;
-            background:#20252b;
-            color:#fff;
-            cursor:pointer;
-          ">
+          class="secondary-button">
 
-          コピー
+          閉じる
 
         </button>
 
-      </div>
-
-
-      <div
-        id="temporaryPasswordMessage"
-        style="
-          min-height:18px;
-          margin-top:9px;
-          color:#28713e;
-          font-size:11px;
-        ">
-      </div>
-
-
-      <button
-        id="temporaryPasswordClose"
-        type="button"
-        style="
-          width:100%;
-          height:44px;
-          margin-top:20px;
-          border:1px solid #d5d9de;
-          border-radius:7px;
-          background:#fff;
-          cursor:pointer;
-        ">
-
-        閉じる
-
-      </button>
+      </footer>
 
     </div>
 
@@ -2208,23 +1356,28 @@ function showTemporaryPassword(
 
   const input =
     document.getElementById(
-      "temporaryPasswordValue"
+      "temporaryPasswordInput"
     );
 
 
-  const copy =
+  const copyButton =
     document.getElementById(
-      "copyTemporaryPassword"
+      "temporaryPasswordCopy"
     );
 
 
   const copyMessage =
     document.getElementById(
-      "temporaryPasswordMessage"
+      "temporaryPasswordCopyMessage"
     );
 
 
-  copy?.addEventListener(
+  input?.focus();
+
+  input?.select();
+
+
+  copyButton?.addEventListener(
     "click",
     async () => {
 
@@ -2235,7 +1388,7 @@ function showTemporaryPassword(
         );
 
 
-        copy.textContent =
+        copyButton.textContent =
           "コピーしました";
 
 
@@ -2245,9 +1398,9 @@ function showTemporaryPassword(
       }
       catch {
 
-        input.focus();
+        input?.focus();
 
-        input.select();
+        input?.select();
 
 
         copyMessage.textContent =
@@ -2272,10 +1425,131 @@ function showTemporaryPassword(
       }
     );
 
+}
 
-  input.focus();
 
-  input.select();
+/* =========================================================
+   Suspend
+   ========================================================= */
+
+async function suspendStudent(
+  student
+) {
+
+  if (
+    !window.confirm(
+      `${student.display_name || "この生徒"}のアカウントを停止しますか？`
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  try {
+
+    await callBrightWorker({
+
+      action:
+        "suspend_student",
+
+      student_id:
+        student.id
+
+    });
+
+
+    closeStudentDetail();
+
+
+    setMessage(
+      "アカウントを停止しました。",
+      "success"
+    );
+
+
+    await loadStudents();
+
+  }
+  catch (error) {
+
+    console.error(
+      "SUSPEND ERROR:",
+      error
+    );
+
+
+    setDetailMessage(
+      error.message ||
+      "アカウントを停止できませんでした。",
+      true
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   Unsuspend
+   ========================================================= */
+
+async function unsuspendStudent(
+  student
+) {
+
+  if (
+    !window.confirm(
+      `${student.display_name || "この生徒"}の停止を解除しますか？`
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  try {
+
+    await callBrightWorker({
+
+      action:
+        "unsuspend_student",
+
+      student_id:
+        student.id
+
+    });
+
+
+    closeStudentDetail();
+
+
+    setMessage(
+      "アカウントの停止を解除しました。",
+      "success"
+    );
+
+
+    await loadStudents();
+
+  }
+  catch (error) {
+
+    console.error(
+      "UNSUSPEND ERROR:",
+      error
+    );
+
+
+    setDetailMessage(
+      error.message ||
+      "停止を解除できませんでした。",
+      true
+    );
+
+  }
 
 }
 
@@ -2304,15 +1578,6 @@ async function createStudent() {
       .trim();
 
 
-  const studentNumber =
-    document
-      .getElementById(
-        "studentNumber"
-      )
-      ?.value
-      .trim();
-
-
   const email =
     document
       .getElementById(
@@ -2321,24 +1586,6 @@ async function createStudent() {
       ?.value
       .trim()
       .toLowerCase();
-
-
-  const grade =
-    document
-      .getElementById(
-        "grade"
-      )
-      ?.value
-      .trim();
-
-
-  const className =
-    document
-      .getElementById(
-        "className"
-      )
-      ?.value
-      .trim();
 
 
   const password =
@@ -2393,13 +1640,11 @@ async function createStudent() {
 
   if (
     password.length <
-      8 ||
-    password.length >
-      128
+      8
   ) {
 
     setMessage(
-      "パスワードは8文字以上128文字以内にしてください。",
+      "パスワードは8文字以上にしてください。",
       "error"
     );
 
@@ -2423,7 +1668,7 @@ async function createStudent() {
 
   try {
 
-    await callStudentFunction({
+    await callBrightWorker({
 
       action:
         "create_student",
@@ -2431,31 +1676,14 @@ async function createStudent() {
       display_name:
         displayName,
 
-      student_number:
-        studentNumber ||
-        null,
-
       email,
-
-      grade:
-        grade ||
-        null,
-
-      class_name:
-        className ||
-        null,
 
       password
 
     });
 
 
-    clearCreateForm();
-
-
-    formCard.classList.add(
-      "hidden"
-    );
+    hideCreateForm();
 
 
     setMessage(
@@ -2478,7 +1706,7 @@ async function createStudent() {
     setMessage(
       `登録エラー: ${
         error.message ||
-        "生徒登録に失敗しました。"
+        "登録に失敗しました。"
       }`,
       "error"
     );
@@ -2499,377 +1727,31 @@ async function createStudent() {
 
 
 /* =========================================================
-   CSV
+   Events
    ========================================================= */
 
-function exportStudentsCsv() {
+showFormButton?.addEventListener(
+  "click",
+  showCreateForm
+);
 
-  if (
-    allStudents.length ===
-    0
-  ) {
 
-    setMessage(
-      "出力できる生徒がいません。",
-      "error"
-    );
+cancelButton?.addEventListener(
+  "click",
+  hideCreateForm
+);
 
-    return;
 
-  }
+createButton?.addEventListener(
+  "click",
+  createStudent
+);
 
 
-  const header = [
-
-    "氏名",
-    "生徒番号",
-    "メールアドレス",
-    "学年",
-    "クラス",
-    "状態",
-    "パスワード変更",
-    "最終ログイン",
-    "登録日時",
-    "更新日時",
-    "ユーザーID"
-
-  ];
-
-
-  const rows =
-    allStudents.map(
-      student => [
-
-        student.display_name,
-
-        student.student_number,
-
-        student.email,
-
-        student.grade,
-
-        student.class_name,
-
-        student.status ===
-          "suspended"
-          ? "停止"
-          : "有効",
-
-        student.must_change_password
-          ? "必要"
-          : "不要",
-
-        student.last_login_at,
-
-        student.created_at,
-
-        student.updated_at,
-
-        student.id
-
-      ]
-    );
-
-
-  const csv =
-    [
-      header,
-      ...rows
-    ]
-      .map(
-        row =>
-          row
-            .map(
-              value =>
-                `"${String(
-                  value ?? ""
-                )
-                  .replace(
-                    /"/g,
-                    '""'
-                  )}"`
-            )
-            .join(",")
-      )
-      .join("\r\n");
-
-
-  const blob =
-    new Blob(
-      [
-        "\uFEFF" +
-        csv
-      ],
-      {
-        type:
-          "text/csv;charset=utf-8"
-      }
-    );
-
-
-  const url =
-    URL.createObjectURL(
-      blob
-    );
-
-
-  const link =
-    document.createElement(
-      "a"
-    );
-
-
-  link.href =
-    url;
-
-
-  link.download =
-    `students-${
-      new Date()
-        .toISOString()
-        .slice(
-          0,
-          10
-        )
-    }.csv`;
-
-
-  document.body.appendChild(
-    link
-  );
-
-
-  link.click();
-
-
-  link.remove();
-
-
-  URL.revokeObjectURL(
-    url
-  );
-
-}
-
-
-/* =========================================================
-   DOM
-   ========================================================= */
-
-function initializeDom() {
-
-  formCard =
-    document.getElementById(
-      "formCard"
-    );
-
-  message =
-    document.getElementById(
-      "message"
-    );
-
-  studentsElement =
-    document.getElementById(
-      "students"
-    );
-
-  searchInput =
-    document.getElementById(
-      "studentSearch"
-    );
-
-  studentCount =
-    document.getElementById(
-      "studentCount"
-    );
-
-  createButton =
-    document.getElementById(
-      "create"
-    );
-
-
-  const showFormButton =
-    document.getElementById(
-      "showForm"
-    );
-
-
-  const cancelButton =
-    document.getElementById(
-      "cancel"
-    );
-
-
-  const logoutButton =
-    document.getElementById(
-      "logout"
-    );
-
-
-  const clearSearchButton =
-    document.getElementById(
-      "clearSearch"
-    );
-
-
-  const exportButton =
-    document.getElementById(
-      "exportCsv"
-    );
-
-
-  const required = [
-
-    [
-      formCard,
-      "formCard"
-    ],
-
-    [
-      message,
-      "message"
-    ],
-
-    [
-      studentsElement,
-      "students"
-    ],
-
-    [
-      searchInput,
-      "studentSearch"
-    ],
-
-    [
-      studentCount,
-      "studentCount"
-    ],
-
-    [
-      createButton,
-      "create"
-    ],
-
-    [
-      showFormButton,
-      "showForm"
-    ],
-
-    [
-      cancelButton,
-      "cancel"
-    ],
-
-    [
-      logoutButton,
-      "logout"
-    ]
-
-  ];
-
-
-  const missing =
-    required
-      .filter(
-        item =>
-          !item[0]
-      )
-      .map(
-        item =>
-          item[1]
-      );
-
-
-  if (
-    missing.length
-  ) {
-
-    throw new Error(
-      `必要なHTML要素がありません: ${missing.join(", ")}`
-    );
-
-  }
-
-
-  showFormButton.addEventListener(
-    "click",
-    showCreateForm
-  );
-
-
-  cancelButton.addEventListener(
-    "click",
-    hideCreateForm
-  );
-
-
-  createButton.addEventListener(
-    "click",
-    createStudent
-  );
-
-
-  logoutButton.addEventListener(
-    "click",
-    logout
-  );
-
-
-  searchInput.addEventListener(
-    "input",
-    applySearch
-  );
-
-
-  clearSearchButton?.addEventListener(
-    "click",
-    () => {
-
-      searchInput.value =
-        "";
-
-      applySearch();
-
-      searchInput.focus();
-
-    }
-  );
-
-
-  exportButton?.addEventListener(
-    "click",
-    exportStudentsCsv
-  );
-
-
-  document.addEventListener(
-    "keydown",
-    event => {
-
-      if (
-        event.key !==
-        "Escape"
-      ) {
-
-        return;
-
-      }
-
-
-      document
-        .getElementById(
-          "temporaryPasswordDialog"
-        )
-        ?.remove();
-
-
-      closeStudentDetail();
-
-    }
-  );
-
-}
+logoutButton?.addEventListener(
+  "click",
+  logout
+);
 
 
 /* =========================================================
@@ -2878,15 +1760,10 @@ function initializeDom() {
 
 async function start() {
 
-  initializeDom();
-
-
   try {
 
     const admin =
-      await withTimeout(
-        requireAdmin()
-      );
+      await requireAdmin();
 
 
     if (!admin) {
@@ -2902,58 +1779,37 @@ async function start() {
   catch (error) {
 
     console.error(
-      "STUDENT ADMIN ERROR:",
+      "STUDENT ADMIN START ERROR:",
       error
     );
 
 
-    studentsElement.innerHTML = `
+    if (studentsElement) {
 
-      <div class="list-row">
+      studentsElement.innerHTML = `
 
-        <strong>
-          生徒管理を読み込めませんでした。
-        </strong>
+        <div class="list-row">
 
-        <br><br>
+          <strong>
+            生徒管理を読み込めませんでした。
+          </strong>
 
-        <small>
-          ${escapeHtml(
-            error?.message ||
-            "不明なエラー"
-          )}
-        </small>
+          <p>
+            ${escapeHtml(
+              error?.message ||
+              "データの取得に失敗しました。"
+            )}
+          </p>
 
-      </div>
+        </div>
 
-    `;
+      `;
+
+    }
 
   }
 
 }
 
 
-/* =========================================================
-   Boot
-   ========================================================= */
-
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    start,
-    {
-      once:
-        true
-    }
-  );
-
-}
-else {
-
-  start();
-
-}
+start();
