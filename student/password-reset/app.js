@@ -4,6 +4,10 @@ import {
 } from "../../assets/js/supabase.js";
 
 
+/* =========================================================
+   DOM
+   ========================================================= */
+
 const newPassword =
   document.getElementById(
     "newPassword"
@@ -25,6 +29,10 @@ const message =
   );
 
 
+/* =========================================================
+   Message
+   ========================================================= */
+
 function setMessage(
   text,
   type = ""
@@ -33,11 +41,16 @@ function setMessage(
   message.textContent =
     text;
 
+
   message.className =
     `message ${type}`;
 
 }
 
+
+/* =========================================================
+   Current student
+   ========================================================= */
 
 async function getCurrentStudent() {
 
@@ -50,7 +63,9 @@ async function getCurrentStudent() {
 
 
   if (error) {
+
     throw error;
+
   }
 
 
@@ -58,7 +73,9 @@ async function getCurrentStudent() {
     data?.session;
 
 
-  if (!session?.user?.id) {
+  if (
+    !session?.user?.id
+  ) {
 
     throw new Error(
       "ログインしてください。"
@@ -89,7 +106,9 @@ async function getCurrentStudent() {
 
 
   if (studentError) {
+
     throw studentError;
+
   }
 
 
@@ -106,34 +125,99 @@ async function getCurrentStudent() {
   }
 
 
+  /*
+   * 停止中ならここでも拒否。
+   *
+   * 停止モーダル自体は
+   * 共通ログイン画面で表示する。
+   */
+
   if (
     student.status ===
     "suspended"
   ) {
 
-    await supabase.auth.signOut();
+    await supabase.auth
+      .signOut({
+        scope:
+          "local"
+      });
+
 
     throw new Error(
-      "アカウントが停止中です。"
+      "アカウントが停止中です。管理者に問い合わせてください。"
     );
 
   }
 
 
   return {
+
     session,
+
     student
+
   };
 
 }
 
+
+/* =========================================================
+   Password validation
+   ========================================================= */
+
+function validatePassword(
+  password,
+  confirmation
+) {
+
+  if (
+    password.length <
+    8
+  ) {
+
+    return "パスワードは8文字以上にしてください。";
+
+  }
+
+
+  if (
+    password.length >
+    128
+  ) {
+
+    return "パスワードは128文字以内にしてください。";
+
+  }
+
+
+  if (
+    password !==
+    confirmation
+  ) {
+
+    return "パスワードが一致していません。";
+
+  }
+
+
+  return "";
+
+}
+
+
+/* =========================================================
+   Change password
+   ========================================================= */
 
 async function changePassword() {
 
   if (
     submitButton.disabled
   ) {
+
     return;
+
   }
 
 
@@ -145,30 +229,17 @@ async function changePassword() {
     confirmPassword.value;
 
 
-  if (
-    password.length <
-    8 ||
-    password.length >
-    128
-  ) {
-
-    setMessage(
-      "パスワードは8文字以上128文字以内にしてください。",
-      "error"
+  const validation =
+    validatePassword(
+      password,
+      confirmation
     );
 
-    return;
 
-  }
-
-
-  if (
-    password !==
-    confirmation
-  ) {
+  if (validation) {
 
     setMessage(
-      "パスワードが一致していません。",
+      validation,
       "error"
     );
 
@@ -193,14 +264,13 @@ async function changePassword() {
   try {
 
     const {
-      session,
       student
     } =
       await getCurrentStudent();
 
 
     /*
-     * Authのパスワードを変更。
+     * Supabase Authのパスワード変更。
      */
 
     const {
@@ -209,16 +279,24 @@ async function changePassword() {
     } =
       await supabase.auth
         .updateUser({
+
           password
+
         });
 
 
     if (passwordError) {
-      throw passwordError;
+
+      throw new Error(
+        passwordError.message ||
+        "パスワードを変更できませんでした。"
+      );
+
     }
 
 
     /*
+     * Auth変更成功後に
      * must_change_passwordを解除。
      */
 
@@ -250,14 +328,12 @@ async function changePassword() {
 
     if (flagError) {
 
-      throw flagError;
+      throw new Error(
+        "パスワード変更状態を更新できませんでした。"
+      );
 
     }
 
-
-    /*
-     * 完了。
-     */
 
     newPassword.value =
       "";
@@ -267,27 +343,24 @@ async function changePassword() {
 
 
     setMessage(
-      "パスワードを変更しました。教材画面へ移動します。",
+      "パスワードを変更しました。移動しています。",
       "success"
     );
 
 
-    await new Promise(
-      resolve =>
-        setTimeout(
-          resolve,
-          900
-        )
-    );
-
-
     /*
-     * bookがある場合は元の教材へ戻す。
+     * returnがあれば元の場所へ。
      */
 
     const params =
       new URLSearchParams(
         window.location.search
+      );
+
+
+    const returnUrl =
+      params.get(
+        "return"
       );
 
 
@@ -297,22 +370,62 @@ async function changePassword() {
       );
 
 
-    if (book) {
+    await new Promise(
+      resolve =>
+        setTimeout(
+          resolve,
+          700
+        )
+    );
 
-      window.location.replace(
-        `/student/viewer/?book=${encodeURIComponent(
-          book
-        )}`
-      );
+
+    if (
+      returnUrl
+    ) {
+
+      /*
+       * 外部URLへの遷移を防ぐ。
+       */
+
+      if (
+        returnUrl.startsWith(
+          "/"
+        )
+      ) {
+
+        window.location.replace(
+          returnUrl
+        );
+
+        return;
+
+      }
 
     }
-    else {
+
+
+    if (
+      book
+    ) {
 
       window.location.replace(
-        "/student/"
+
+        `/student/viewer/?book=${
+          encodeURIComponent(
+            book
+          )
+        }`
+
       );
 
+      return;
+
     }
+
+
+    window.location.replace(
+      "/student/books/"
+    );
 
   }
   catch (error) {
@@ -343,7 +456,11 @@ async function changePassword() {
 }
 
 
-submitButton.addEventListener(
+/* =========================================================
+   Events
+   ========================================================= */
+
+submitButton?.addEventListener(
   "click",
   changePassword
 );
@@ -356,7 +473,7 @@ submitButton.addEventListener(
   .forEach(
     input => {
 
-      input.addEventListener(
+      input?.addEventListener(
         "keydown",
         event => {
 
@@ -378,9 +495,9 @@ submitButton.addEventListener(
   );
 
 
-/*
- * 初期確認。
- */
+/* =========================================================
+   Initial guard
+   ========================================================= */
 
 (async () => {
 
@@ -392,6 +509,11 @@ submitButton.addEventListener(
       await getCurrentStudent();
 
 
+    /*
+     * 変更不要なユーザーが
+     * 直接このURLを開いた場合は戻す。
+     */
+
     if (
       !student.must_change_password
     ) {
@@ -402,21 +524,56 @@ submitButton.addEventListener(
         );
 
 
+      const returnUrl =
+        params.get(
+          "return"
+        );
+
+
       const book =
         params.get(
           "book"
         );
 
 
-      if (book) {
+      if (
+        returnUrl &&
+        returnUrl.startsWith(
+          "/"
+        )
+      ) {
 
         window.location.replace(
-          `/student/viewer/?book=${encodeURIComponent(
-            book
-          )}`
+          returnUrl
         );
 
+        return;
+
       }
+
+
+      if (
+        book
+      ) {
+
+        window.location.replace(
+
+          `/student/viewer/?book=${
+            encodeURIComponent(
+              book
+            )
+          }`
+
+        );
+
+        return;
+
+      }
+
+
+      window.location.replace(
+        "/student/books/"
+      );
 
     }
 
